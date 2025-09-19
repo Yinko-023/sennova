@@ -484,12 +484,6 @@ if (session_status() === PHP_SESSION_NONE) {
                     height: 100%;
                 }
 
-                .main-content {
-                    margin-left: 280px;
-                    /* espacio para que no se monte sobre el sidebar */
-                    padding-top: 70px;
-                    /* altura de navbar */
-                }
 
 
                 .sidebar .nav-link {

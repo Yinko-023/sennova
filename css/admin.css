@@ -280,3 +280,41 @@ input[type="date"]{ min-width:180px; }
 
 /* Fila: sin gaps inesperados */
 .row{ column-gap:0; row-gap:0; }
+
+/* Contenedor estrecho y centrado para las vistas (opcional) */
+.page-wrap {
+  max-width: 1180px;      /* ajusta si quieres más/menos ancho */
+  margin: 0 auto;
+}
+
+/* Barra/etiqueta del título de la página (la píldora oscura) */
+#hdrPDFs {
+  background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+  color: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  padding: 14px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Subtítulo bajo el título (línea gris clara) */
+#hdrPDFsSub {
+  color: rgba(255,255,255,.85);
+  font-size: .95rem;
+  margin-top: 4px;
+}
+
+/* Un poco de “aire” arriba y abajo del bloque de cabecera */
+#pdfsHeaderBlock {
+  margin-top: 12px;       /* súbelo o bájalo según lo quieras ver */
+  margin-bottom: 16px;
+}
+
+/* Asegura que la primera fila no quede “hundida” */
+.main-content > .container-fluid:first-child,
+.main-content > .row:first-child {
+  margin-top: 0 !important;
+  padding-top: 8px !important;
+}
