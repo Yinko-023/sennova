@@ -16,8 +16,8 @@ try {
   $pdo = conectaDb();
   $pdo->beginTransaction();
 
-  $stmt = $pdo->prepare('SELECT relative_path FROM generated_pdfs WHERE id = :id FOR UPDATE');
-  $stmt->execute([':id' => $id]);
+  $stmt = $pdo->prepare('SELECT relative_path FROM generated_pdfs WHERE id_pdf = :id_pdf FOR UPDATE');
+  $stmt->execute([':id_pdf' => $id]);
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
   if (!$row) {
@@ -36,8 +36,8 @@ try {
   }
 
   // Borrar registro en BD
-  $del = $pdo->prepare('DELETE FROM generated_pdfs WHERE id = :id');
-  $del->execute([':id' => $id]);
+  $del = $pdo->prepare('DELETE FROM generated_pdfs WHERE id_pdf = :id_pdf');
+  $del->execute([':id_pdf' => $id]);
   $pdo->commit();
 
   header('Location: /sennova/inAdmin.php?vista=pdfs&msg=deleted');
