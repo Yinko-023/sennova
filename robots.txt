@@ -1,0 +1,2 @@
+User-agent: *
+Disallow: /acceso-xz9x1d4.php
