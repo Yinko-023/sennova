@@ -1,26 +1,26 @@
 <?php
-$estado = $_GET['estado'] ?? 'todas';
+$rol        = $_SESSION['rol']  ?? null;         
+$areaSesion = $_SESSION['area'] ?? null;
+$esVisualizadorElectronica = ($rol === 2 && $areaSesion === 'visualizador');
+$areaEfectiva = $esVisualizadorElectronica ? 'electronica' : $areaSesion;
+$esAdmin = empty($areaEfectiva);                 
+$estado   = $_GET['estado']   ?? 'todas';
 $busqueda = $_GET['busqueda'] ?? '';
-$esAdmin = empty($_SESSION['area']); // El admin no tiene área asignada
-$area = $esAdmin ? ($_GET['area'] ?? '') : $_SESSION['area'];
-
-// Este será el parámetro que usarás en los botones
+$area = $esAdmin ? ($_GET['area'] ?? '') : $areaEfectiva;
 $areaParam = $esAdmin && $area !== '' ? '&area=' . urlencode($area) : '';
 
 $controller = new SolicitudController();
 
 if ($esAdmin) {
     if (!empty($area)) {
-        // Admin viendo un área específica
         $solicitudes = $controller->obtenerSolicitudesPorArea($estado, $area, $busqueda);
     } else {
-        // Admin viendo todas las áreas
         $solicitudes = $controller->obtenerSolicitudesTodas($estado, $busqueda);
     }
 } else {
-    // Usuario de área específica
     $solicitudes = $controller->obtenerSolicitudesPorArea($estado, $area, $busqueda);
-} ?>
+}
+?>
 
 <div class="container mt-5">
     <div class="text-center my-4" data-aos="fade-up">
@@ -34,7 +34,6 @@ if ($esAdmin) {
             <?php endif; ?>
         </h2>
     </div>
-
 
     <?php if (isset($_GET['res']) && $_GET['res'] === 'ok'): ?>
         <div class="success-modal active" id="successModal">
@@ -50,20 +49,17 @@ if ($esAdmin) {
         </div>
     <?php endif; ?>
 
-    <!-- Buscador -->
     <form method="GET" action="inAdmin.php?vista=atencion" id="form-busqueda-live" class="mb-4 position-relative">
         <input type="hidden" name="vista" value="atencion">
         <input type="hidden" name="estado" value="<?= htmlspecialchars($estado) ?>">
 
         <div class="input-group shadow-sm position-relative">
-            <!-- Campo de búsqueda con padding derecho -->
             <input type="text" name="busqueda" id="inputBusqueda"
                 class="form-control form-control-lg pe-5"
                 placeholder="Buscar por nombre, empresa o email"
                 value="<?= isset($_GET['busqueda']) ? htmlspecialchars($_GET['busqueda']) : '' ?>"
                 autocomplete="off">
 
-            <!-- Botón X con posición absoluta fuera del input -->
             <button type="button" id="limpiarBusqueda"
                 class="btn btn-sm btn-light border position-absolute"
                 style="top: 50%; right: 80px; transform: translateY(-50%); display: none;"
@@ -71,14 +67,12 @@ if ($esAdmin) {
                 <i class="fas fa-times text-muted"></i>
             </button>
 
-            <!-- Botón Buscar -->
             <button type="submit" class="btn btn-primary btn-lg">
                 <i class="fas fa-search me-1"></i> Buscar
             </button>
         </div>
     </form>
 
-    <!-- Botones tipo tarjetas -->
     <?php if ($esAdmin): ?>
         <div class="row text-center g-3 mb-4">
             <!-- Ambas Áreas -->
@@ -106,11 +100,9 @@ if ($esAdmin) {
             <style>
                 .bg-purple {
                     background-color: #6f42c1 !important;
-                    /* Bootstrap's "purple" */
                     color: white;
                 }
             </style>
-            <!-- Área Electrónica -->
             <div class="col-4">
                 <a href="inAdmin.php?vista=atencion&area=electronica" class="text-decoration-none">
                     <div class="card shadow-sm border-0 <?= $area == 'electronica' ? 'bg-info text-white' : '' ?>">
@@ -125,7 +117,6 @@ if ($esAdmin) {
 
         </div>
     <?php endif; ?>
-
 
     <div class="row text-center g-3 mb-4">
         <div class="col-6 col-md-3">
@@ -195,9 +186,7 @@ if ($esAdmin) {
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm border-0 h-100 position-relative">
                         <div class="card-body">
-                            <!-- Botones arriba a la derecha -->
                             <div class="position-absolute top-0 end-0 m-2 d-flex gap-1">
-                                <!-- Botón destacar -->
                                 <form method="post" action="routes/destacarServi.php" class="d-inline">
                                     <input type="hidden" name="id_re" value="<?= $soli['id_re'] ?>">
                                     <button type="submit"
@@ -207,7 +196,6 @@ if ($esAdmin) {
                                     </button>
                                 </form>
 
-                                <!-- Botón eliminar -->
                                 <form method="post" action="routes/DeleteServi.php"
                                     onsubmit="return confirm('¿Estás seguro de eliminar esta solicitud?')" class="d-inline">
                                     <input type="hidden" name="id_re" value="<?= $soli['id_re'] ?>">
@@ -217,7 +205,6 @@ if ($esAdmin) {
                                 </form>
                             </div>
 
-                            <!-- Contenido de la solicitud -->
                             <h5 class="card-title fw-bold text-primary-emphasis mt-4"><?= htmlspecialchars($soli['nombre']) ?></h5>
                             <p class="mb-1"><strong>Cédula:</strong> <?= htmlspecialchars($soli['cc_cliente']) ?></p>
                             <p class="mb-1"><strong>Servicio:</strong> <?= htmlspecialchars($soli['servicio']) ?></p>
@@ -226,7 +213,6 @@ if ($esAdmin) {
                             <p class="mb-1"><strong>Email:</strong> <?= htmlspecialchars($soli['email']) ?></p>
                             <p><strong>Descripción:</strong><br><?= nl2br(htmlspecialchars($soli['descripcion'])) ?></p>
 
-                            <!-- Mostrar área solo si es admin -->
                             <?php if (empty($_SESSION['area'])): ?>
                                 <p class="mb-1">
                                     <strong>Área:</strong>
@@ -260,7 +246,6 @@ if ($esAdmin) {
                     </div>
                 </div>
 
-                <!-- Modal -->
                 <div class="modal fade" id="respuestaModal<?= $soli['id_re'] ?>" tabindex="-1"
                     aria-labelledby="modalLabel<?= $soli['id_re'] ?>" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered modal-narrow"><!-- modal-lg para PC -->
@@ -268,7 +253,6 @@ if ($esAdmin) {
                             <form action="routes/Atendido.php" method="POST"
                                 class="respuesta-form" id="formResp<?= $soli['id_re'] ?>">
                                 <input type="hidden" name="id_soli" value="<?= $soli['id_re'] ?>">
-                                <!-- bandera si NO comenta: '1' = sin comentario, '0' = con comentario -->
                                 <input type="hidden" name="sin_opinion" id="sinOpinion<?= $soli['id_re'] ?>" value="0">
 
                                 <div class="modal-header">
@@ -277,7 +261,6 @@ if ($esAdmin) {
                                 </div>
 
                                 <div class="modal-body">
-                                    <!-- Toggle: Comentar (ACTIVADO por defecto) -->
                                     <div class="form-check form-switch mb-3">
                                         <input class="form-check-input" type="checkbox" role="switch"
                                             id="toggleComent<?= $soli['id_re'] ?>" checked>
@@ -286,13 +269,11 @@ if ($esAdmin) {
                                         </label>
                                     </div>
 
-                                    <!-- Aviso cuando no comenta -->
                                     <div id="avisoSinComent<?= $soli['id_re'] ?>"
                                         class="alert alert-info py-2 px-3 mb-3" style="display:none;">
                                         No se enviará ninguna notificación (medio: <strong>Ninguno</strong>).
                                     </div>
 
-                                    <!-- Comentario -->
                                     <div class="mb-3 comentario-container" id="comentarioContainer<?= $soli['id_re'] ?>">
                                         <div class="form-floating">
                                             <textarea class="form-control" placeholder="Escriba un mensaje para el usuario..."
@@ -301,7 +282,6 @@ if ($esAdmin) {
                                         </div>
                                     </div>
 
-                                    <!-- Acción -->
                                     <div class="mb-3">
                                         <label class="form-label">Acción</label>
                                         <div class="btn-group w-100" role="group">
@@ -319,7 +299,6 @@ if ($esAdmin) {
                                         </div>
                                     </div>
 
-                                    <!-- Medio de notificación -->
                                     <div class="mb-3">
                                         <label class="form-label">Notificar al Cliente Mediante</label>
                                         <div class="btn-group w-100" role="group">
