@@ -43,9 +43,7 @@ $subprocesos = $model->obtenerPorProceso($idProceso);
 <!-- Main Content -->
 <div class="container py-section">
   <!-- FORMULARIO -->
-  <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) ||
-    (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
-  ): ?>
+  <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) || ((isset($_SESSION['rol']) && $_SESSION['rol'] == 2) || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica'))): ?>
     <div class="row justify-content-center mb-5">
       <div class="col-lg-10">
         <div class="card-form">
@@ -110,9 +108,7 @@ $subprocesos = $model->obtenerPorProceso($idProceso);
               </a>
             </div>
 
-            <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) ||
-              (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
-            ): ?>
+            <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) || ((isset($_SESSION['rol']) && $_SESSION['rol'] == 2) || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica'))): ?>
               <div class="mt-2">
                 <form method="post" action="/sennova/routes/createProces.php" class="d-inline">
                   <input type="hidden" name="id_sub" value="<?= $sub['id_sub'] ?>">
