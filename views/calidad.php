@@ -170,64 +170,125 @@ $servi = $modelo->obtenerServi();
 
 
   <!-- Publicaciones -->
-  <section class="py-20 bg-gray-300">
+  <section id="nosotros" class="publications-section bg-light-gray py-12">
     <?php if (!empty($publicaciones)): ?>
-      <div class="container py-5">
-        <h2 class="text-center text-4xl font-bold text-dark mb-5 position-relative aos-init aos-animate"
-          data-aos="fade-up" data-aos-delay="100" data-aos-duration="1000"
-          style="text-shadow: 1px 1px 2px rgba(255, 255, 255, 1);">
-          Nuestras Publicaciones
-          <span class="d-block mx-auto mt-2"
-            style="width: 80px; height: 4px; background-color: #000000ff; border-radius: 2px;"></span>
-        </h2>
-        <div class="row mt-5">
+      <div class="container mx-auto px-4 my-8">
+        <!-- Encabezado -->
+        <div class="text-center mb-16" data-aos="fade-up">
+          <span class="inline-block text-success uppercase tracking-widest text-sm font-semibold mb-3">Nuestro Contenido</span>
+          <h2 class="text-4xl md:text-5xl font-bold text-dark mb-4 relative">
+            Nuestras Publicaciones
+            <span class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-success to-dark-success rounded-full mt-4"></span>
+          </h2>
+          <p class="text-lg text-gray-600 max-w-2xl mx-auto">Explora nuestras publicaciones especializadas y descubre contenido de valor</p>
+        </div>
+
+        <!-- Grid de publicaciones -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-5">
           <?php foreach ($publicaciones as $index => $publi): ?>
-            <div class="col-md-6 mb-4" data-aos="zoom-in" <?= $index % 2 !== 0 ? 'data-aos-delay="150"' : '' ?>>
-              <div class="card flex-md-row shadow-sm h-md-250 border-0" style="background: #f5f2eb;">
-                <div class="card-body d-flex flex-column justify-content-center text-center text-md-start">
-                  <strong class="text-success mb-2"><?= htmlspecialchars(ucfirst($publi['type_pu'])) ?></strong>
-                  <h3 class="mb-0">
-                    <a href="#" class="text-dark"><?= htmlspecialchars($publi['title']) ?></a>
+            <div class="publication-card" data-aos="fade-up" <?= $index % 2 !== 0 ? 'data-aos-delay="100"' : '' ?>>
+              <div class="bg-white rounded-xl shadow-lg overflow-hidden h-full flex flex-col md:flex-row transition-all duration-300 hover:shadow-xl">
+                <!-- Imagen -->
+                <div class="md:w-2/5 h-48 md:h-auto relative overflow-hidden">
+                  <img
+                    src="/sennova/img/<?= htmlspecialchars($publi['image_path']) ?>"
+                    alt="<?= htmlspecialchars($publi['title']) ?>"
+                    class="w-full h-full object-cover transition-transform duration-500 hover:scale-105 cursor-pointer"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modal<?= $publi['id'] ?>">
+                  <div class="absolute top-4 left-4">
+                    <span class="inline-block bg-success text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                      <?= htmlspecialchars(ucfirst($publi['type_pu'])) ?>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Contenido -->
+                <div class="md:w-3/5 p-6 flex flex-col">
+                  <h3 class="text-xl font-bold text-gray-900 mb-2">
+                    <a href="#" class="hover:text-success transition-colors" data-bs-toggle="modal" data-bs-target="#modal<?= $publi['id'] ?>">
+                      <?= htmlspecialchars($publi['title']) ?>
+                    </a>
                   </h3>
-                  <p class="card-text mb-auto">
+                  <p class="text-gray-600 mb-4 flex-grow">
                     <?= nl2br(htmlspecialchars(substr($publi['content'], 0, 100))) ?>...
                   </p>
-                  <div class="text-muted mb-1"><?= date("M d, Y", strtotime($publi['published_at'])) ?></div>
-                  <a href="#" class="fw-semibold" style="color:#3d5a40;" data-bs-toggle="modal"
-                    data-bs-target="#modal<?= $publi['id'] ?>">
-                    Seguir leyendo
-                  </a>
-                  <div class="mt-3">
-                    <a href="#contacto" class="btn text-white rounded-pill px-4 py-2" style="background: #273d35ff;">
-                      <i class="bi bi-envelope-fill me-2"></i> Solicitar
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-500">
+                      <i class="far fa-calendar-alt mr-1"></i>
+                      <?= date("M d, Y", strtotime($publi['published_at'])) ?>
+                    </span>
+                    <a href="#" class="text-sm font-semibold text-success hover:text-dark-success transition-colors"
+                      data-bs-toggle="modal" data-bs-target="#modal<?= $publi['id'] ?>">
+                      Leer más <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                  </div>
+                  <div class="mt-4">
+                    <a href="#contacto" class="inline-block bg-dark-success hover:bg-success text-white font-medium py-2 px-4 rounded-full transition-colors text-sm">
+                      <i class="fas fa-envelope mr-2"></i> Solicitar
                     </a>
                   </div>
                 </div>
-                <img src="/sennova/img/<?= htmlspecialchars($publi['image_path']) ?>" alt="Imagen publicación"
-                  class="mx-auto d-block d-md-inline-block"
-                  style="width:200px; height:250px; object-fit:cover; cursor:pointer;" data-bs-toggle="modal"
-                  data-bs-target="#modal<?= $publi['id'] ?>" />
               </div>
             </div>
 
-            <!-- Modal -->
+            <!-- Modal principal -->
             <div class="modal fade" id="modal<?= $publi['id'] ?>" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <div class="modal-content" style="background:#f5f2eb;">
-                  <div class="modal-header" style="background:#4b3621;">
-                    <h5 class="modal-title text-white"><?= htmlspecialchars($publi['title']) ?></h5>
-                    <button type="button" class="btn-close bg-light" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 overflow-hidden">
+                  <div class="modal-header bg-dark-success text-white py-4 px-6">
+                    <div>
+                      <span class="inline-block bg-white text-success text-xs font-semibold px-2 py-1 rounded-full uppercase tracking-wider mb-1">
+                        <?= htmlspecialchars(ucfirst($publi['type_pu'])) ?>
+                      </span>
+                      <h5 class="modal-title text-xl font-bold mb-0"><?= htmlspecialchars($publi['title']) ?></h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
-                  <div class="modal-body">
-                    <img src="/sennova/img/<?= htmlspecialchars($publi['image_path']) ?>" alt="Imagen publicación"
-                      class="img-fluid rounded mb-3" style="max-height:300px; object-fit:cover; width:100%;">
-                    <p class="text-muted"><?= date("d M Y", strtotime($publi['published_at'])) ?></p>
-                    <p><?= nl2br(htmlspecialchars($publi['content'])) ?></p>
+
+                  <div class="modal-body p-6">
+                    <div class="mb-6 rounded-lg overflow-hidden">
+                      <img
+                        src="/sennova/img/<?= htmlspecialchars($publi['image_path']) ?>"
+                        alt="<?= htmlspecialchars($publi['title']) ?>"
+                        class="w-full h-64 object-cover cursor-zoom-in"
+                        data-bs-toggle="modal"
+                        data-bs-target="#imageModal<?= $publi['id'] ?>">
+                    </div>
+
+                    <div class="flex items-center text-gray-500 text-sm mb-6">
+                      <i class="far fa-calendar-alt mr-2"></i>
+                      <?= date("d M Y", strtotime($publi['published_at'])) ?>
+                    </div>
+
+                    <div class="prose max-w-none text-gray-700">
+                      <?= nl2br(htmlspecialchars($publi['content'])) ?>
+                    </div>
                   </div>
-                  <div class="modal-footer">
-                    <a href="#contacto" class="btn" style="background:#3d5a40; color:white;">Solicitar</a>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+
+                  <div class="modal-footer bg-gray-50 py-4 px-6">
+                    <a href="#contacto" class="bg-success hover:bg-dark-success text-white font-medium py-2 px-5 rounded-full transition-colors mr-3">
+                      <i class="fas fa-envelope mr-2"></i> Solicitar
+                    </a>
+                    <button type="button" class="bg-white hover:bg-gray-100 text-gray-700 font-medium py-2 px-5 border border-gray-300 rounded-full transition-colors" data-bs-dismiss="modal">
+                      <i class="fas fa-times mr-2"></i> Cerrar
+                    </button>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal imagen ampliada -->
+            <div class="modal fade" id="imageModal<?= $publi['id'] ?>" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content bg-transparent border-0">
+                  <button type="button" class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 z-10" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                  </button>
+                  <img
+                    src="/sennova/img/<?= htmlspecialchars($publi['image_path']) ?>"
+                    alt="<?= htmlspecialchars($publi['title']) ?>"
+                    class="w-full h-auto max-h-[90vh] object-contain">
                 </div>
               </div>
             </div>
@@ -235,41 +296,58 @@ $servi = $modelo->obtenerServi();
         </div>
       </div>
     <?php else: ?>
-      <div class="alert alert-warning text-center bg-light">No hay publicaciones de Café disponibles.</div>
+      <!-- Estado vacío -->
+      <div class="container mx-auto px-4 py-16 text-center">
+        <div class="inline-block bg-white rounded-xl shadow-md p-8 max-w-md">
+          <div class="text-gray-400 mb-4">
+            <i class="fas fa-book-open fa-3x"></i>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">No hay publicaciones disponibles</h3>
+          <p class="text-gray-600">Estamos trabajando en nuevo contenido para ti</p>
+        </div>
+      </div>
     <?php endif; ?>
   </section>
 
   <!-- Servicios -->
-  <section id="servicios" class="py-20" style="background: rgba(108, 143, 131, 1);">
-    <div class="container py-5">
-      <h2 class="text-center text-4xl font-bold text-dark mb-5 position-relative aos-init aos-animate"
-        data-aos="fade-up" data-aos-delay="100" data-aos-duration="1000"
-        style="text-shadow: 1px 1px 2px rgba(255, 255, 255, 1);">
-        Nuestros Servicios
-        <span class="d-block mx-auto mt-2"
-          style="width: 80px; height: 4px; background-color: #000000ff; border-radius: 2px;"></span>
-      </h2>
+  <section id="servicios" class="services-section py-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+    <div class="container">
+      <div class="section-header text-center mb-5" data-aos="fade-up" data-aos-delay="100">
+        <span class="section-subtitle text-dark">Lo que ofrecemos</span>
+        <h2 class="section-title position-relative text-dark">
+          Nuestros Servicios
+          <span class="title-underline bg-dark"></span>
+        </h2>
+      </div>
+
       <?php if (!empty($servi)): ?>
         <div class="row justify-content-center g-4">
           <?php foreach ($servi as $servicio): ?>
-            <div class="col-12 col-md-6 col-lg-4 d-flex" data-aos="fade-up" data-aos-duration="800">
-              <div class="card h-100 shadow rounded-4 border-0 w-100" style="background:#f5f2eb;">
-                <div class="card-body d-flex flex-column justify-content-between p-4">
-                  <div class="text-center">
-                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3"
-                      style="width: 90px; height: 90px;">
-                      <img src="img/<?= htmlspecialchars($servicio['icono_ca']) ?>" alt="icono"
-                        style="max-width: 60%; max-height: 60%;">
-                    </div>
-                    <h5 class="fw-bold mb-2" style="color: #273d35ff;"><?= htmlspecialchars($servicio['titulo_ca']) ?></h5>
-                    <p class="text-muted mb-3"><?= htmlspecialchars($servicio['des_corta']) ?></p>
-                    <div class="fw-bold fs-5" style="color:#273d35ff;">
-                      Desde <?= number_format($servicio['precio_ca'], 0, ',', '.') . ' COP' ?>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
+              <div class="service-card w-100" data-aos="fade-up" data-aos-duration="800">
+                <div class="card-inner">
+                  <!-- Ícono -->
+                  <div class="service-icon">
+                    <div class="icon-wrapper">
+                      <img
+                        src="img/<?= htmlspecialchars($servicio['icono_ca']) ?>"
+                        alt="<?= htmlspecialchars($servicio['titulo_ca']) ?>"
+                        class="icon-img">
                     </div>
                   </div>
-                  <div class="mt-4 text-center">
-                    <button class="btn text-white rounded-pill px-4 py-2 " style="background: #273d35ff;"
-                      data-bs-toggle="modal" data-bs-target="#modal-cafe<?= $servicio['id_ca'] ?>">
+
+                  <!-- Contenido -->
+                  <div class="card-content">
+                    <h3 class="service-title"><?= htmlspecialchars($servicio['titulo_ca']) ?></h3>
+                    <p class="service-description"><?= htmlspecialchars($servicio['des_corta']) ?></p>
+
+                    <div class="service-price">
+                      Desde <?= number_format($servicio['precio_ca'], 0, ',', '.') ?> COP
+                    </div>
+
+                    <button class="service-button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modal-cafe<?= $servicio['id_ca'] ?>">
                       <i class="fas fa-circle-info me-2"></i> Más Información
                     </button>
                   </div>
@@ -277,71 +355,62 @@ $servi = $modelo->obtenerServi();
               </div>
             </div>
 
-
-
-            <!-- Modal de cada servicio -->
+            <!-- Modal con el mismo diseño que electrónica -->
             <div class="modal fade" id="modal-cafe<?= $servicio['id_ca'] ?>" tabindex="-1"
               aria-labelledby="modalLabel-cafe<?= $servicio['id_ca'] ?>" aria-hidden="true">
-              <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content border-0 shadow rounded-4">
-
-                  <!-- Cabecera del Modal -->
-                  <div class="modal-header bg-dark text-white rounded-top-4">
-                    <h5 class="modal-title d-flex align-items-center" id="modalLabel-elect<?= $servicio['id_ca'] ?>">
-                      <i class="fas fa-wrench me-2 text-warning"></i> <?= htmlspecialchars($servicio['titulo_ca']) ?>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                      aria-label="Cerrar"></button>
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <!-- Encabezado modal -->
+                  <div class="modal-header">
+                    <div class="modal-title-wrapper">
+                      <i class="fas fa-wrench modal-title-icon"></i>
+                      <h5 class="modal-title" id="modalLabel-cafe<?= $servicio['id_ca'] ?>">
+                        <?= htmlspecialchars($servicio['titulo_ca']) ?>
+                      </h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                   </div>
 
-                  <!-- Cuerpo del Modal -->
-                  <div class="modal-body py-4 px-4">
-                    <div class="row g-4 align-items-start">
+                  <!-- Cuerpo modal -->
+                  <div class="modal-body">
+                    <div class="modal-row">
+                      <!-- Descripción -->
+                      <div class="service-details">
+                        <h6 class="section-label">Descripción del servicio</h6>
+                        <div class="service-description-long">
+                          <?= nl2br(htmlspecialchars($servicio['des_larga'])) ?>
+                        </div>
 
-                      <!-- Columna: Detalles del servicio -->
-                      <div class="col-md-7">
-                        <h6 class="text-muted fw-bold mb-2">Sobre el servicio</h6>
-                        <p class="text-muted small"><?= nl2br(htmlspecialchars($servicio['des_larga'])) ?></p>
-
-                        <div class="mt-3">
-                          <span class="badge bg-warning text-dark fs-6">
-                            <i class="fas fa-tag me-1"></i> Desde <?= number_format($servicio['precio_ca'], 0, ',', '.') ?>
-                            COP
-                          </span>
+                        <div class="price-tag">
+                          <i class="fas fa-tag"></i>
+                          Desde <?= number_format($servicio['precio_ca'], 0, ',', '.') ?> COP
                         </div>
                       </div>
 
-                      <!-- Columna: Opciones de pago -->
-                      <div class="col-md-5 text-center">
-                        <div class="bg-light rounded-3 p-4 shadow-sm h-100">
-                          <h6 class="fw-semibold text-dark mb-3">
-                            <i class="fas fa-cash-register me-2 text-success"></i>Métodos de Pago Aceptados
-                          </h6>
+                      <!-- Métodos de pago -->
+                      <div class="payment-methods">
+                        <h6 class="section-label"><i class="fas fa-credit-card"></i> Métodos de pago</h6>
+                        <ul class="payment-list">
+                          <li><i class="fas fa-check-circle"></i> Transferencia Bancaria</li>
+                          <li><i class="fas fa-check-circle"></i> Pago Contra Entrega</li>
+                          <li><i class="fas fa-check-circle"></i> Pagos Virtuales</li>
+                        </ul>
 
-                          <ul class="list-unstyled text-muted small">
-                            <li><i class="fas fa-check-circle text-success me-2"></i> Transferencia Bancaria</li>
-                            <li><i class="fas fa-check-circle text-success me-2"></i> Pago Contra Entrega</li>
-                            <li><i class="fas fa-check-circle text-success me-2"></i> Pagos Virtuales Disponibles</li>
-                          </ul>
-
-                          <div class="alert alert-info mt-4 small mb-0" style="font-size: 0.85rem;">
-                            Para realizar pagos virtuales, te enviaremos el enlace una vez agendes el servicio.
-                          </div>
+                        <div class="payment-note">
+                          <i class="fas fa-info-circle"></i>
+                          Te enviaremos el enlace de pago virtual al agendar el servicio.
                         </div>
                       </div>
-
-
                     </div>
                   </div>
 
-                  <!-- Footer -->
-                  <div class="modal-footer border-0 justify-content-between px-4 pb-3">
-                    <small class="text-muted">
-                      ¿Dudas? Escríbenos a <a href="mailto:soporte@empresa.com"
-                        class="text-decoration-none">soporte@empresa.com</a>
-                    </small>
-                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">
-                      <i class="fas fa-times me-1"></i> Cerrar
+                  <!-- Pie modal -->
+                  <div class="modal-footer">
+                    <div class="contact-info">
+                      <i class="fas fa-envelope"></i> soporte@empresa.com
+                    </div>
+                    <button type="button" class="close-button" data-bs-dismiss="modal">
+                      <i class="fas fa-times"></i> Cerrar
                     </button>
                   </div>
                 </div>
@@ -350,10 +419,17 @@ $servi = $modelo->obtenerServi();
           <?php endforeach; ?>
         </div>
       <?php else: ?>
-        <p class="text-center text-light">No hay servicios disponibles por el momento.</p>
+        <!-- Estado vacío -->
+        <div class="empty-state text-center py-5">
+          <div class="empty-icon mb-3">
+            <i class="fas fa-tools fa-3x text-muted"></i>
+          </div>
+          <p class="text-muted">No hay servicios disponibles actualmente</p>
+        </div>
       <?php endif; ?>
     </div>
   </section>
+
 
   <!-- Nosotros -->
   <section id="nosotros" class="py-20 bg-gray-300" data-aos="fade-up">
@@ -695,4 +771,5 @@ $servi = $modelo->obtenerServi();
     crossorigin="anonymous"></script>
 
 </body>
+
 </html>

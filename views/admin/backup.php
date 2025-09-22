@@ -1,90 +1,237 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
 require_once __DIR__ . '/../../conexion/conexion.php';
 
 $backupDir = __DIR__ . '/../../backups/';
 if (!is_dir($backupDir)) {
-    mkdir($backupDir, 0777, true);
+  mkdir($backupDir, 0777, true);
 }
 
-$mysqldumpPath = 'C:\\xampp\\mysql\\bin\\mysqldump.exe'; // Ruta absoluta a mysqldump
-$mysqlPath = 'C:\\xampp\\mysql\\bin\\mysql.exe';         // Ruta absoluta a mysql
-$usuario_db = 'root';
+$mysqldumpPath = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
+$mysqlPath     = 'C:\\xampp\\mysql\\bin\\mysql.exe';
+$usuario_db    = 'root';
 $contrasena_db = '';
-$nombre_db = 'sennova2';
+$nombre_db     = 'sennova2';
 
-// Crear backup
+function db(): PDO
+{
+  return conectaDb();
+}
+
+function getUserInfo(): array
+{
+  $usuario_id     = $_SESSION['user_id'] ?? $_SESSION['id'] ?? null;
+  $usuario_nombre = $_SESSION['usuario'] ?? $_SESSION['username'] ?? null;
+  return [$usuario_id, $usuario_nombre];
+}
+
+function getClientMeta(): array
+{
+  $ip         = $_SERVER['REMOTE_ADDR']    ?? null;
+  $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+  return [$ip, $user_agent];
+}
+
+function log_auditoria(string $accion, string $entidad, ?string $entidad_id, string $descripcion, $datos_antes = null, $datos_despues = null): void
+{
+  [$usuario_id, $usuario_nombre] = getUserInfo();
+  [$ip, $user_agent] = getClientMeta();
+
+  $sql = "INSERT INTO auditoria_cambios
+            (fecha, usuario_id, usuario_nombre, accion, entidad, entidad_id, descripcion, datos_antes, datos_despues, ip, user_agent)
+            VALUES (NOW(), :usuario_id, :usuario_nombre, :accion, :entidad, :entidad_id, :descripcion, :datos_antes, :datos_despues, :ip, :user_agent)";
+
+  $stmt = db()->prepare($sql);
+  $stmt->execute([
+    ':usuario_id'     => $usuario_id,
+    ':usuario_nombre' => $usuario_nombre,
+    ':accion'         => $accion,
+    ':entidad'        => $entidad,
+    ':entidad_id'     => $entidad_id,
+    ':descripcion'    => $descripcion,
+    ':datos_antes'    => is_null($datos_antes) ? null : (is_string($datos_antes) ? $datos_antes : json_encode($datos_antes, JSON_UNESCAPED_UNICODE)),
+    ':datos_despues'  => is_null($datos_despues) ? null : (is_string($datos_despues) ? $datos_despues : json_encode($datos_despues, JSON_UNESCAPED_UNICODE)),
+    ':ip'             => $ip,
+    ':user_agent'     => $user_agent
+  ]);
+}
+
 if (isset($_POST['crear_backup'])) {
-    $fecha = date('Y-m-d_H-i-s');
-    $filename = "backup_sennova2_$fecha.sql";
-    $filepath = $backupDir . $filename;
+  $fecha    = date('Y-m-d_H-i-s');
+  $filename = "backup_{$nombre_db}_{$fecha}.sql";
+  $filepath = $backupDir . $filename;
 
-    if ($contrasena_db === '') {
-        $cmd = "\"$mysqldumpPath\" -u $usuario_db $nombre_db > \"$filepath\"";
+  if ($contrasena_db === '') {
+    $cmd = "\"$mysqldumpPath\" -u $usuario_db $nombre_db > \"$filepath\" 2>&1";
+  } else {
+    $cmd = "\"$mysqldumpPath\" -u $usuario_db -p$contrasena_db $nombre_db > \"$filepath\" 2>&1";
+  }
+
+  $output = [];
+  $status = 0;
+  exec($cmd, $output, $status);
+
+  if ($status === 0 && file_exists($filepath)) {
+    log_auditoria(
+      'create',
+      'backup',
+      $filename,
+      "Creó una copia de seguridad: $filename",
+      null,
+      json_encode(['archivo' => $filename, 'ruta' => $filepath, 'bd' => $nombre_db], JSON_UNESCAPED_UNICODE)
+    );
+  } else {
+    echo "<div class='alert alert-danger'>❌ Error al crear el backup. Verifica que 'mysqldump' esté disponible.</div>";
+    echo "<pre>Comando ejecutado:\n$cmd\n\nSalida:\n" . htmlspecialchars(implode("\n", $output)) . "\nCódigo de estado: $status</pre>";
+  }
+}
+
+if (isset($_POST['eliminar'], $_POST['file'])) {
+  $file     = basename($_POST['file']);
+  $filepath = $backupDir . $file;
+
+  if (is_file($filepath)) {
+    $antes = [
+      'archivo'      => $file,
+      'ruta'         => $filepath,
+      'tamano_bytes' => filesize($filepath),
+      'modificado'   => date('c', filemtime($filepath))
+    ];
+
+    if (@unlink($filepath)) {
+      log_auditoria(
+        'delete',
+        'backup',
+        $file,
+        "Eliminó la copia de seguridad: $file",
+        json_encode($antes, JSON_UNESCAPED_UNICODE),
+        null
+      );
     } else {
-        $cmd = "\"$mysqldumpPath\" -u $usuario_db -p$contrasena_db $nombre_db > \"$filepath\"";
+      echo "<div class='alert alert-danger'>❌ No se pudo eliminar el archivo.</div>";
+    }
+  }
+}
+
+if (isset($_POST['restaurar'], $_POST['file'])) {
+  $file     = basename($_POST['file']);
+  $filepath = $backupDir . $file;
+
+  if (is_file($filepath)) {
+    if ($contrasena_db === '') {
+      $cmd = "\"$mysqlPath\" -u $usuario_db $nombre_db < \"$filepath\" 2>&1";
+    } else {
+      $cmd = "\"$mysqlPath\" -u $usuario_db -p$contrasena_db $nombre_db < \"$filepath\" 2>&1";
     }
 
+    $output = [];
+    $status = 0;
     exec($cmd, $output, $status);
 
-    if ($status === 0 && file_exists($filepath)) {
-        $usuario = $_SESSION['usuario'] ?? 'Desconocido';
-        $descripcion = "Creó una copia de seguridad: $filename";
-        $conn = conectaDb();
-        $sql = "INSERT INTO auditoria_cambios (usuario, descripcion, fecha) VALUES (?, ?, NOW())";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([$usuario, $descripcion]);
+    if ($status === 0) {
+      log_auditoria(
+        'update',
+        'backup',
+        $file,
+        "Restauró la copia de seguridad: $file",
+        null,
+        json_encode(['archivo' => $file, 'bd' => $nombre_db], JSON_UNESCAPED_UNICODE)
+      );
     } else {
-        echo "<div class='alert alert-danger'>❌ Error al crear el backup. Verifica que 'mysqldump' esté disponible.</div>";
-        echo "<pre>Comando ejecutado:\n$cmd\n\nSalida:\n" . implode("\n", $output) . "\nCódigo de estado: $status</pre>";
+      echo "<div class='alert alert-danger'>❌ Error al restaurar la copia.</div>";
+      echo "<pre>Comando ejecutado:\n$cmd\n\nSalida:\n" . htmlspecialchars(implode("\n", $output)) . "\nCódigo de estado: $status</pre>";
     }
+  }
 }
 
-// Eliminar backup
-if (isset($_POST['eliminar']) && isset($_POST['file'])) {
-    $file = basename($_POST['file']);
-    $filepath = $backupDir . $file;
-    if (file_exists($filepath)) {
-        unlink($filepath);
-
-        $usuario = $_SESSION['usuario'] ?? 'Desconocido';
-        $descripcion = "Eliminó la copia de seguridad: $file";
-        $conn = conectaDb();
-        $sql = "INSERT INTO auditoria_cambios (usuario, descripcion, fecha) VALUES (?, ?, NOW())";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([$usuario, $descripcion]);
-    }
-}
-
-// Restaurar backup
-if (isset($_POST['restaurar']) && isset($_POST['file'])) {
-    $file = basename($_POST['file']);
-    $filepath = $backupDir . $file;
-    if (file_exists($filepath)) {
-        if ($contrasena_db === '') {
-            $cmd = "\"$mysqlPath\" -u $usuario_db $nombre_db < \"$filepath\"";
-        } else {
-            $cmd = "\"$mysqlPath\" -u $usuario_db -p$contrasena_db $nombre_db < \"$filepath\"";
-        }
-
-        exec($cmd, $output, $status);
-
-        if ($status === 0) {
-            $usuario = $_SESSION['usuario'] ?? 'Desconocido';
-            $descripcion = "Restauró la copia de seguridad: $file";
-            $conn = conectaDb();
-            $sql = "INSERT INTO auditoria_cambios (usuario, descripcion, fecha) VALUES (?, ?, NOW())";
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$usuario, $descripcion]);
-        } else {
-            echo "<div class='alert alert-danger'>❌ Error al restaurar la copia.</div>";
-            echo "<pre>Comando ejecutado:\n$cmd\n\nSalida:\n" . implode("\n", $output) . "\nCódigo de estado: $status</pre>";
-        }
-    }
-}
-
-// Listar backups
-$backups = array_diff(scandir($backupDir), ['.', '..']);
+$backups = array_values(array_filter(
+  array_diff(scandir($backupDir), ['.', '..']),
+  fn($f) => is_file($backupDir . $f)
+));
 ?>
+
+
+
+<div class="backup-container mt-5">
+  <div class="backup-header">
+    <h2><i class="fas fa-database me-2"></i> Copia de Seguridad</h2>
+    <p class="text-muted">Gestión de respaldos del sistema</p>
+  </div>
+
+  <div class="backup-actions mb-4">
+    <form method="post" class="d-inline-block">
+      <button type="submit" name="crear_backup" class="btn btn-dark">
+        <i class="fas fa-plus-circle me-2"></i> Crear copia de seguridad
+      </button>
+    </form>
+  </div>
+
+  <div class="backup-table-container text-center">
+    <table class="table table-hover">
+      <thead class="backup-table-header">
+        <tr>
+          <th><i class="fas fa-file-alt me-1"></i> Archivo</th>
+          <th><i class="fas fa-calendar-alt me-1"></i> Fecha</th>
+          <th><i class="fas fa-cog me-1"></i> Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (!empty($backups)): ?>
+          <?php foreach ($backups as $file): ?>
+            <tr>
+              <td class="align-middle">
+                <i class="fas fa-file-archive text-primary me-2"></i>
+                <?= htmlspecialchars($file) ?>
+              </td>
+              <td class="align-middle">
+                <span class="badge bg-light text-dark">
+                  <?= date("Y-m-d H:i:s", filemtime($backupDir . $file)) ?>
+                </span>
+              </td>
+              <td class="align-middle">
+                <div class="d-flex gap-2 justify-content-center">
+                  <form method="post" class="d-inline restaurar-form">
+                    <input type="hidden" name="file" value="<?= htmlspecialchars($file) ?>">
+                    <input type="hidden" name="restaurar" value="1">
+                    <button type="button" class="btn btn-success btn-sm btn-confirmar-restaurar">
+                      <i class="fas fa-redo me-1"></i> Restaurar
+                    </button>
+                  </form>
+
+                  <form method="post" class="d-inline eliminar-form">
+                    <input type="hidden" name="file" value="<?= htmlspecialchars($file) ?>">
+                    <input type="hidden" name="eliminar" value="1">
+                    <button type="button" class="btn btn-danger btn-sm btn-confirmar-eliminar">
+                      <i class="fas fa-trash-alt me-1"></i> Eliminar
+                    </button>
+                  </form>
+
+                  <a href="<?= '/backups/' . urlencode($file) ?>" class="btn btn-info btn-sm" download>
+                    <i class="fas fa-download me-1"></i> Descargar
+                  </a>
+                </div>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <tr>
+            <td colspan="3" class="text-center py-5">
+              <div class="empty-state">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No hay copias de seguridad</h5>
+                <p class="text-muted">Crea tu primera copia de seguridad para comenzar</p>
+              </div>
+            </td>
+          </tr>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <style>
   :root {
     --gradient-primary: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
@@ -254,12 +401,12 @@ $backups = array_diff(scandir($backupDir), ['.', '..']);
     .backup-container {
       padding: 1.5rem;
     }
-    
+
     .d-flex.gap-2 {
       flex-direction: column;
       gap: 0.5rem !important;
     }
-    
+
     .btn-sm {
       width: 100%;
       justify-content: center;
@@ -267,143 +414,66 @@ $backups = array_diff(scandir($backupDir), ['.', '..']);
   }
 </style>
 
-<div class="backup-container mt-5">
-    <div class="backup-header">
-        <h2><i class="fas fa-database me-2"></i> Copia de Seguridad</h2>
-        <p class="text-muted">Gestión de respaldos del sistema</p>
-    </div>
-
-    <div class="backup-actions mb-4">
-        <form method="post" class="d-inline-block">
-            <button type="submit" name="crear_backup" class="btn btn-dark">
-                <i class="fas fa-plus-circle me-2"></i> Crear copia de seguridad
-            </button>
-        </form>
-    </div>
-
-    <div class="backup-table-container text-center">
-        <table class="table table-hover">
-            <thead class="backup-table-header">
-                <tr>
-                    <th><i class="fas fa-file-alt me-1"></i> Archivo</th>
-                    <th><i class="fas fa-calendar-alt me-1"></i> Fecha</th>
-                    <th><i class="fas fa-cog me-1"></i> Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (!empty($backups)): ?>
-                    <?php foreach ($backups as $file): ?>
-                        <tr>
-                            <td class="align-middle">
-                                <i class="fas fa-file-archive text-primary me-2"></i>
-                                <?= htmlspecialchars($file) ?>
-                            </td>
-                            <td class="align-middle">
-                                <span class="badge bg-light text-dark">
-                                    <?= date("Y-m-d H:i:s", filemtime($backupDir . $file)) ?>
-                                </span>
-                            </td>
-                            <td class="align-middle">
-                                <div class="d-flex gap-2 justify-content-center">
-                                    <form method="post" class="d-inline restaurar-form">
-                                        <input type="hidden" name="file" value="<?= htmlspecialchars($file) ?>">
-                                        <input type="hidden" name="restaurar" value="1">
-                                        <button type="button" class="btn btn-success btn-sm btn-confirmar-restaurar">
-                                            <i class="fas fa-redo me-1"></i> Restaurar
-                                        </button>
-                                    </form>
-
-                                    <form method="post" class="d-inline eliminar-form">
-                                        <input type="hidden" name="file" value="<?= htmlspecialchars($file) ?>">
-                                        <input type="hidden" name="eliminar" value="1">
-                                        <button type="button" class="btn btn-danger btn-sm btn-confirmar-eliminar">
-                                            <i class="fas fa-trash-alt me-1"></i> Eliminar
-                                        </button>
-                                    </form>
-
-                                    <a href="<?= '/backups/' . urlencode($file) ?>" class="btn btn-info btn-sm" download>
-                                        <i class="fas fa-download me-1"></i> Descargar
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="3" class="text-center py-5">
-                            <div class="empty-state">
-                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">No hay copias de seguridad</h5>
-                                <p class="text-muted">Crea tu primera copia de seguridad para comenzar</p>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // Confirmación para restaurar
-    document.querySelectorAll('.btn-confirmar-restaurar').forEach(boton => {
-        boton.addEventListener('click', function() {
-            const form = this.closest('form');
-            
-            Swal.fire({
-                title: '¿Restaurar esta copia?',
-                text: "Se reemplazará la base de datos actual con esta copia de seguridad.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#0d6324ff',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Sí, restaurar',
-                cancelButtonText: 'Cancelar',
-                background: '#ffffff',
-                backdrop: `
+  // Confirmación para restaurar
+  document.querySelectorAll('.btn-confirmar-restaurar').forEach(boton => {
+    boton.addEventListener('click', function() {
+      const form = this.closest('form');
+
+      Swal.fire({
+        title: '¿Restaurar esta copia?',
+        text: "Se reemplazará la base de datos actual con esta copia de seguridad.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0d6324ff',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, restaurar',
+        cancelButtonText: 'Cancelar',
+        background: '#ffffff',
+        backdrop: `
                     rgba(28, 62, 94, 0.4)
                     url("/img/loading.gif")
                     center left
                     no-repeat
                 `
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: 'Restaurando...',
-                        text: 'Por favor espera mientras se restaura la copia.',
-                        timer: 2000,
-                        timerProgressBar: true,
-                        didOpen: () => {
-                            Swal.showLoading();
-                            form.submit();
-                        }
-                    });
-                }
-            });
-        });
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'Restaurando...',
+            text: 'Por favor espera mientras se restaura la copia.',
+            timer: 2000,
+            timerProgressBar: true,
+            didOpen: () => {
+              Swal.showLoading();
+              form.submit();
+            }
+          });
+        }
+      });
     });
+  });
 
-    // Confirmación para eliminar
-    document.querySelectorAll('.btn-confirmar-eliminar').forEach(boton => {
-        boton.addEventListener('click', function() {
-            const form = this.closest('form');
-            
-            Swal.fire({
-                title: '¿Eliminar esta copia?',
-                text: "No podrás revertir esta acción!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#f72525ff',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar',
-                background: '#ffffff'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
+  // Confirmación para eliminar
+  document.querySelectorAll('.btn-confirmar-eliminar').forEach(boton => {
+    boton.addEventListener('click', function() {
+      const form = this.closest('form');
+
+      Swal.fire({
+        title: '¿Eliminar esta copia?',
+        text: "No podrás revertir esta acción!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f72525ff',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        background: '#ffffff'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
     });
+  });
 </script>

@@ -1,37 +1,39 @@
 <?php
 $conn = new mysqli("localhost", "root", "", "sennova2");
-
+$conn->set_charset('utf8mb4');
 if ($conn->connect_error) {
     die("Conexión fallida: " . $conn->connect_error);
 }
 
-if (isset($_POST['borrar']) && isset($_POST['fecha']) && isset($_POST['usuario']) && isset($_POST['descripcion'])) {
-    $fecha = $_POST['fecha'];
-    $usuario = $_POST['usuario'];
-    $descripcion = $_POST['descripcion'];
-    $sqlDelete = "DELETE FROM auditoria_cambios WHERE fecha = ? AND usuario = ? AND descripcion = ?";
-    $stmt = $conn->prepare($sqlDelete);
-    $stmt->bind_param("sss", $fecha, $usuario, $descripcion);
+/* ---- Eliminar registro por id_cam (nuevo esquema) ---- */
+if (isset($_POST['borrar']) && isset($_POST['id_cam'])) {
+    $id_cam = (int)$_POST['id_cam'];
+    $stmt = $conn->prepare("DELETE FROM auditoria_cambios WHERE id_cam = ?");
+    $stmt->bind_param("i", $id_cam);
     $stmt->execute();
     $stmt->close();
 }
 
-$sql = "SELECT u.username AS usuario, a.descripcion, a.fecha
+/* ---- Listado: usa usuario_nombre o username de users si viene null ---- */
+$sql = "SELECT 
+            a.id_cam,
+            COALESCE(a.usuario_nombre, u.username) AS usuario,
+            a.descripcion,
+            a.fecha
         FROM auditoria_cambios a
-        LEFT JOIN users u ON a.usuario = u.id
-        ORDER BY a.fecha DESC, a.id DESC";
-
+        LEFT JOIN users u ON a.usuario_id = u.id
+        ORDER BY a.fecha DESC, a.id_cam DESC";
 $result = $conn->query($sql);
 ?>
 
-<div class="container">
-    <div class="header">
+<div class="container" id="historial-container">
+    <div class="header" id="historial-header">
         <h2><i class="fas fa-history me-2"></i> Historial de Cambios</h2>
         <p class="mb-0">Registro completo de todas las actividades del sistema</p>
     </div>
 
-    <div class="table-container">
-        <table class="table table-hover">
+    <div class="table-container" id="historial-table-container">
+        <table class="table table-hover" id="historial-table">
             <thead>
                 <tr>
                     <th><i class="fas fa-user me-1"></i> Usuario</th>
@@ -41,23 +43,21 @@ $result = $conn->query($sql);
                 </tr>
             </thead>
             <tbody>
-                <?php if ($result->num_rows > 0): ?>
+                <?php if ($result && $result->num_rows > 0): ?>
                     <?php while ($row = $result->fetch_assoc()): ?>
                         <tr>
                             <td>
-                                <span class="badge-user">
+                                <span class="badge-user" id="user-badge">
                                     <i class="fas fa-user-circle me-1"></i>
-                                    <?php echo htmlspecialchars($row['usuario']); ?>
+                                    <?= htmlspecialchars($row['usuario'] ?? '—') ?>
                                 </span>
                             </td>
-                            <td><?php echo htmlspecialchars($row['descripcion']); ?></td>
-                            <td class="fecha"><?php echo htmlspecialchars($row['fecha']); ?></td>
+                            <td id="description-cell"><?= htmlspecialchars($row['descripcion'] ?? '') ?></td>
+                            <td class="fecha" id="date-cell"><?= htmlspecialchars($row['fecha'] ?? '') ?></td>
                             <td>
-                                <form method="post" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.');">
-                                    <input type="hidden" name="usuario" value="<?php echo htmlspecialchars($row['usuario']); ?>">
-                                    <input type="hidden" name="descripcion" value="<?php echo htmlspecialchars($row['descripcion']); ?>">
-                                    <input type="hidden" name="fecha" value="<?php echo htmlspecialchars($row['fecha']); ?>">
-                                    <button type="submit" name="borrar" class="btn-borrar">
+                                <form method="post" onsubmit="return confirm('¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer.');">
+                                    <input type="hidden" name="id_cam" value="<?= (int)$row['id_cam'] ?>">
+                                    <button type="submit" name="borrar" class="btn-borrar" id="delete-button">
                                         <i class="fas fa-trash-alt me-1"></i> Borrar
                                     </button>
                                 </form>
@@ -67,7 +67,7 @@ $result = $conn->query($sql);
                 <?php else: ?>
                     <tr>
                         <td colspan="4">
-                            <div class="empty-state">
+                            <div class="empty-state" id="empty-state">
                                 <i class="fas fa-inbox"></i>
                                 <h4>No hay registros disponibles</h4>
                                 <p>No se han encontrado cambios registrados en el sistema</p>
@@ -80,111 +80,104 @@ $result = $conn->query($sql);
     </div>
 </div>
 
-<script>
-    // Agrega animación al hacer hover en los botones
-    document.querySelectorAll('.btn-borrar').forEach(button => {
-        button.addEventListener('mouseenter', function() {
-            this.querySelector('i').classList.add('fa-shake');
-        });
-        button.addEventListener('mouseleave', function() {
-            this.querySelector('i').classList.remove('fa-shake');
-        });
-    });
-</script>
-
-<?php
-$conn->close();
-?>
 <style>
-    .container {
+    #historial-container {
         max-width: 1200px;
         margin-top: 30px;
         margin-bottom: 50px;
     }
 
-    .header {
-        background: linear-gradient(135deg, #1a1c1dff 0%, #071625ff 100%);
-        color: white;
+    #historial-header {
+        background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+        color: #fff;
         padding: 20px;
         border-radius: 8px 8px 0 0;
         margin-bottom: -1px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
     }
 
-    .table-container {
-        background-color: white;
+    #historial-table-container {
+        background: #fff;
         border-radius: 0 0 8px 8px;
-        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 15px rgba(0, 0, 0, .08);
         overflow: hidden;
     }
 
-    .table {
+    #historial-table {
         margin-bottom: 0;
     }
 
-    .table thead th {
-        background-color: #343638ff;
-        color: white;
+    #historial-table thead th {
+        background:  #384a5cff;
+        color: #fff;
         font-weight: 600;
         text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 0.5px;
+        font-size: .8rem;
+        letter-spacing: .5px;
         border-bottom: none;
         padding: 15px 20px;
     }
 
-    .table tbody td {
+    #historial-table tbody td {
         padding: 12px 20px;
         vertical-align: middle;
         border-top: 1px solid #f1f5f9;
     }
 
-    .table tbody tr:hover {
-        background-color: #f8fafc;
+    #historial-table tbody tr:hover {
+        background: #f8fafc;
     }
 
-    .btn-borrar {
-        background-color: #dc3545;
-        color: white;
+    #delete-button {
+        background: #dc3545;
+        color: #fff;
         border: none;
         padding: 6px 12px;
         border-radius: 4px;
-        font-size: 0.8rem;
-        transition: all 0.2s;
+        font-size: .8rem;
+        transition: .2s;
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        gap: 5px;
+        gap: 6px;
     }
 
-    .btn-borrar:hover {
-        background-color: #bb2d3b;
+    #delete-button:hover {
+        background: #bb2d3b;
         transform: translateY(-1px);
     }
 
-    .badge-user {
-        background-color: #e9ecef;
+    #user-badge {
+        background: #e9ecef;
         color: #495057;
         font-weight: 500;
         padding: 4px 8px;
         border-radius: 4px;
     }
 
-    .fecha {
+    #date-cell {
         color: #6c757d;
-        font-size: 0.85rem;
+        font-size: .85rem;
         white-space: nowrap;
     }
 
-    .empty-state {
+    #empty-state {
         padding: 40px;
         text-align: center;
         color: #6c757d;
     }
 
-    .empty-state i {
+    #empty-state i {
         font-size: 2.5rem;
         margin-bottom: 15px;
         color: #dee2e6;
     }
 </style>
+
+<script>
+    // Animación ligera en el ícono del botón borrar
+    document.querySelectorAll('.btn-borrar').forEach(btn => {
+        btn.addEventListener('mouseenter', () => btn.querySelector('i')?.classList.add('fa-shake'));
+        btn.addEventListener('mouseleave', () => btn.querySelector('i')?.classList.remove('fa-shake'));
+    });
+</script>
+<?php $conn->close(); ?>

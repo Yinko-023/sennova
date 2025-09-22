@@ -20,7 +20,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 echo 'Panel Admin';
             }
         } else {
-            echo 'Panel ';
+            echo 'Panel';
         }
         ?>
     </title>
