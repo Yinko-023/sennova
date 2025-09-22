@@ -267,16 +267,16 @@
       <section class="card">
         <header>
           <h2>📝 Formulario de Evaluación Técnica</h2>
-        </header>
-        <div>
-          <!-- Aquí va el contenido completo del primer formulario que ya tienes -->
-          <form method="POST" action="routes/estres.php">
-            <input type="hidden" name="form_action" value="generate">
-            <input type="hidden" name="advance_code" value="1">
-            <div class="grid grid-3">
               <div> <label for="f_nombre">Nombre</label> <input id="f_nombre" name="nombre"
                   placeholder="Nombre completo" required /> </div>
               <div> <label for="f_fecha">Fecha</label> <input id="f_fecha" name="fecha" type="date" required /> </div>
+          <!-- Campo de firma (imagen) -->
+          <div class="mb-3 mt-4">
+            <label for="firma_img_1" class="form-label">Firma (imagen):</label>
+            <input type="file" class="form-control" id="firma_img_1" name="firma_img" accept="image/*">
+            <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+            <div class="mt-2" id="firma_preview_1"></div>
+          </div>
               <div> <label for="f_cel">Celular</label> <input id="f_cel" name="celular" type="tel"
                   placeholder="(+57) 3XX XXX XXXX" required /> </div>
             </div> <!-- Servicios -->
@@ -634,16 +634,16 @@
                       <span class="icon">✓</span> SI
                     </label>
                     <label for="aprobado_no" class="switch-seg no">
-                      <span class="icon">✗</span> NO
-                    </label>
-                    <span class="switch-slider" aria-hidden="true"></span>
-                  </div>
-                </div>
-              </div>
-            </div> <!-- Botones -->
             <div class="control-section">
               <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;">
                 <button type="button" class="btn secondary" onclick="showTab('form1-tab')" style="flex:0 0 auto; white-space:nowrap;">
+                    <!-- Campo de firma (imagen) -->
+                    <div class="mb-3 mt-4">
+                      <label for="firma_img_2" class="form-label">Firma (imagen):</label>
+                      <input type="file" class="form-control" id="firma_img_2" name="firma_img" accept="image/*">
+                      <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+                      <div class="mt-2" id="firma_preview_2"></div>
+                    </div>
                   ← Anterior
                 </button>
                 <!-- Descargar PDF -->
@@ -670,16 +670,16 @@
       <section class="card">
         <header>
           <h2>🛠️ Recursos y Materiales</h2>
-        </header>
-        <div>
-          <form id="form-cotizacion-3" class="cot-wrap" method="POST" action="routes/estres.php">
-            <input type="hidden" name="advance_code" id="f3_advance_code" value="1">
-            <input type="hidden" name="reset_code" id="f3_reset_code" value="0">
-            <input type="hidden" name="accion" value="cotizacion">
-            <div class="fieldset">
               <div class="legend">SOLICITUD</div>
               <div class="box">
 
+          <!-- Campo de firma (imagen) -->
+          <div class="mb-3 mt-4">
+            <label for="firma_img_3" class="form-label">Firma (imagen):</label>
+            <input type="file" class="form-control" id="firma_img_3" name="firma_img" accept="image/*">
+            <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+            <div class="mt-2" id="firma_preview_3"></div>
+          </div>
                 <!-- Vía de solicitud -->
                 <div class="soli-grid">
                   <div class="soli-col">
@@ -688,16 +688,16 @@
                       <span>Telefónica</span>
                     </label>
                     <label class="chk">
-                      <input type="radio" name="solicitud_via" value="Presencial">
-                      <span>Presencial</span>
-                    </label>
-                  </div>
-
-                  <div class="soli-col">
-                    <label class="chk">
                       <input type="radio" name="solicitud_via" value="Correo electrónico">
                       <span>Correo electrónico</span>
                     </label>
+                    <!-- Campo de firma (imagen) -->
+                    <div class="mb-3 mt-4">
+                      <label for="firma_img_4" class="form-label">Firma (imagen):</label>
+                      <input type="file" class="form-control" id="firma_img_4" name="firma_img" accept="image/*">
+                      <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+                      <div class="mt-2" id="firma_preview_4"></div>
+                    </div>
 
                     <!-- “Otro” con campo visible al marcar -->
                     <div class="soli-otro">
@@ -706,16 +706,16 @@
                         <span>Otro</span>
                       </label>
                       <input class="control" id="sol_via_otro_text" name="solicitud_via_otro" placeholder="Especifique" style="display:none;max-width:240px">
-                    </div>
-                  </div>
-                </div>
-
-
-                <!-- Fecha / números -->
-                <div class="row auto-3 mt-12">
                   <div class="fg">
                     <label>Fecha</label>
                     <input class="control" type="date" name="fecha" required>
+                      <!-- Campo de firma (imagen) -->
+                      <div class="mb-3 mt-4">
+                        <label for="firma_img_5" class="form-label">Firma (imagen):</label>
+                        <input type="file" class="form-control" id="firma_img_5" name="firma_img" accept="image/*">
+                        <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+                        <div class="mt-2" id="firma_preview_5"></div>
+                      </div>
                   </div>
                   <div class="fg">
                     <label>Comprobante Pago No.</label>
@@ -769,16 +769,16 @@
                 <table class="items" id="items-table">
                   <thead>
                     <tr>
-                      <th style="width:70px">ÍTEM</th>
-                      <th>DESCRIPCIÓN</th>
-                      <th style="width:120px">CANTIDAD</th>
-                      <th style="width:160px">VALOR UNITARIO</th>
-                      <th style="width:160px">VALOR TOTAL</th>
-                      <th style="width:70px">—</th>
-                    </tr>
                   </thead>
                   <tbody id="items-body"></tbody>
                   <tfoot>
+                  <!-- Campo de firma (imagen) -->
+                  <div class="mb-3 mt-4">
+                    <label for="firma_img_6" class="form-label">Firma (imagen):</label>
+                    <input type="file" class="form-control" id="firma_img_6" name="firma_img" accept="image/*">
+                    <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+                    <div class="mt-2" id="firma_preview_6"></div>
+                  </div>
                     <tr>
                       <td colspan="4">TOTAL</td>
                       <td><input class="control" id="total_general" name="total_general" readonly value="$0"></td>
@@ -786,16 +786,16 @@
                     </tr>
                   </tfoot>
                 </table>
-                <button type="button" class="btn secondary" id="btnAddItem" style="margin-top:10px">+ Agregar ítem</button>
-
-                <div class="fg" style="margin-top:12px">
-                  <label>Observaciones:</label>
-                  <textarea class="control" name="observaciones" rows="4" style="height:auto"></textarea>
-                </div>
-              </div>
             </div>
 
             <!-- ===== ACEPTACIÓN ===== -->
+                  <!-- Campo de firma (imagen) -->
+                  <div class="mb-3 mt-4">
+                    <label for="firma_img_7" class="form-label">Firma (imagen):</label>
+                    <input type="file" class="form-control" id="firma_img_7" name="firma_img" accept="image/*">
+                    <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+                    <div class="mt-2" id="firma_preview_7"></div>
+                  </div>
             <div class="fieldset">
               <div class="legend">ACEPTO</div>
               <div class="box">
@@ -831,16 +831,16 @@
       <section class="card">
         <header>
           <h2>📅 Cronograma de Actividades</h2>
-        </header>
-
-        <div>
-          <!-- ===== ORDEN DE TRABAJO ===== -->
-          <form id="form-ot" method="POST" action="routes/estres.php" class="ot-wrap">
-            <!-- Campos ocultos -->
-            <input type="hidden" name="action" value="generate_ot">
             <input type="hidden" id="ot_materiales_json" name="ot_materiales_json" value="[]">
             <input type="hidden" name="advance_code" id="f4_advance_code" value="1">
             <input type="hidden" name="reset_code" id="f4_reset_code" value="0">
+          <!-- Campo de firma (imagen) -->
+          <div class="mb-3 mt-4">
+            <label for="firma_img_8" class="form-label">Firma (imagen):</label>
+            <input type="file" class="form-control" id="firma_img_8" name="firma_img" accept="image/*">
+            <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+            <div class="mt-2" id="firma_preview_8"></div>
+          </div>
 
 
             <!-- ===== Encabezado ===== -->
@@ -868,16 +868,16 @@
                   <span>Diseño de tarjetas de circuito impreso</span>
                 </label>
                 <label class="servicio-item">
-                  <input type="checkbox" name="ot_servicio[fabricacion_pcb]">
-                  <span>Fabricación de tarjetas de circuito impreso</span>
-                </label>
-                <label class="servicio-item">
-                  <input type="checkbox" name="ot_servicio[impresion_3d]">
-                  <span>Impresión de piezas 3D</span>
-                </label>
                 <label class="servicio-item">
                   <input type="checkbox" name="ot_servicio[diseno_3d]">
                   <span>Diseño de piezas 3D</span>
+                <!-- Campo de firma (imagen) -->
+                <div class="mb-3 mt-4">
+                  <label for="firma_img_9" class="form-label">Firma (imagen):</label>
+                  <input type="file" class="form-control" id="firma_img_9" name="firma_img" accept="image/*">
+                  <small class="form-text text-muted">Seleccione una imagen de la firma para incluir en el PDF.</small>
+                  <div class="mt-2" id="firma_preview_9"></div>
+                </div>
                 </label>
                 <label class="servicio-item">
                   <input type="checkbox" name="ot_servicio[transferencia]">
