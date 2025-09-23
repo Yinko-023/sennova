@@ -271,7 +271,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                 <div
                     class="bloque-navegacion d-flex flex-column justify-content-center align-items-center text-center p-4">
                     <i class="bi bi-calendar-event-fill fs-2"></i>
-                    <a href="/eventos"
+                    <a href="#eventos"
                         class="text-white text-decoration-none d-flex flex-column align-items-center w-100 h-100">
                         <p class="mb-0 fw-bold">Eventos Destacados</p>
                     </a>
@@ -430,7 +430,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
     </section>
 
     <!-- Publicaciones destacadas -->
-    <section class="px-4 py-8 md:px-8">
+    <section class="px-4 py-8 md:px-8" id="eventos">
         <?php if (!empty($destacada)): ?>
             <div class="max-w-7xl mx-auto">
                 <!-- Encabezado con efecto de destaque -->
@@ -445,7 +445,6 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
 
                 <!-- Tarjeta destacada -->
                 <div class="relative" data-aos="zoom-in">
-                    <!-- Efecto de resaltado -->
                     <div
                         class="absolute -inset-1 bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl opacity-20 blur-lg">
                     </div>
@@ -466,9 +465,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                                 <?php endif; ?>
                             </div>
 
-                            <!-- Sección de contenido -->
                             <div class="md:w-3/5 p-8">
-                                <!-- Badge de área -->
                                 <span
                                     class="inline-block px-3 py-1 bg-<?= $destacada['lab_area'] === 'electronica' ? 'blue' : 'amber' ?>-100 text-<?= $destacada['lab_area'] === 'electronica' ? 'blue' : 'amber' ?>-800 rounded-full text-xs font-semibold mb-4">
                                     <?= strtoupper(htmlspecialchars($destacada['lab_area'])) ?>
@@ -494,16 +491,21 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                                         $enlace = 'inCalidad.php';
                                     } elseif ($area === 'electronica') {
                                         $enlace = 'inElectronica.php';
-                                    } elseif ($area === 'calidad') {
+                                    } elseif ($area === 'general') {
                                         $enlace = 'index.php';
                                     }
                                     ?>
 
-                                    <a href="<?= $enlace ?>"
-                                        class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-green-800 to-green-600 text-white font-medium rounded-lg hover:from-green-900 hover:to-blue-900 transition-all duration-300 shadow-md">
-                                        Visitar Laboratorio
-                                        <i class="fas fa-arrow-right ml-2"></i>
-                                    </a>
+                                    <?php if ($area === 'cafe' || $area === 'electronica'): ?>
+                                        <a href="<?= htmlspecialchars($enlace) ?>"
+                                            class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-green-800 to-green-600 text-white font-medium rounded-lg hover:from-green-900 hover:to-blue-900 transition-all duration-300 shadow-md">
+                                            Visitar Laboratorio
+                                            <i class="fas fa-arrow-right ml-2"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="text-sm text-gray-500">Nuestro Anuncio es Totalmente General.</span>
+                                    <?php endif; ?>
+
                                 </div>
                             </div>
                         </div>
@@ -564,7 +566,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
     </section>
 
     <!-- PUBLICACIONES Y ANUNCIOS -->
-    <section class="px-4 py-12 md:px-16 bg-gray-50">
+    <section class="px-4 py-12 md:px-16 bg-gray-50" id="publicaciones">
         <!-- Encabezado con efecto -->
         <div class="text-center mb-8" data-aos="fade-down">
             <h2 class="text-4xl font-bold text-gray-800">
@@ -758,7 +760,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
 </div>
 
 <!-- Footer -->
-<footer class="bg-[#134e4a] text-white text-center py-6">
+<footer class="bg-[#134e4a] text-white text-center py-6" id="contactos">
     <div class="container">
         <div class="row g-4">
 
@@ -865,7 +867,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
     AOS.init();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO"crossorigin="anonymous">
+    integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
 </script>
 </body>
 

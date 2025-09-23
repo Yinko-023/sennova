@@ -33,9 +33,8 @@ if ($esAdmin) {
             <?php endif; ?>
         </h2>
     </div>
-
     <?php if (isset($_GET['res']) && $_GET['res'] === 'ok'): ?>
-        <div class="success-modal active" id="successModal">
+        <div id="successModal" class="active">
             <div class="modal-content">
                 <button class="modal-close" id="closeModal">&times;</button>
                 <div class="modal-icon">
@@ -47,6 +46,7 @@ if ($esAdmin) {
             </div>
         </div>
     <?php endif; ?>
+
 
     <form method="GET" action="inAdmin.php?vista=atencion" id="form-busqueda-live" class="mb-4 position-relative">
         <input type="hidden" name="vista" value="atencion">
@@ -679,4 +679,125 @@ if ($esAdmin) {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(37, 117, 252, .4);
     }
+
+    /* <!-- CSS exclusivo para este modal --> */
+
+    /* Overlay */
+    #successModal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(17, 24, 39, .6);
+        z-index: 1080;
+        padding: 1rem;
+    }
+
+    #successModal.active {
+        display: flex;
+    }
+
+    /* Caja */
+    #successModal .modal-content {
+        width: 100%;
+        max-width: 520px;
+        background: #fff;
+        border: 0;
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+        padding: 24px 24px 16px;
+        position: relative;
+        text-align: center;
+        animation: pop .2s ease-out;
+    }
+
+    @keyframes pop {
+        from {
+            transform: scale(.98);
+            opacity: .9
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1
+        }
+    }
+
+    /* Botón cerrar */
+    #successModal .modal-close {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        border: 0;
+        background: transparent;
+        font-size: 28px;
+        line-height: 1;
+        color: #9ca3af;
+        cursor: pointer;
+    }
+
+    /* Icono */
+    #successModal .modal-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 12px;
+        border-radius: 50%;
+        background: #e6f4ea;
+        display: grid;
+        place-items: center;
+    }
+
+    #successModal .modal-icon i {
+        color: #22c55e;
+        font-size: 28px;
+    }
+
+    #successModal .modal-title {
+        margin: 4px 0 6px;
+        font-weight: 800;
+        font-size: 24px;
+        color: #111827;
+    }
+
+    #successModal .modal-message {
+        margin: 0 0 14px;
+        color: #4b5563;
+    }
+
+    /* Botón aceptar */
+    #successModal .modal-button {
+        display: inline-block;
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #16a34a, #15803d);
+        color: #fff;
+        font-weight: 600;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: transform .06s ease;
+    }
+
+    #successModal .modal-button:active {
+        transform: translateY(1px);
+    }
 </style>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById('successModal');
+        if (!modal) return;
+
+        const closeBtn = document.getElementById('closeModal');
+        const okBtn = document.getElementById('acceptButton');
+
+        function close() {
+            modal.classList.remove('active');
+        }
+        closeBtn?.addEventListener('click', close);
+        okBtn?.addEventListener('click', close);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
+    });
+</script>
