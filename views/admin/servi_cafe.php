@@ -29,10 +29,13 @@ $servi = $modelo->obtenerServi();
                     <?php if (!empty($servi)): ?>
                         <?php foreach ($servi as $servis): ?>
                             <tr class="hover-shadow text-center" data-aos="fade-up" data-aos-delay="100" id="fila-servicio-cafe-<?= $servis['id_ca'] ?>">
-                                <td>
-                                    <div class="avatar avatar-md rounded-circle border shadow-sm overflow-hidden mx-auto" id="icono-container-cafe">
-                                        <img src="/sennova/img/<?= htmlspecialchars($servis['icono_ca']) ?>" alt="Icono servicio"
-                                            class="img-fluid rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
+                                <td class="text-center">
+                                    <div id="icono-container-cafe"
+                                        class="rounded-circle overflow-hidden d-inline-block"
+                                        style="width:45px;height:45px;">
+                                        <img src="/sennova/img/<?= htmlspecialchars($servis['icono_ca']) ?>"
+                                            alt="Icono servicio"
+                                            style="width:100%;height:100%;object-fit:cover;display:block;">
                                     </div>
                                 </td>
                                 <td class="fw-semibold" id="titulo-servicio-cafe"><?= htmlspecialchars($servis['titulo_ca']) ?></td>
@@ -256,105 +259,108 @@ $servi = $modelo->obtenerServi();
 
 <style>
     /* Estilos personalizados para la sección de café y cacao */
-    #card-header-cafe, 
-    #card-header-registro-cafe, 
+    #card-header-cafe,
+    #card-header-registro-cafe,
     #modal-editar-header-cafe {
         background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
         border: none;
     }
-    
+
     #tabla-header-cafe {
         background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
     }
-    
-    #btn-registrar-cafe, 
+
+    #btn-registrar-cafe,
     #btn-guardar-cambios-cafe {
         background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
         border: none;
         transition: all 0.3s ease;
     }
-    
-    #btn-registrar-cafe:hover, 
+
+    #btn-registrar-cafe:hover,
     #btn-guardar-cambios-cafe:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
-    
-    #input-group-dollar-cafe, 
+
+    #input-group-dollar-cafe,
     #edit-input-group-dollar-cafe {
         background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
         border: 1px solid #dee2e6;
     }
-    
+
     #fila-servicio-cafe-<?= $servis['id_ca'] ?>:hover {
         background-color: rgba(44, 62, 80, 0.05);
         transition: background-color 0.3s ease;
     }
-    
+
     #icono-container-cafe {
         transition: transform 0.3s ease;
     }
-    
+
     #icono-container-cafe:hover {
         transform: scale(1.1);
     }
-    
-    #btn-editar-cafe, #btn-eliminar-cafe {
+
+    #btn-editar-cafe,
+    #btn-eliminar-cafe {
         transition: all 0.3s ease;
     }
-    
+
     #btn-editar-cafe:hover {
         background-color: #ffc107;
         color: #000;
     }
-    
+
     #btn-eliminar-cafe:hover {
         background-color: #dc3545;
         color: #fff;
     }
-    
-    #card-servicios-cafe, 
+
+    #card-servicios-cafe,
     #card-registro-cafe {
         border-radius: 12px;
         overflow: hidden;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    
-    #card-servicios-cafe:hover, 
+
+    #card-servicios-cafe:hover,
     #card-registro-cafe:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
     }
-    
+
     #modal-editar-container-cafe {
-        box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
         border-radius: 12px;
     }
-    
-    #modal-exito-container-cafe, 
+
+    #modal-exito-container-cafe,
     #modal-error-container-cafe {
-        box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
         border: none;
     }
-    
-    #success-mark-cafe, #error-mark-cafe {
+
+    #success-mark-cafe,
+    #error-mark-cafe {
         padding: 30px 0;
     }
-    
-    .e-check-icon, .e-error-icon {
+
+    .e-check-icon,
+    .e-error-icon {
         position: relative;
         display: inline-block;
         width: 80px;
         height: 80px;
     }
-    
+
     .e-icon-line {
         position: absolute;
         background-color: #28a745;
         display: block;
         border-radius: 2px;
     }
-    
+
     .e-line-tip {
         width: 25px;
         height: 5px;
@@ -362,7 +368,7 @@ $servi = $modelo->obtenerServi();
         left: 14px;
         transform: rotate(45deg);
     }
-    
+
     .e-line-long {
         width: 47px;
         height: 5px;
@@ -370,7 +376,7 @@ $servi = $modelo->obtenerServi();
         right: 8px;
         transform: rotate(-45deg);
     }
-    
+
     .e-icon-circle {
         position: absolute;
         left: 0;
@@ -381,7 +387,7 @@ $servi = $modelo->obtenerServi();
         border: 4px solid #28a745;
         box-sizing: border-box;
     }
-    
+
     .e-icon-fix {
         position: absolute;
         top: 0;
@@ -391,11 +397,11 @@ $servi = $modelo->obtenerServi();
         background-color: #fff;
         transform: rotate(-45deg);
     }
-    
+
     .e-error-icon .e-icon-line {
         background-color: #dc3545;
     }
-    
+
     .e-line-left {
         width: 50px;
         height: 5px;
@@ -403,7 +409,7 @@ $servi = $modelo->obtenerServi();
         left: 16px;
         transform: rotate(45deg);
     }
-    
+
     .e-line-right {
         width: 50px;
         height: 5px;
@@ -411,7 +417,7 @@ $servi = $modelo->obtenerServi();
         right: 16px;
         transform: rotate(-45deg);
     }
-    
+
     .e-icon-circle-error {
         position: absolute;
         left: 0;
@@ -422,141 +428,147 @@ $servi = $modelo->obtenerServi();
         border: 4px solid #dc3545;
         box-sizing: border-box;
     }
-    
+
     .e-progress-bar {
         background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
     }
-    
+
     .e-progress-bar-error {
         background: linear-gradient(90deg, #dc3545 0%, #fd7e14 100%);
     }
-    
+
     .e-animate-bounce {
         animation: bounceIn 0.6s ease;
     }
-    
+
     @keyframes bounceIn {
-        0% { transform: scale(0.8); opacity: 0; }
-        60% { transform: scale(1.05); opacity: 1; }
-        100% { transform: scale(1); }
+        0% {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+
+        60% {
+            transform: scale(1.05);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(1);
+        }
     }
-    
+
     /* Estilos específicos para la sección de café */
     #cafe-section .fa-coffee {
         color: #ffffffff !important;
     }
-    
-    #btn-registrar-cafe:hover, 
+
+    #btn-registrar-cafe:hover,
     #btn-guardar-cambios-cafe:hover {
         background: linear-gradient(90deg, #3a506b 0%, #24243e 100%);
     }
 </style>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const modalId = <?php echo isset($_GET['mensaje']) && $_GET['mensaje'] === 'eliminado' ? "'modalCafeExito'" : "'modalCafeError'"; ?>;
-            const modal = new bootstrap.Modal(document.getElementById(modalId));
-            modal.show();
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const modalId = <?php echo isset($_GET['mensaje']) && $_GET['mensaje'] === 'eliminado' ? "'modalCafeExito'" : "'modalCafeError'"; ?>;
+        const modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+
+        setTimeout(() => {
+            const modalElement = document.getElementById(modalId);
+            const modalContent = modalElement.querySelector('.modal-body');
+            modalContent.classList.remove('e-animate-bounce');
+            modalContent.classList.add('e-animate-fade');
 
             setTimeout(() => {
-                const modalElement = document.getElementById(modalId);
-                const modalContent = modalElement.querySelector('.modal-body');
-                modalContent.classList.remove('e-animate-bounce');
-                modalContent.classList.add('e-animate-fade');
+                modal.hide();
+                modalContent.classList.remove('e-animate-fade');
+                modalContent.classList.add('e-animate-bounce');
+            }, 400);
+        }, 1500);
 
-                setTimeout(() => {
-                    modal.hide();
-                    modalContent.classList.remove('e-animate-fade');
-                    modalContent.classList.add('e-animate-bounce');
-                }, 400);
-            }, 1500);
+        // Limpiar parámetros de URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mensaje');
+        window.history.replaceState({}, document.title, url.toString());
+    });
 
-            // Limpiar parámetros de URL
-            const url = new URL(window.location.href);
-            url.searchParams.delete('mensaje');
-            window.history.replaceState({}, document.title, url.toString());
+    document.addEventListener('DOMContentLoaded', function() {
+        const precioInput = document.getElementById('precioInput2');
+        const precioReal = document.getElementById('precioReal');
+
+        // Formatear al escribir
+        precioInput.addEventListener('input', function() {
+            // Obtener solo dígitos
+            let cleanValue = this.value.replace(/\D/g, '');
+
+            // Guardar valor limpio en campo oculto
+            precioReal.value = cleanValue;
+
+            if (cleanValue) {
+                // Convertir a formato monetario con separador de miles
+                this.value = parseInt(cleanValue).toLocaleString('es-CO');
+            } else {
+                this.value = '';
+            }
         });
-    </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const precioInput = document.getElementById('precioInput2');
-            const precioReal = document.getElementById('precioReal');
+        // Manejar el envío del formulario
+        document.querySelector('form').addEventListener('submit', function() {
+            // Asegurar que se envía el valor limpio
+            if (!precioReal.value && precioInput.value) {
+                precioReal.value = precioInput.value.replace(/\D/g, '');
+            }
+        });
 
-            // Formatear al escribir
-            precioInput.addEventListener('input', function() {
-                // Obtener solo dígitos
-                let cleanValue = this.value.replace(/\D/g, '');
+        // Para el modal de edición
+        const editPrecioInput = document.getElementById('edit-precio-ca');
 
-                // Guardar valor limpio en campo oculto
-                precioReal.value = cleanValue;
-
-                if (cleanValue) {
-                    // Convertir a formato monetario con separador de miles
-                    this.value = parseInt(cleanValue).toLocaleString('es-CO');
+        if (editPrecioInput) {
+            editPrecioInput.addEventListener('input', function() {
+                let valor = this.value.replace(/\D/g, '');
+                if (valor) {
+                    this.value = parseInt(valor).toLocaleString('es-CO');
                 } else {
                     this.value = '';
                 }
             });
 
-            // Manejar el envío del formulario
-            document.querySelector('form').addEventListener('submit', function() {
-                // Asegurar que se envía el valor limpio
-                if (!precioReal.value && precioInput.value) {
-                    precioReal.value = precioInput.value.replace(/\D/g, '');
-                }
+            document.getElementById('form-editar-cafe').addEventListener('submit', function() {
+                const valor = editPrecioInput.value.replace(/\D/g, '');
+                editPrecioInput.value = valor; // Enviamos solo el valor entero
             });
 
-            // Para el modal de edición
-            const editPrecioInput = document.getElementById('edit-precio-ca');
+            window.editarServicioCafe = function(servis) {
+                document.getElementById('edit-id-ca').value = servis.id_ca;
+                document.getElementById('edit-titulo-ca').value = servis.titulo_ca;
+                document.getElementById('edit-des-corta-ca').value = servis.des_corta;
+                document.getElementById('edit-des-larga-ca').value = servis.des_larga;
+                document.getElementById('edit-icono-ca').value = servis.icono_ca;
 
-            if (editPrecioInput) {
-                editPrecioInput.addEventListener('input', function() {
-                    let valor = this.value.replace(/\D/g, '');
-                    if (valor) {
-                        this.value = parseInt(valor).toLocaleString('es-CO');
-                    } else {
-                        this.value = '';
-                    }
-                });
+                if (servis.precio_ca) {
+                    document.getElementById('edit-precio-ca').value = parseInt(servis.precio_ca).toLocaleString('es-CO');
+                } else {
+                    document.getElementById('edit-precio-ca').value = '';
+                }
 
-                document.getElementById('form-editar-cafe').addEventListener('submit', function() {
-                    const valor = editPrecioInput.value.replace(/\D/g, '');
-                    editPrecioInput.value = valor; // Enviamos solo el valor entero
-                });
+                const modal = new bootstrap.Modal(document.getElementById('modalEditarServicioCafe'));
+                modal.show();
+            };
+        }
+    });
 
-                window.editarServicioCafe = function(servis) {
-                    document.getElementById('edit-id-ca').value = servis.id_ca;
-                    document.getElementById('edit-titulo-ca').value = servis.titulo_ca;
-                    document.getElementById('edit-des-corta-ca').value = servis.des_corta;
-                    document.getElementById('edit-des-larga-ca').value = servis.des_larga;
-                    document.getElementById('edit-icono-ca').value = servis.icono_ca;
+    const precioInput = document.getElementById('precioInput2');
 
-                    if (servis.precio_ca) {
-                        document.getElementById('edit-precio-ca').value = parseInt(servis.precio_ca).toLocaleString('es-CO');
-                    } else {
-                        document.getElementById('edit-precio-ca').value = '';
-                    }
+    precioInput.addEventListener('input', function() {
+        // Elimina cualquier carácter que no sea dígito
+        this.value = this.value.replace(/\D/g, '');
+    });
 
-                    const modal = new bootstrap.Modal(document.getElementById('modalEditarServicioCafe'));
-                    modal.show();
-                };
-            }
-        });
-    </script>
-
-    <script>
-        const precioInput = document.getElementById('precioInput2');
-
-        precioInput.addEventListener('input', function() {
-            // Elimina cualquier carácter que no sea dígito
-            this.value = this.value.replace(/\D/g, '');
-        });
-
-        precioInput.addEventListener('keydown', function(e) {
-            // Evita pegar letras o símbolos
-            if (e.key === 'e' || e.key === '+' || e.key === '-' || e.key === '.' || e.key === ',') {
-                e.preventDefault();
-            }
-        });
-    </script>
+    precioInput.addEventListener('keydown', function(e) {
+        // Evita pegar letras o símbolos
+        if (e.key === 'e' || e.key === '+' || e.key === '-' || e.key === '.' || e.key === ',') {
+            e.preventDefault();
+        }
+    });
+</script>

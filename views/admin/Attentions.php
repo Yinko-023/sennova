@@ -380,7 +380,7 @@ if ($esAdmin) {
             }
 
             checkbox.addEventListener('change', toggleComentario);
-            toggleComentario(); // Ejecutar al cargar
+            toggleComentario(); 
         });
     });
 
@@ -417,10 +417,10 @@ if ($esAdmin) {
 
                 // ===== Estado inicial: switch ACTIVADO (comentar) =====
                 toggle.checked = true;
-                hiddenFlag.value = '0'; // 0 = con comentario
+                hiddenFlag.value = '0'; 
                 comentario.disabled = false;
-                comentarioWrap.style.display = ''; // visible
-                setMediosDisabled(modal, false); // medios habilitados
+                comentarioWrap.style.display = ''; 
+                setMediosDisabled(modal, false); 
                 aviso.style.display = 'none';
 
                 // si ningún medio está seleccionado aún, selecciona correo por defecto
@@ -431,19 +431,16 @@ if ($esAdmin) {
                 // ===== Cambio del switch =====
                 toggle.onchange = function() {
                     if (toggle.checked) {
-                        // Encendido → comentar y elegir medio
                         hiddenFlag.value = '0';
                         comentario.disabled = false;
                         comentarioWrap.style.display = '';
                         setMediosDisabled(modal, false);
-                        // si estaba en ninguno, deja al menos uno válido
                         if (medioNinguno.checked) {
                             medioNinguno.checked = false;
                             medioCorreo.checked = true;
                         }
                         aviso.style.display = 'none';
                     } else {
-                        // Apagado → no comentar, medio = ninguno
                         hiddenFlag.value = '1';
                         comentario.value = '';
                         comentario.disabled = true;
@@ -458,20 +455,17 @@ if ($esAdmin) {
                 // ===== Validación en submit =====
                 form.onsubmit = function(e) {
                     if (toggle.checked) {
-                        // si comenta, comentario obligatorio
                         if (comentario.value.trim() === '') {
                             e.preventDefault();
                             alert('Si activas la opción de comentar, debes escribir un comentario.');
                             return false;
                         }
-                        // y un medio distinto a ninguno
                         if (medioNinguno.checked) {
                             e.preventDefault();
                             alert('Selecciona Correo o WhatsApp para notificar, o apaga la opción de comentar.');
                             return false;
                         }
                     } else {
-                        // no comenta → limpia comentario y fuerza ninguno
                         comentario.value = '';
                         medioNinguno.checked = true;
                     }
@@ -481,7 +475,6 @@ if ($esAdmin) {
     })();
 
     // Modal de notificacion
-
     document.addEventListener('DOMContentLoaded', function() {
         const closeModal = document.getElementById('closeModal');
         const acceptButton = document.getElementById('acceptButton');
@@ -513,6 +506,23 @@ if ($esAdmin) {
                 successModal.classList.remove('active');
             }
         }, 5000);
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById('successModal');
+        if (!modal) return;
+
+        const closeBtn = document.getElementById('closeModal');
+        const okBtn = document.getElementById('acceptButton');
+
+        function close() {
+            modal.classList.remove('active');
+        }
+        closeBtn?.addEventListener('click', close);
+        okBtn?.addEventListener('click', close);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
     });
 </script>
 
@@ -783,21 +793,3 @@ if ($esAdmin) {
         transform: translateY(1px);
     }
 </style>
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const modal = document.getElementById('successModal');
-        if (!modal) return;
-
-        const closeBtn = document.getElementById('closeModal');
-        const okBtn = document.getElementById('acceptButton');
-
-        function close() {
-            modal.classList.remove('active');
-        }
-        closeBtn?.addEventListener('click', close);
-        okBtn?.addEventListener('click', close);
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) close();
-        });
-    });
-</script>

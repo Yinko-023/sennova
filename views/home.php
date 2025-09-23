@@ -757,6 +757,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
             }
         </style>
     </section>
+    
 </div>
 
 <!-- Footer -->
