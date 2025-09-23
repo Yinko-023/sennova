@@ -1,14 +1,13 @@
 <?php
-$rol        = $_SESSION['rol']  ?? null;         
+$rol        = $_SESSION['rol']  ?? null;
 $areaSesion = $_SESSION['area'] ?? null;
 $esVisualizadorElectronica = ($rol === 2 && $areaSesion === 'visualizador');
 $areaEfectiva = $esVisualizadorElectronica ? 'electronica' : $areaSesion;
-$esAdmin = empty($areaEfectiva);                 
+$esAdmin = empty($areaEfectiva);
 $estado   = $_GET['estado']   ?? 'todas';
 $busqueda = $_GET['busqueda'] ?? '';
 $area = $esAdmin ? ($_GET['area'] ?? '') : $areaEfectiva;
 $areaParam = $esAdmin && $area !== '' ? '&area=' . urlencode($area) : '';
-
 $controller = new SolicitudController();
 
 if ($esAdmin) {
@@ -113,8 +112,6 @@ if ($esAdmin) {
                     </div>
                 </a>
             </div>
-
-
         </div>
     <?php endif; ?>
 
@@ -134,8 +131,6 @@ if ($esAdmin) {
         <div class="col-6 col-md-3">
             <a href="inAdmin.php?vista=atencion&estado=pendiente<?= $areaParam ?>"
                 class="text-decoration-none">
-
-
                 <div class="card border-warning shadow-sm <?= $estado == 'pendiente' ? 'bg-warning text-dark' : '' ?>">
                     <div class="card-body py-3">
                         <i class="fas fa-hourglass-half fa-lg mb-1"></i>
@@ -148,8 +143,6 @@ if ($esAdmin) {
         <div class="col-6 col-md-3">
             <a href="inAdmin.php?vista=atencion&estado=aceptada<?= $areaParam ?>"
                 class="text-decoration-none">
-
-
                 <div class="card border-success shadow-sm <?= $estado == 'aceptada' ? 'bg-success text-white' : '' ?>">
                     <div class="card-body py-3">
                         <i class="fas fa-check-circle fa-lg mb-1"></i>
@@ -162,7 +155,6 @@ if ($esAdmin) {
         <div class="col-6 col-md-3">
             <a href="inAdmin.php?vista=atencion&estado=rechazada<?= $areaParam ?>"
                 class="text-decoration-none">
-
                 <div class="card border-danger shadow-sm <?= $estado == 'rechazada' ? 'bg-danger text-white' : '' ?>">
                     <div class="card-body py-3">
                         <i class="fas fa-times-circle fa-lg mb-1"></i>
@@ -221,8 +213,6 @@ if ($esAdmin) {
                                         <?= ucfirst($soli['area']) ?>
                                     </span>
                                 </p>
-
-
                             <?php endif; ?>
 
                             <div class="d-flex justify-content-between align-items-center mt-3">
@@ -248,7 +238,7 @@ if ($esAdmin) {
 
                 <div class="modal fade" id="respuestaModal<?= $soli['id_re'] ?>" tabindex="-1"
                     aria-labelledby="modalLabel<?= $soli['id_re'] ?>" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered modal-narrow"><!-- modal-lg para PC -->
+                    <div class="modal-dialog modal-dialog-centered modal-narrow">
                         <div class="modal-content">
                             <form action="routes/Atendido.php" method="POST"
                                 class="respuesta-form" id="formResp<?= $soli['id_re'] ?>">
@@ -527,145 +517,166 @@ if ($esAdmin) {
 </script>
 
 <style>
-    .btn-group .btn.disabled,
-    .btn-group .btn:disabled {
-        pointer-events: none;
-        opacity: .55;
+    #respuestaModal<?= $soli['id_re'] ?>.modal-content {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
     }
 
-    .modal .modal-dialog.modal-narrow {
-        width: auto !important;
-        max-width: 720px !important;
-        margin: 1.75rem auto !important;
+    #respuestaModal<?= $soli['id_re'] ?>.modal-header {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        color: #fff;
+        border-radius: 15px 15px 0 0;
+        padding: 15px 20px;
+        border-bottom: none;
     }
 
-    @media (min-width: 1400px) {
-        .modal .modal-dialog.modal-narrow {
-            max-width: 820px !important;
-        }
-    }
-
-    .modal .modal-dialog.modal-narrow.modal-dialog-scrollable .modal-content {
-        max-height: calc(100vh - 3.5rem);
-    }
-
-    .modal.modal-fullscreen,
-    .modal .modal-dialog.modal-fullscreen {
-        max-width: none !important;
-    }
-
-    /* Estilos para el modal de éxito */
-    .success-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 10000;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .success-modal.active {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .modal-content {
-        background: white;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 450px;
-        padding: 30px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        position: relative;
-        transform: translateY(50px);
-        transition: transform 0.4s ease;
-    }
-
-    .success-modal.active .modal-content {
-        transform: translateY(0);
-    }
-
-    .modal-icon {
-        width: 80px;
-        height: 80px;
-        background-color: #215c23ff;
-        border-radius: 50%;
-        margin: 0 auto 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: pulse 1.5s infinite;
-    }
-
-    .modal-icon i {
-        font-size: 40px;
-        color: white;
-    }
-
-    .modal-title {
-        font-size: 24px;
+    #respuestaModal<?= $soli['id_re'] ?>.modal-title {
         font-weight: 600;
-        margin-bottom: 15px;
-        color: #2c3e50;
+        font-size: 1.3rem;
     }
 
-    .modal-message {
-        font-size: 16px;
-        color: #7f8c8d;
-        margin-bottom: 25px;
+    #respuestaModal<?= $soli['id_re'] ?>.btn-close {
+        filter: invert(1);
+        opacity: .85;
     }
 
-    .modal-button {
-        background-color: #278828ff;
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: 500;
+    #respuestaModal<?= $soli['id_re'] ?>.btn-close:hover {
+        opacity: 1;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.modal-body {
+        padding: 25px;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check.form-switch {
+        margin-bottom: 20px;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        width: 44px;
+        height: 26px;
+        border-radius: 26px;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        position: relative;
         cursor: pointer;
-        transition: background-color 0.3s;
+        outline: none;
+        transition: background-color .2s, border-color .2s, box-shadow .2s;
     }
 
-    .modal-button:hover {
-        background-color: #337735ff;
-    }
-
-    .modal-close {
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input::before {
+        content: "";
         position: absolute;
-        top: 15px;
-        right: 15px;
-        background: none;
+        top: 2px;
+        left: 2px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+        transition: transform .2s;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input:focus {
+        box-shadow: 0 0 0 .2rem rgba(37, 117, 252, .25);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input:checked {
+        background-color: #2575fc;
+        border-color: #2575fc;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input:checked::before {
+        transform: translateX(18px);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.alert-info {
+        background-color: rgba(37, 117, 252, .10);
+        border-color: rgba(37, 117, 252, .20);
+        color: #1a56db;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-floating textarea {
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+        transition: all .3s;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-floating textarea:focus {
+        border-color: #2575fc;
+        box-shadow: 0 0 0 .2rem rgba(37, 117, 252, .25);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 10px;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn {
+        border: 1px solid #dee2e6;
+        padding: 10px 15px;
+        transition: all .3s;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-check:checked+.btn-outline-success,
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-outline-success:hover {
+        background: #198754;
+        color: #fff;
+        border-color: #198754;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-check:checked+.btn-outline-danger,
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-outline-danger:hover {
+        background: #dc3545;
+        color: #fff;
+        border-color: #dc3545;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-check:checked+.btn-outline-primary,
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-outline-primary:hover {
+        background: #2575fc;
+        color: #fff;
+        border-color: #2575fc;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-check:checked+.btn-outline-secondary,
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-outline-secondary:hover {
+        background: #6c757d;
+        color: #fff;
+        border-color: #6c757d;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.modal-footer {
+        border-top: 1px solid #e9ecef;
+        padding: 20px 25px;
+        background: #f8f9fa;
+        border-radius: 0 0 15px 15px;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.modal-footer .btn-primary {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
         border: none;
-        font-size: 22px;
-        color: #95a5a6;
-        cursor: pointer;
-        transition: color 0.3s;
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 600;
+        transition: transform .2s, box-shadow .2s;
+        box-shadow: 0 4px 15px rgba(37, 117, 252, .3);
     }
 
-    .modal-close:hover {
-        color: #2c3e50;
-    }
-
-    @keyframes pulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
-        }
-
-        70% {
-            box-shadow: 0 0 0 15px rgba(76, 175, 80, 0);
-        }
-
-        100% {
-            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-        }
+    #respuestaModal<?= $soli['id_re'] ?>.modal-footer .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 117, 252, .4);
     }
 </style>

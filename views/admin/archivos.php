@@ -93,8 +93,8 @@
           <small class="text-muted">Formatos aceptados: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX</small>
         </div>
 
-        <div class="d-grid mt-4">
-          <button type="submit" class="btn btn-upload">
+        <div class="d-grid mt-4 ">
+          <button type="submit" class="btn btn-upload text-light">
             <i class="fas fa-upload me-2"></i>Subir archivo
           </button>
         </div>

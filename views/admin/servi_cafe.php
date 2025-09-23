@@ -125,7 +125,7 @@ $servi = $modelo->obtenerServi();
 
                     <div class="col-12">
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn px-4 py-2 shadow-sm" id="btn-registrar-cafe">
+                            <button type="submit" class="btn px-4 py-2 shadow-sm text-light" id="btn-registrar-cafe">
                                 <i class="fas fa-save me-2"></i>Registrar Servicio
                             </button>
                         </div>
