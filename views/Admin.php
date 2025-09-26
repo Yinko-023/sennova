@@ -170,6 +170,8 @@ if (session_status() === PHP_SESSION_NONE) {
     <?php
     require_once __DIR__ . '/../controllers/PubliController.php';
 
+    $areaSesion = $_SESSION['area'] ?? null; 
+
     $solicitudController = new SolicitudController();
 
     if (isset($_SESSION['area']) && in_array($_SESSION['area'], ['cafe', 'electronica'])) {

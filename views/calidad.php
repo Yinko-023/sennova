@@ -546,11 +546,10 @@ $servi = $modelo->obtenerServi();
             <select id="servicio" name="servicio" required
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-green-600 focus:ring-green-600 focus:outline-none focus:ring-2 transition duration-200">
               <option value="">Seleccione un servicio</option>
-              <option value="sensorial">Diseño de tarjetas de circuito impreso (PCB)</option>
-              <option value="fisicoquimico">Fabricación de tarjetas PCB</option>
-              <option value="calidad">Diseño de piezas 3D</option>
-              <option value="tueste">Impresión de piezas 3D</option>
-              <option value="asesoria">Integración de soluciones tecnológicas</option>
+              <option value="sensorial">Perfilación sensorial</option>
+              <option value="maquila">Maquila de café</option>
+              <option value="tueste">Tueste profesional</option>
+              <option value="transformacion">Transformación de cacao</option>
             </select>
           </div>
 
@@ -561,9 +560,7 @@ $servi = $modelo->obtenerServi();
               placeholder="Describa el proyecto, requerimientos técnicos, objetivos, etc."
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-green-600 focus:ring-green-600 focus:outline-none focus:ring-2 transition duration-200"></textarea>
           </div>
-
-
-
+          
           <button type="submit"
             class="w-full bg-green-800 hover:bg-green-600 text-white py-4 rounded-lg text-lg font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition duration-300">
             Enviar Solicitud

@@ -1,3 +1,45 @@
+<?php
+
+$rol        = $_SESSION['rol']  ?? null;
+$areaSesion = $_SESSION['area'] ?? null;
+if (!isset($areaFiltro)) {
+  if ($rol == 1) {
+    $areaFiltro = null;
+  } elseif ($rol == 2) {
+    $areaFiltro = 'electronica';
+  } else {
+    $areaFiltro = $areaSesion ?: null;
+  }
+}
+
+$areaNombre = $areaFiltro ? ucfirst($areaFiltro) : 'General';
+$areaClase  = $areaFiltro === 'cafe'
+  ? 'area-cafe'
+  : ($areaFiltro === 'electronica' ? 'area-electronica' : 'area-general');
+$atendidasNum   = $resumen['atendidas_num']   ?? $resumen['aceptadas']   ?? 0;
+$pendientesNum  = $resumen['pendientes_num']  ?? $resumen['pendientes']  ?? 0;
+$rechazadasNum  = $resumen['rechazadas_num']  ?? $resumen['rechazadas']  ?? 0;
+$totalResumen   = $resumen['total'] ?? ($atendidasNum + $pendientesNum + $rechazadasNum);
+$den            = max(1, (int)$totalResumen);
+$atendidasPct   = $resumen['atendidas_pct']   ?? (int)round($atendidasNum  * 100 / $den);
+$rechazadasPct  = $resumen['rechazadas_pct']  ?? (int)round($rechazadasNum * 100 / $den);
+$growthPct      = $resumen['growth_pct'] ?? 0;
+$displayTotal = $totalResumen;
+if ($areaFiltro === 'cafe') {
+  $displayTotal = (int)($resumen['cafe'] ?? 0);
+}
+if ($areaFiltro === 'electronica') {
+  $displayTotal = (int)($resumen['electronica'] ?? 0);
+}
+
+$resumen['atendidas_num']   = $atendidasNum;
+$resumen['pendientes_num']  = $pendientesNum;
+$resumen['rechazadas_num']  = $rechazadasNum;
+$resumen['atendidas_pct']   = $atendidasPct;
+$resumen['rechazadas_pct']  = $rechazadasPct;
+$resumen['growth_pct']      = $growthPct;
+?>
+
 <div class="container-fluid dashboard-container ">
   <!-- Encabezado -->
   <div id="dashboardHeader" class="dashboard-header">
@@ -218,93 +260,311 @@
 
     <!-- Sidebar con Estadísticas -->
     <div class="col-lg-4 mb-4">
-      <div class="sidebar-panel mb-4">
-        <div class="panel-header">
-          <h5><i class="fas fa-chart-pie"></i> Resumen Mensual</h5>
-        </div>
-        <div class="stats-item">
-          <h6 class="stats-title">Solicitudes</h6>
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="stats-value"><?= $resumen['total'] ?? 0 ?></h3>
-            <span class="status-badge info">+12%</span>
+
+      <?php if (is_null($areaFiltro)): ?>
+        <div class="sidebar-panel mb-4">
+          <div class="panel-header">
+            <h5><i class="fas fa-chart-pie"></i> Resumen Mensual</h5>
           </div>
-          <div class="row">
-            <div class="col-6">
-              <div class="mb-3">
-                <small class="text-muted">Café</small>
-                <h5 class="stats-value"><?= $resumen['cafe'] ?? 0 ?></h5>
+
+          <div class="stats-item">
+            <h6 class="stats-title">Solicitudes</h6>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h3 class="stats-value"><?= $resumen['total'] ?? 0 ?></h3>
+              <span class="status-badge info">
+                <?= (($resumen['growth_pct'] ?? 0) >= 0 ? '+' : '') . ($resumen['growth_pct'] ?? 0) ?>%
+              </span>
+            </div>
+
+            <div class="row">
+              <div class="col-6">
+                <div class="mb-3">
+                  <small class="text-muted">Café</small>
+                  <h5 class="stats-value"><?= $resumen['cafe'] ?? 0 ?></h5>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="mb-3">
+                  <small class="text-muted">Electrónica</small>
+                  <h5 class="stats-value"><?= $resumen['electronica'] ?? 0 ?></h5>
+                </div>
               </div>
             </div>
-            <div class="col-6">
-              <div class="mb-3">
-                <small class="text-muted">Electrónica</small>
-                <h5 class="stats-value"><?= $resumen['electronica'] ?? 0 ?></h5>
+
+            <!-- Progreso Atendidas / Rechazadas -->
+            <div class="progress progress-thin mb-2" role="progressbar" aria-label="Atendidas/rechazadas">
+              <div class="progress-bar bg-success" style="width: <?= $resumen['atendidas_pct'] ?? 0 ?>%"></div>
+              <div class="progress-bar bg-danger" style="width: <?= $resumen['rechazadas_pct'] ?? 0 ?>%"></div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">
+                <i class="fas fa-circle text-success me-1"></i>
+                Atendidas: <?= $resumen['atendidas_num'] ?? 0 ?>
+              </small>
+              <small class="text-muted">
+                <i class="fas fa-circle text-danger me-1"></i>
+                Rechazadas: <?= $resumen['rechazadas_num'] ?? 0 ?>
+              </small>
+            </div>
+          </div>
+
+          <div class="stats-item">
+            <h6 class="stats-title">Usuario más activo</h6>
+            <div class="d-flex align-items-center">
+              <div class="user-avatar">
+                <?= isset($usuarioTop['nombre']) ? substr($usuarioTop['nombre'], 0, 1) : 'N' ?>
+              </div>
+              <div>
+                <h6 class="mb-0"><?= $usuarioTop['nombre'] ?? 'N/A' ?></h6>
+                <small class="text-muted"><?= $usuarioTop['total'] ?? 0 ?> solicitudes</small>
               </div>
             </div>
           </div>
-          <div class="progress progress-thin mb-2">
-            <div class="progress-bar progress-bar-success" style="width: <?= $resumen['atendidas'] ?? 0 ?>%"></div>
-            <div class="progress-bar progress-bar-warning" style="width: <?= $resumen['pendientes'] ?? 0 ?>%"></div>
+        </div>
+
+      <?php else: ?>
+        <div class="sidebar-panel mb-4 border-0 shadow-sm overflow-hidden <?= $areaClase ?>">
+          <div class="panel-header d-flex align-items-center justify-content-between px-3 py-2">
+            <h5 class="mb-0 d-flex align-items-center gap-2">
+              <span class="badge rounded-pill badge-area"><?= $areaNombre ?></span>
+              <span><i class="fas fa-chart-line"></i> Resumen del Mes</span>
+            </h5>
+            <span class="badge growth-badge">
+              <?= (($resumen['growth_pct'] ?? 0) >= 0 ? '+' : '') . ($resumen['growth_pct'] ?? 0) ?>%
+            </span>
           </div>
-          <div class="d-flex justify-content-between">
-            <small class="text-muted"><i class="fas fa-circle text-success me-1"></i> Atendidas: <?= $resumen['atendidas'] ?? 0 ?></small>
-            <small class="text-muted"><i class="fas fa-circle text-warning me-1"></i> Pendientes: <?= $resumen['pendientes'] ?? 0 ?></small>
+
+          <div class="p-3">
+            <!-- Total del área -->
+            <div class="d-flex align-items-baseline justify-content-between mb-3">
+              <div>
+                <small class="text-muted">Total <?= $areaNombre ?></small>
+                <div class="display-6 fw-bold mb-0"><?= $displayTotal ?></div>
+              </div>
+            </div>
+
+            <!-- Mini métricas -->
+            <div class="row g-2 mb-3">
+              <div class="col-4">
+                <div class="card metric-card text-center p-2">
+                  <small class="text-muted d-block">Atendidas</small>
+                  <div class="fw-bold text-success"><?= $resumen['atendidas_num'] ?? 0 ?></div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="card metric-card text-center p-2">
+                  <small class="text-muted d-block">Pendientes</small>
+                  <div class="fw-bold text-warning"><?= $resumen['pendientes_num'] ?? 0 ?></div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="card metric-card text-center p-2">
+                  <small class="text-muted d-block">Rechazadas</small>
+                  <div class="fw-bold text-danger"><?= $resumen['rechazadas_num'] ?? 0 ?></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progreso Atendidas / Rechazadas -->
+            <div class="progress progress-thin mb-2" role="progressbar" aria-label="Atendidas/rechazadas">
+              <div class="progress-bar bg-success" style="width: <?= $resumen['atendidas_pct'] ?? 0 ?>%"></div>
+              <div class="progress-bar bg-danger" style="width: <?= $resumen['rechazadas_pct'] ?? 0 ?>%"></div>
+            </div>
+            <div class="d-flex justify-content-between">
+              <small class="text-muted"><i class="fas fa-circle text-success me-1"></i> <?= $resumen['atendidas_pct'] ?? 0 ?>%</small>
+              <small class="text-muted"><i class="fas fa-circle text-danger me-1"></i> <?= $resumen['rechazadas_pct'] ?? 0 ?>%</small>
+            </div>
           </div>
         </div>
-        <div class="stats-item">
-          <h6 class="stats-title">Usuario más activo</h6>
-          <div class="d-flex align-items-center">
-            <div class="user-avatar">
-              <?= isset($usuarioTop['nombre']) ? substr($usuarioTop['nombre'], 0, 1) : 'N' ?>
-            </div>
-            <div>
-              <h6 class="mb-0"><?= $usuarioTop['nombre'] ?? 'N/A' ?></h6>
-              <small class="text-muted"><?= $usuarioTop['total'] ?? 0 ?> solicitudes</small>
-            </div>
-          </div>
-        </div>
-      </div>
+      <?php endif; ?>
 
       <!-- Actividad Reciente -->
-      <div class="sidebar-panel">
+      <?php
+      if (!function_exists('time_ago_es')) {
+        function time_ago_es(string $ts): string
+        {
+          $t = is_numeric($ts) ? (int)$ts : strtotime($ts);
+          $diff = time() - $t;
+          if ($diff < 60) return 'Hace ' . $diff . ' seg';
+          $mins = floor($diff / 60);
+          if ($mins < 60) return 'Hace ' . $mins . ' min';
+          $hrs = floor($mins / 60);
+          if ($hrs < 24) return 'Hace ' . $hrs . ' hora' . ($hrs > 1 ? 's' : '');
+          $days = floor($hrs / 24);
+          if ($days < 7) return 'Hace ' . $days . ' día' . ($days > 1 ? 's' : '');
+          return date('Y-m-d H:i', $t);
+        }
+      }
+      ?>
+
+      <div class="sidebar-panel" id="panel-actividad">
         <div class="panel-header">
           <h5><i class="fas fa-list-ul"></i> Actividad Reciente</h5>
         </div>
-        <div class="activity-item">
-          <div class="d-flex justify-content-between">
-            <h6>Nuevo usuario registrado</h6>
-            <span class="activity-time">Hace 5 min</span>
+
+        <?php
+        $maxMostrar = 5;
+        $totalActs  = is_array($actividades ?? null) ? count($actividades) : 0;
+        $primeros   = $totalActs > 0 ? array_slice($actividades, 0, $maxMostrar) : [];
+        $resto      = $totalActs > $maxMostrar ? array_slice($actividades, $maxMostrar) : [];
+        ?>
+
+        <div class="panel-body" id="actividad-scroll">
+          <?php if (!empty($primeros)): ?>
+            <?php foreach ($primeros as $item): ?>
+              <div class="activity-item">
+                <div class="d-flex justify-content-between">
+                  <h6><?= htmlspecialchars($item['title']) ?></h6>
+                  <span class="activity-time"><?= htmlspecialchars(time_ago_es($item['ts'])) ?></span>
+                </div>
+                <p><?= htmlspecialchars($item['text']) ?></p>
+              </div>
+            <?php endforeach; ?>
+
+            <?php if (!empty($resto)): ?>
+              <div id="actividad-resto" class="d-none">
+                <?php foreach ($resto as $item): ?>
+                  <div class="activity-item">
+                    <div class="d-flex justify-content-between">
+                      <h6><?= htmlspecialchars($item['title']) ?></h6>
+                      <span class="activity-time"><?= htmlspecialchars(time_ago_es($item['ts'])) ?></span>
+                    </div>
+                    <p><?= htmlspecialchars($item['text']) ?></p>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+
+          <?php else: ?>
+            <div class="p-3 text-center text-muted">
+              <i class="far fa-bell-slash"></i> Sin actividad reciente
+            </div>
+          <?php endif; ?>
+        </div>
+
+        <?php if (!empty($resto)): ?>
+          <div class="text-center p-3">
+            <button class="btn btn-sm btn-outline-secondary"
+              data-bs-toggle="modal"
+              data-bs-target="#modalActividadReciente">
+              Ver más
+            </button>
           </div>
-          <p>Juan Pérez (juan.perez@ejemplo.com)</p>
-        </div>
-        <div class="activity-item">
-          <div class="d-flex justify-content-between">
-            <h6>Archivo subido</h6>
-            <span class="activity-time">Hace 1 hora</span>
-          </div>
-          <p>Indicadores.xlsx (2.4 MB)</p>
-        </div>
-        <div class="activity-item">
-          <div class="d-flex justify-content-between">
-            <h6>Visita desde IP</h6>
-            <span class="activity-time">Hace 3 horas</span>
-          </div>
-          <p>192.168.1.20 (Chrome, Windows)</p>
-        </div>
-        <div class="activity-item">
-          <div class="d-flex justify-content-between">
-            <h6>Solicitud de café</h6>
-            <span class="activity-time">Hoy, 09:42</span>
-          </div>
-          <p>Usuario: maria.gonzalez</p>
-        </div>
-        <div class="text-center p-3">
-          <a href="#" class="btn btn-sm btn-outline-primary">Ver toda la actividad</a>
-        </div>
+        <?php endif; ?>
+
       </div>
     </div>
   </div>
 </div>
+<!-- Modal: Actividad Reciente -->
+<!-- Modal: Actividad Reciente -->
+<div class="modal fade" id="modalActividadReciente" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" id="modal-actividad">
+      <div class="modal-header text-white" id="modal-actividad-header">
+        <h5 class="modal-title d-flex align-items-center gap-2" id="modal-actividad-title">
+          <i class="fas fa-history"></i>
+          Todas las actividad reciente 
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar" id="modal-actividad-close"></button>
+      </div>
+
+      <div class="modal-body p-0" id="modal-actividad-body">
+        <div id="modal-actividad-scroll" class="p-3">
+          <?php if (!empty($actividades)): ?>
+            <ul class="list-group list-group-flush" id="modal-actividad-lista">
+              <?php foreach ($actividades as $item): ?>
+                <li class="list-group-item px-3 py-3" id="modal-actividad-item">
+                  <div class="d-flex justify-content-between align-items-start" id="modal-actividad-item-row">
+                    <div class="me-3" id="modal-actividad-item-left">
+                      <div class="fw-semibold" id="modal-actividad-item-title"><?= htmlspecialchars($item['title']) ?></div>
+                      <div class="text-muted small" id="modal-actividad-item-text"><?= htmlspecialchars($item['text']) ?></div>
+                    </div>
+                    <span class="text-nowrap text-muted small" id="modal-actividad-item-time"><?= htmlspecialchars(time_ago_es($item['ts'])) ?></span>
+                  </div>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <div class="p-4 text-center text-muted" id="modal-actividad-empty">
+              <i class="far fa-bell-slash"></i> Sin actividad reciente
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <div class="modal-footer" id="modal-actividad-footer">
+        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal" id="btn-actividad-cerrar">Cerrar</button>
+        <a href="inAdmin.php?vista=actividad" class="btn" id="btn-actividad-historial">Ver historial completo</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<style>
+/* Contenedor principal del modal */
+#modal-actividad{
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Encabezado con gradient */
+#modal-actividad-header{
+  background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+  border-bottom: none;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+/* Body scrollable */
+#modal-actividad-scroll{
+  max-height: 60vh;   /* ajusta si quieres más/menos alto */
+  overflow-y: auto;
+}
+
+/* Footer con gradient y botones contrastados */
+#modal-actividad-footer{
+  background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+  border-top: none;
+}
+
+/* Botón primario del historial con gradient propio (si prefieres) */
+#btn-actividad-historial{
+  background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+  color: #fff;
+  border: none;
+}
+#btn-actividad-historial:hover{
+  filter: brightness(1.08);
+  color: #fff;
+}
+
+/* Botón cerrar con borde claro para contraste */
+#btn-actividad-cerrar{
+  border-color: rgba(255,255,255,.55);
+  color: #fff;
+}
+#btn-actividad-cerrar:hover{
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+
+/* Item hover sutil dentro de la lista */
+#modal-actividad-item:hover{
+  background-color: #f8fafc;
+  transition: background-color .15s ease;
+}
+
+/* (Opcional) Afinar tipografías de título/texto */
+#modal-actividad-title{ font-weight: 700; }
+#modal-actividad-item-title{ font-weight: 600; }
+
+</style>
+
+
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
