@@ -39,9 +39,6 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
             <ul
                 class="nav d-flex flex-column flex-md-row align-items-start align-items-md-center gap-1 gap-md-2 mb-0 ps-0">
                 <li class="nav-item">
-                    <a href="#" class="nav-link sin-subrayado text-white fw-semibold px-2">SENNOVA</a>
-                </li>
-                <li class="nav-item">
                     <a href="#" class="nav-link sin-subrayado text-white fw-semibold px-2" data-bs-toggle="modal"
                         data-bs-target="#programasModal">Programas</a>
                 </li>
@@ -58,8 +55,6 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
     </div>
 
     <style>
-
-
         .nav-link {
             color: #ffffff !important;
             font-weight: 500;
@@ -113,9 +108,61 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                 width: 100%;
             }
         }
+
+        /* Móvil + Tablet (hasta < 992px) */
+        @media (max-width: 991.98px) {
+
+            /* Centrar el título y compactar el header */
+            .header-suave .container {
+                flex-direction: column;
+                /* apila título + nav */
+                align-items: center;
+                /* centra horizontal */
+                gap: .5rem;
+            }
+
+            .header-suave .container>a {
+                width: 100%;
+                text-align: center;
+                /* TÍTULO centrado */
+            }
+
+            nav {
+                width: 100%;
+            }
+
+            /* Nav en una FILA (no uno debajo del otro) */
+            .header-suave .nav {
+                display: flex;
+                flex-direction: row !important;
+                /* fuerza fila (anula .flex-column) */
+                flex-wrap: wrap;
+                /* permite salto si no cabe */
+                justify-content: center;
+                /* centrar items */
+                align-items: center;
+                gap: .25rem .75rem;
+                width: 100%;
+            }
+
+            .header-suave .nav-item {
+                width: auto;
+            }
+
+            .header-suave .nav-link {
+                width: auto;
+                padding-left: .5rem !important;
+                padding-right: .5rem !important;
+            }
+
+            /* El dropdown no a pantalla completa en móvil */
+            .header-suave .dropdown-menu {
+                width: auto;
+                min-width: 12rem;
+            }
+        }
     </style>
 </header>
-
 
 <!-- Carrusel -->
 <section class="relative w-full overflow-hidden ">
@@ -224,7 +271,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                 <div
                     class="bloque-navegacion d-flex flex-column justify-content-center align-items-center text-center p-4">
                     <i class="bi bi-calendar-event-fill fs-2"></i>
-                    <a href="/eventos"
+                    <a href="#eventos"
                         class="text-white text-decoration-none d-flex flex-column align-items-center w-100 h-100">
                         <p class="mb-0 fw-bold">Eventos Destacados</p>
                     </a>
@@ -383,7 +430,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
     </section>
 
     <!-- Publicaciones destacadas -->
-    <section class="px-4 py-8 md:px-8">
+    <section class="px-4 py-8 md:px-8" id="eventos">
         <?php if (!empty($destacada)): ?>
             <div class="max-w-7xl mx-auto">
                 <!-- Encabezado con efecto de destaque -->
@@ -398,7 +445,6 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
 
                 <!-- Tarjeta destacada -->
                 <div class="relative" data-aos="zoom-in">
-                    <!-- Efecto de resaltado -->
                     <div
                         class="absolute -inset-1 bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl opacity-20 blur-lg">
                     </div>
@@ -419,9 +465,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                                 <?php endif; ?>
                             </div>
 
-                            <!-- Sección de contenido -->
                             <div class="md:w-3/5 p-8">
-                                <!-- Badge de área -->
                                 <span
                                     class="inline-block px-3 py-1 bg-<?= $destacada['lab_area'] === 'electronica' ? 'blue' : 'amber' ?>-100 text-<?= $destacada['lab_area'] === 'electronica' ? 'blue' : 'amber' ?>-800 rounded-full text-xs font-semibold mb-4">
                                     <?= strtoupper(htmlspecialchars($destacada['lab_area'])) ?>
@@ -447,16 +491,21 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                                         $enlace = 'inCalidad.php';
                                     } elseif ($area === 'electronica') {
                                         $enlace = 'inElectronica.php';
-                                    } elseif ($area === 'calidad') {
+                                    } elseif ($area === 'general') {
                                         $enlace = 'index.php';
                                     }
                                     ?>
 
-                                    <a href="<?= $enlace ?>"
-                                        class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-green-800 to-green-600 text-white font-medium rounded-lg hover:from-green-900 hover:to-blue-900 transition-all duration-300 shadow-md">
-                                        Visitar Laboratorio
-                                        <i class="fas fa-arrow-right ml-2"></i>
-                                    </a>
+                                    <?php if ($area === 'cafe' || $area === 'electronica'): ?>
+                                        <a href="<?= htmlspecialchars($enlace) ?>"
+                                            class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-green-800 to-green-600 text-white font-medium rounded-lg hover:from-green-900 hover:to-blue-900 transition-all duration-300 shadow-md">
+                                            Visitar Laboratorio
+                                            <i class="fas fa-arrow-right ml-2"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="text-sm text-gray-500">Nuestro Anuncio es Totalmente General.</span>
+                                    <?php endif; ?>
+
                                 </div>
                             </div>
                         </div>
@@ -517,7 +566,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
     </section>
 
     <!-- PUBLICACIONES Y ANUNCIOS -->
-    <section class="px-4 py-12 md:px-16 bg-gray-50">
+    <section class="px-4 py-12 md:px-16 bg-gray-50" id="publicaciones">
         <!-- Encabezado con efecto -->
         <div class="text-center mb-8" data-aos="fade-down">
             <h2 class="text-4xl font-bold text-gray-800">
@@ -623,8 +672,6 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                     </button>
                 </div>
             </form>
-
-
         </div>
 
         <!-- Listado de publicaciones -->
@@ -710,12 +757,11 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
             }
         </style>
     </section>
-
-
+    
 </div>
 
 <!-- Footer -->
-<footer class="bg-[#134e4a] text-white text-center py-6">
+<footer class="bg-[#134e4a] text-white text-center py-6" id="contactos">
     <div class="container">
         <div class="row g-4">
 
@@ -773,7 +819,9 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
         <div class="row align-items-center" data-aos="fade-up" data-aos-delay="400">
             <div class="col-md-7 col-lg-8">
                 <p class="mb-0">&copy;
-                    <script>document.write(new Date().getFullYear());</script> TuEmpresa/Sitio. Todos los
+                    <script>
+                        document.write(new Date().getFullYear());
+                    </script> TuEmpresa/Sitio. Todos los
                     derechos reservados.
                 </p>
             </div>
@@ -784,121 +832,12 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
         </div>
     </div>
 </footer>
-<style>
-    body {
-        font-family: 'Segoe UI', sans-serif;
-        background-color: #f0f2f5;
-        color: #1f2937;
-        margin: 0;
-        padding: 0;
-        line-height: 1.6;
-    }
-
-    .header-suave {
-        background-color: #14532d;
-        border-bottom: 1px solid #d1d5db;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-        padding: 1rem 2rem;
-    }
-
-    .nav-link {
-        color: #019401;
-        font-weight: 600;
-        margin: 0 1rem;
-        transition: color 0.3s ease;
-        text-decoration: none;
-    }
-
-    .nav-link:hover {
-        color: #01af01;
-        text-decoration: underline;
-    }
-
-    .carousel-img {
-        height: 500px;
-        object-fit: cover;
-        width: 100%;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        border-radius: 0;
-    }
-
-    .bloque-navegacion {
-        background: #1a6439ff;
-        border: 1px solid #1a6439ff;
-        border-radius: 0.75rem;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .card-custom {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.75rem;
-        padding: 1.25rem;
-        transition: box-shadow 0.3s ease, transform 0.2s ease;
-    }
-
-    .card-custom:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    }
-
-    .metro-button {
-        background-color: #01af01;
-        color: #ffffff;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        border: none;
-        border-radius: 0.5rem;
-        cursor: pointer;
-        transition: background 0.3s ease, transform 0.2s ease;
-    }
-
-    .metro-button:hover {
-        background-color: #019401;
-        transform: scale(1.03);
-    }
-
-    .footer {
-        background: #ffffff;
-        border-top: 1px solid #e5e7eb;
-        padding: 2rem 1rem;
-        text-align: center;
-        color: #6b7280;
-        font-size: 0.875rem;
-    }
-
-    .form-select {
-        background-color: #ffffff;
-        color: #111827;
-        border: 1px solid #01af01;
-        border-radius: 0.5rem;
-        padding: 0.5rem;
-        transition: border 0.3s ease;
-    }
-
-    .form-select:focus {
-        border-color: #019401;
-        outline: none;
-    }
-
-    .tile {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border-radius: 0.75rem;
-        overflow: hidden;
-    }
-
-    .tile:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
-    }
-</style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('filtroForm');
 
-        form.addEventListener('submit', function (e) {
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
 
             const formData = new FormData(form);
@@ -929,8 +868,8 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
     AOS.init();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO"
-    crossorigin="anonymous"></script>
+    integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
+</script>
 </body>
 
 </html>

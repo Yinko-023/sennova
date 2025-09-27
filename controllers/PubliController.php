@@ -3909,316 +3909,318 @@ class EvaluacionController
 
   /* ===============  FORMULARIO 8 (VERIFICACION DISEÑO 2p – TCPDF)  ================= */
   public static function storeInformeServicio(): void
-{
-  // 0) Limpia buffers y carga TCPDF
-  while (ob_get_level()) {
-    ob_end_clean();
-  }
-  self::ensureTcpdfLoaded();
-
-  /* ========== AUTO–INCREMENTO (contador exclusivo F8) ========== */
-  $projectRoot = dirname(__DIR__, 2);
-  $counterDir  = $projectRoot . '/sennova/storage/counters';
-  $counterFile = $counterDir . '/informe_servicio.counter';
-
-  if (!is_dir($counterDir)) {
-    @mkdir($counterDir, 0775, true);
-  }
-
-  $readCounter = function () use ($counterFile): int {
-    if (!is_file($counterFile)) return 0; // 0 => siguiente será 001
-    $v = @file_get_contents($counterFile);
-    $n = is_string($v) ? (int)trim($v) : 0;
-    return max(0, $n);
-  };
-  $saveCounter = function (int $n) use ($counterFile): void {
-    @file_put_contents($counterFile, (string)max(0, $n), LOCK_EX);
-  };
-  $fmt3 = function (int $n): string {
-    return sprintf('%03d', max(0, $n));
-  };
-
-  // Flags del form (por defecto: avanzar sí, reset no)
-  $advanceFlag = (string)($_POST['advance_code'] ?? '') === '1';
-  $resetFlag   = (string)($_POST['reset_code']   ?? '') === '1';
-
-  // 1) POST (texto)
-  $ot        = trim((string)($_POST['isv_ot'] ?? '')); // <- correlativo F8
-  $fechaIso  = (string)($_POST['isv_fecha'] ?? date('Y-m-d'));
-  $serv      = (array)($_POST['isv_servicio'] ?? []); // checkboxes
-  $result    = (string)($_POST['isv_resultados'] ?? '');
-  $obs       = (string)($_POST['isv_obs'] ?? '');
-  $elaboro   = trim((string)($_POST['isv_elaboro'] ?? ''));
-  $aprobo    = trim((string)($_POST['isv_aprobo'] ?? ''));
-  $fecha     = $fechaIso ? date('d/m/Y', strtotime($fechaIso)) : '';
-
-  // 1.1) Resolver correlativo para isv_ot
-  if ($resetFlag) {
-    $saveCounter(0);
-    $ot = $fmt3(1);
-    if ($advanceFlag) $saveCounter(1); // consume 001
-  } else {
-    $curr = $readCounter();
-    if ($ot === '') {
-      $ot = $fmt3($curr + 1);
-      if ($advanceFlag) $saveCounter($curr + 1);
-    } else {
-      // normaliza si es numérico
-      if (preg_match('/^\d+$/', $ot)) {
-        $ot = $fmt3((int)$ot);
-      }
-      // si advance=1, evita retroceso del contador global
-      $n = (int)preg_replace('/\D+/', '', $ot);
-      if ($advanceFlag && $n > $curr) $saveCounter($n);
+  {
+    // 0) Limpia buffers y carga TCPDF
+    while (ob_get_level()) {
+      ob_end_clean();
     }
-  }
+    self::ensureTcpdfLoaded();
 
-  // 1.2) Preparar carpeta temporal para imágenes
-  $tmpDir = $projectRoot . '/sennova/storage/tmp_isv';
-  if (!is_dir($tmpDir)) {
-    @mkdir($tmpDir, 0775, true);
-  }
+    /* ========== AUTO–INCREMENTO (contador exclusivo F8) ========== */
+    $projectRoot = dirname(__DIR__, 2);
+    $counterDir  = $projectRoot . '/sennova/storage/counters';
+    $counterFile = $counterDir . '/informe_servicio.counter';
 
-  // 1.3) Subida de imágenes
-  $uploadedImgs = [];
-  if (!empty($_FILES['isv_resultados_img']) && is_array($_FILES['isv_resultados_img']['name'])) {
-    $names = $_FILES['isv_resultados_img']['name'];
-    $tmps  = $_FILES['isv_resultados_img']['tmp_name'];
-    $errs  = $_FILES['isv_resultados_img']['error'];
+    if (!is_dir($counterDir)) {
+      @mkdir($counterDir, 0775, true);
+    }
 
-    $finfo = function_exists('finfo_open') ? finfo_open(FILEINFO_MIME_TYPE) : null;
+    $readCounter = function () use ($counterFile): int {
+      if (!is_file($counterFile)) return 0; // 0 => siguiente será 001
+      $v = @file_get_contents($counterFile);
+      $n = is_string($v) ? (int)trim($v) : 0;
+      return max(0, $n);
+    };
+    $saveCounter = function (int $n) use ($counterFile): void {
+      @file_put_contents($counterFile, (string)max(0, $n), LOCK_EX);
+    };
+    $fmt3 = function (int $n): string {
+      return sprintf('%03d', max(0, $n));
+    };
 
-    for ($i = 0; $i < count($names); $i++) {
-      if ($errs[$i] !== UPLOAD_ERR_OK) continue;
-      $tmp = $tmps[$i];
-      if (!$tmp || !is_uploaded_file($tmp)) continue;
+    // Flags del form (por defecto: avanzar sí, reset no)
+    $advanceFlag = (string)($_POST['advance_code'] ?? '') === '1';
+    $resetFlag   = (string)($_POST['reset_code']   ?? '') === '1';
 
-      // MIME real
-      $mime = $finfo ? strtolower((string)finfo_file($finfo, $tmp)) : '';
-      if (!$mime) {
-        $gi = @getimagesize($tmp);
-        if ($gi && !empty($gi['mime'])) $mime = strtolower($gi['mime']);
-      }
+    // 1) POST (texto)
+    $ot        = trim((string)($_POST['isv_ot'] ?? '')); // <- correlativo F8
+    $fechaIso  = (string)($_POST['isv_fecha'] ?? date('Y-m-d'));
+    $serv      = (array)($_POST['isv_servicio'] ?? []); // checkboxes
+    $result    = (string)($_POST['isv_resultados'] ?? '');
+    $obs       = (string)($_POST['isv_obs'] ?? '');
+    $elaboro   = trim((string)($_POST['isv_elaboro'] ?? ''));
+    $aprobo    = trim((string)($_POST['isv_aprobo'] ?? ''));
+    $fecha     = $fechaIso ? date('d/m/Y', strtotime($fechaIso)) : '';
 
-      $base = $tmpDir . '/isv_' . uniqid();
-      $ok   = false;
-      $dest = '';
-
-      if (in_array($mime, ['image/jpeg', 'image/jpg'])) {
-        $dest = $base . '.jpg';
-        $ok = @move_uploaded_file($tmp, $dest);
-      } elseif ($mime === 'image/png') {
-        $dest = $base . '.png';
-        $ok = @move_uploaded_file($tmp, $dest);
-      } elseif ($mime === 'image/gif') {
-        $dest = $base . '.gif';
-        $ok = @move_uploaded_file($tmp, $dest);
-      } elseif ($mime === 'image/webp') {
-        if (function_exists('imagecreatefromwebp')) {
-          $im = @imagecreatefromwebp($tmp);
-          if ($im) {
-            $dest = $base . '.jpg';
-            $ok = @imagejpeg($im, $dest, 90);
-            @imagedestroy($im);
-          }
-        }
+    // 1.1) Resolver correlativo para isv_ot
+    if ($resetFlag) {
+      $saveCounter(0);
+      $ot = $fmt3(1);
+      if ($advanceFlag) $saveCounter(1); // consume 001
+    } else {
+      $curr = $readCounter();
+      if ($ot === '') {
+        $ot = $fmt3($curr + 1);
+        if ($advanceFlag) $saveCounter($curr + 1);
       } else {
-        error_log('[ISV] Formato no soportado: ' . $mime);
+        // normaliza si es numérico
+        if (preg_match('/^\d+$/', $ot)) {
+          $ot = $fmt3((int)$ot);
+        }
+        // si advance=1, evita retroceso del contador global
+        $n = (int)preg_replace('/\D+/', '', $ot);
+        if ($advanceFlag && $n > $curr) $saveCounter($n);
       }
+    }
 
-      if ($ok && is_file($dest)) {
-        @chmod($dest, 0644);
-        $uploadedImgs[] = $dest;
+    // 1.2) Preparar carpeta temporal para imágenes
+    $tmpDir = $projectRoot . '/sennova/storage/tmp_isv';
+    if (!is_dir($tmpDir)) {
+      @mkdir($tmpDir, 0775, true);
+    }
+
+    // 1.3) Subida de imágenes
+    $uploadedImgs = [];
+    if (!empty($_FILES['isv_resultados_img']) && is_array($_FILES['isv_resultados_img']['name'])) {
+      $names = $_FILES['isv_resultados_img']['name'];
+      $tmps  = $_FILES['isv_resultados_img']['tmp_name'];
+      $errs  = $_FILES['isv_resultados_img']['error'];
+
+      $finfo = function_exists('finfo_open') ? finfo_open(FILEINFO_MIME_TYPE) : null;
+
+      for ($i = 0; $i < count($names); $i++) {
+        if ($errs[$i] !== UPLOAD_ERR_OK) continue;
+        $tmp = $tmps[$i];
+        if (!$tmp || !is_uploaded_file($tmp)) continue;
+
+        // MIME real
+        $mime = $finfo ? strtolower((string)finfo_file($finfo, $tmp)) : '';
+        if (!$mime) {
+          $gi = @getimagesize($tmp);
+          if ($gi && !empty($gi['mime'])) $mime = strtolower($gi['mime']);
+        }
+
+        $base = $tmpDir . '/isv_' . uniqid();
+        $ok   = false;
+        $dest = '';
+
+        if (in_array($mime, ['image/jpeg', 'image/jpg'])) {
+          $dest = $base . '.jpg';
+          $ok = @move_uploaded_file($tmp, $dest);
+        } elseif ($mime === 'image/png') {
+          $dest = $base . '.png';
+          $ok = @move_uploaded_file($tmp, $dest);
+        } elseif ($mime === 'image/gif') {
+          $dest = $base . '.gif';
+          $ok = @move_uploaded_file($tmp, $dest);
+        } elseif ($mime === 'image/webp') {
+          if (function_exists('imagecreatefromwebp')) {
+            $im = @imagecreatefromwebp($tmp);
+            if ($im) {
+              $dest = $base . '.jpg';
+              $ok = @imagejpeg($im, $dest, 90);
+              @imagedestroy($im);
+            }
+          }
+        } else {
+          error_log('[ISV] Formato no soportado: ' . $mime);
+        }
+
+        if ($ok && is_file($dest)) {
+          @chmod($dest, 0644);
+          $uploadedImgs[] = $dest;
+        }
       }
-    }
-    if ($finfo) finfo_close($finfo);
-  } else {
-    error_log('[ISV] No llegaron archivos en isv_resultados_img[]');
-  }
-
-  // 2) Coordenadas (mm)
-  $C = [
-    'ot'    => [66.0, 67.5],
-    'fecha' => [160.0, 67.5],
-
-    'svc_diseno_pcb'       => [61.3,  80.7],
-    'svc_fabricacion_pcb'  => [61.1,  86.5],
-    'svc_diseno_3d'        => [61.1,  91.7],
-    'svc_impresion_3d'     => [61.0,  97.5],
-    'svc_montaje'          => [61.1, 102.9],
-    'svc_transferencia'    => [61.1, 108.3],
-    'svc_integracion'      => [61.0, 115.0],
-
-    'result' => [35.0, 47.0, 185.0, 80.0],
-    'obs'    => [19.0, 215.0, 172.0, 40.0],
-
-    'elaboro_val' => [35.0, 202.0],
-    'aprobo_val'  => [35.0, 216.0],
-  ];
-
-  // 3) TCPDF
-  $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-  $pdf->setPrintHeader(false);
-  $pdf->setPrintFooter(false);
-  $pdf->SetMargins(0, 0, 0);
-  $pdf->SetAutoPageBreak(false, 0);
-  $pdf->SetTitle('Informe de Servicio');
-  $pdf->SetFont('dejavusans', '', 10);
-  $pdf->AddPage();
-
-  $bg = $projectRoot . '/sennova/img/Plantillas/IR1.png';
-  if (is_file($bg)) {
-    $pdf->Image($bg, 0, 0, 210, 297, '', '', '', false, 300);
-  }
-
-  // Helpers
-  $put = function (float $x, float $y, string $txt, int $size = 10, string $style = '', string $align = 'L') use ($pdf) {
-    if ($txt === '') return;
-    $pdf->SetFont('dejavusans', $style, $size);
-    $pdf->SetXY($x, $y);
-    $pdf->Cell(0, 5, $txt, 0, 0, $align);
-  };
-  $mark = function (float $x, float $y, bool $on) use ($pdf) {
-    if (!$on) return;
-    $pdf->SetFont('dejavusans', '', 10);
-    $pdf->SetXY($x, $y - 1);
-    $pdf->Cell(4.2, 4.2, '☒', 0, 0, 'C');
-  };
-  $multi = function (float $x, float $y, float $w, float $h, string $txt, int $size = 10) use ($pdf) {
-    if ($txt === '') return;
-    $pdf->SetFont('dejavusans', '', $size);
-    $pdf->SetXY($x, $y);
-    $pdf->MultiCell($w, 5.0, $txt, 0, 'L', false, 1, '', '', true, 0, false, true, $h, 'T', true);
-  };
-
-  // 4) Pintado
-  $put($C['ot'][0],    $C['ot'][1],    $ot);     // <- correlativo visible
-  $put($C['fecha'][0], $C['fecha'][1], $fecha);
-
-  $mark($C['svc_diseno_pcb'][0],      $C['svc_diseno_pcb'][1],      isset($serv['diseno_pcb']));
-  $mark($C['svc_fabricacion_pcb'][0], $C['svc_fabricacion_pcb'][1], isset($serv['fabricacion_pcb']));
-  $mark($C['svc_diseno_3d'][0],       $C['svc_diseno_3d'][1],       isset($serv['diseno_3d']));
-  $mark($C['svc_impresion_3d'][0],    $C['svc_impresion_3d'][1],    isset($serv['impresion_3d']));
-  $mark($C['svc_montaje'][0],         $C['svc_montaje'][1],         isset($serv['montaje']));
-  $mark($C['svc_transferencia'][0],   $C['svc_transferencia'][1],   isset($serv['transferencia']));
-  $mark($C['svc_integracion'][0],     $C['svc_integracion'][1],     isset($serv['integracion']));
-
-  $multi($C['result'][0], $C['result'][1], $C['result'][2], $C['result'][3], $result);
-
-  // Mini–galería (igual a tu versión)
-  $thumbGapX   = 8.0;
-  $thumbGapY   = 2.5;
-  $thumbH      = 35.0;
-  $forceCols   = null;
-  $aspectClamp = 1.15;
-
-  $imgCount = count($uploadedImgs);
-  $colsAuto = ($imgCount <= 2) ? 2 : (($imgCount <= 6) ? 3 : 4);
-  $cols     = $forceCols ?: $colsAuto;
-
-  $gridX   = $C['result'][0];
-  $gridW   = $C['result'][2];
-  $cellW   = ($gridW - ($thumbGapX * ($cols - 1))) / $cols;
-  $cellH   = $thumbH;
-
-  if (!is_null($aspectClamp) && $aspectClamp > 0) {
-    $cellW = min($cellW, $cellH * $aspectClamp);
-  }
-
-  $cursorY    = $C['result'][1] + $C['result'][3] + 4.0;
-  $gridBottom = $cursorY;
-  $colIndex   = 0;
-
-  foreach ($uploadedImgs as $path) {
-    if (!is_file($path)) continue;
-
-    if ($cursorY + $cellH > 285) {
-      $pdf->AddPage();
-      if (is_file($bg)) $pdf->Image($bg, 0, 0, 210, 297, '', '', '', false, 300);
-      $cursorY  = 20.0;
-      $gridBottom = $cursorY;
-      $colIndex = 0;
-    }
-
-    $gi = @getimagesize($path);
-    if (!$gi) continue;
-    $iw = (float)$gi[0];
-    $ih = (float)$gi[1];
-    if ($iw <= 0 || $ih <= 0) continue;
-
-    $ratio = $iw / $ih;
-    $drawW = $cellW;
-    $drawH = $drawW / $ratio;
-    if ($drawH > $cellH) {
-      $drawH = $cellH;
-      $drawW = $drawH * $ratio;
-    }
-
-    $xCell = $gridX + ($colIndex * ($cellW + $thumbGapX));
-    $yCell = $cursorY;
-
-    $xImg = $xCell + max(0, ($cellW - $drawW) / 2);
-    $yImg = $yCell + max(0, ($cellH - $drawH) / 2);
-
-    $pdf->Image($path, $xImg, $yImg, $drawW, $drawH, '', '', '', false, 300, '', false, false, 0, false, false, false);
-
-    $colIndex++;
-    if ($colIndex >= $cols) {
-      $colIndex = 0;
-      $cursorY += $cellH + $thumbGapY;
-      $gridBottom = max($gridBottom, $cursorY);
+      if ($finfo) finfo_close($finfo);
     } else {
-      $gridBottom = max($gridBottom, $yCell + $cellH);
+      error_log('[ISV] No llegaron archivos en isv_resultados_img[]');
     }
-  }
 
-  // Observaciones debajo de la grilla
-  $obsTop = max($C['obs'][1], $gridBottom + 6.0);
-  if ($obsTop + $C['obs'][3] > 285) {
+    // 2) Coordenadas (mm)
+    $C = [
+      'ot'    => [66.0, 67.5],
+      'fecha' => [160.0, 67.5],
+
+      'svc_diseno_pcb'       => [61.3,  80.7],
+      'svc_fabricacion_pcb'  => [61.1,  86.5],
+      'svc_diseno_3d'        => [61.1,  91.7],
+      'svc_impresion_3d'     => [61.0,  97.5],
+      'svc_montaje'          => [61.1, 102.9],
+      'svc_transferencia'    => [61.1, 108.3],
+      'svc_integracion'      => [61.0, 115.0],
+
+      'result' => [35.0, 47.0, 185.0, 80.0],
+      'obs'    => [19.0, 215.0, 172.0, 40.0],
+
+      'elaboro_val' => [35.0, 202.0],
+      'aprobo_val'  => [35.0, 216.0],
+    ];
+
+    // 3) TCPDF
+    $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+    $pdf->setPrintHeader(false);
+    $pdf->setPrintFooter(false);
+    $pdf->SetMargins(0, 0, 0);
+    $pdf->SetAutoPageBreak(false, 0);
+    $pdf->SetTitle('Informe de Servicio');
+    $pdf->SetFont('dejavusans', '', 10);
     $pdf->AddPage();
-    if (is_file($bg)) $pdf->Image($bg, 0, 0, 210, 297, '', '', '', false, 300);
-    $obsTop = 20.0;
-  }
-  $multi($C['obs'][0], $obsTop, $C['obs'][2], $C['obs'][3], $obs);
 
-  // Firmas
-  $firmasY1 = 202.0;
-  $firmasY2 = 216.0;
-  if ($obsTop + $C['obs'][3] + 20.0 > 200.0) {
-    $firmasY1 = $obsTop + $C['obs'][3] + 8.0;
-    $firmasY2 = $firmasY1 + 14.0;
-    if ($firmasY2 > 285) {
+    $bg = $projectRoot . '/sennova/img/Plantillas/IR1.png';
+    if (is_file($bg)) {
+      $pdf->Image($bg, 0, 0, 210, 297, '', '', '', false, 300);
+    }
+
+    // Helpers
+    $put = function (float $x, float $y, string $txt, int $size = 10, string $style = '', string $align = 'L') use ($pdf) {
+      if ($txt === '') return;
+      $pdf->SetFont('dejavusans', $style, $size);
+      $pdf->SetXY($x, $y);
+      $pdf->Cell(0, 5, $txt, 0, 0, $align);
+    };
+    $mark = function (float $x, float $y, bool $on) use ($pdf) {
+      if (!$on) return;
+      $pdf->SetFont('dejavusans', '', 10);
+      $pdf->SetXY($x, $y - 1);
+      $pdf->Cell(4.2, 4.2, '☒', 0, 0, 'C');
+    };
+    $multi = function (float $x, float $y, float $w, float $h, string $txt, int $size = 10) use ($pdf) {
+      if ($txt === '') return;
+      $pdf->SetFont('dejavusans', '', $size);
+      $pdf->SetXY($x, $y);
+      $pdf->MultiCell($w, 5.0, $txt, 0, 'L', false, 1, '', '', true, 0, false, true, $h, 'T', true);
+    };
+
+    // 4) Pintado
+    $put($C['ot'][0],    $C['ot'][1],    $ot);     // <- correlativo visible
+    $put($C['fecha'][0], $C['fecha'][1], $fecha);
+
+    $mark($C['svc_diseno_pcb'][0],      $C['svc_diseno_pcb'][1],      isset($serv['diseno_pcb']));
+    $mark($C['svc_fabricacion_pcb'][0], $C['svc_fabricacion_pcb'][1], isset($serv['fabricacion_pcb']));
+    $mark($C['svc_diseno_3d'][0],       $C['svc_diseno_3d'][1],       isset($serv['diseno_3d']));
+    $mark($C['svc_impresion_3d'][0],    $C['svc_impresion_3d'][1],    isset($serv['impresion_3d']));
+    $mark($C['svc_montaje'][0],         $C['svc_montaje'][1],         isset($serv['montaje']));
+    $mark($C['svc_transferencia'][0],   $C['svc_transferencia'][1],   isset($serv['transferencia']));
+    $mark($C['svc_integracion'][0],     $C['svc_integracion'][1],     isset($serv['integracion']));
+
+    $multi($C['result'][0], $C['result'][1], $C['result'][2], $C['result'][3], $result);
+
+    // Mini–galería (igual a tu versión)
+    $thumbGapX   = 8.0;
+    $thumbGapY   = 2.5;
+    $thumbH      = 35.0;
+    $forceCols   = null;
+    $aspectClamp = 1.15;
+
+    $imgCount = count($uploadedImgs);
+    $colsAuto = ($imgCount <= 2) ? 2 : (($imgCount <= 6) ? 3 : 4);
+    $cols     = $forceCols ?: $colsAuto;
+
+    $gridX   = $C['result'][0];
+    $gridW   = $C['result'][2];
+    $cellW   = ($gridW - ($thumbGapX * ($cols - 1))) / $cols;
+    $cellH   = $thumbH;
+
+    if (!is_null($aspectClamp) && $aspectClamp > 0) {
+      $cellW = min($cellW, $cellH * $aspectClamp);
+    }
+
+    $cursorY    = $C['result'][1] + $C['result'][3] + 4.0;
+    $gridBottom = $cursorY;
+    $colIndex   = 0;
+
+    foreach ($uploadedImgs as $path) {
+      if (!is_file($path)) continue;
+
+      if ($cursorY + $cellH > 285) {
+        $pdf->AddPage();
+        if (is_file($bg)) $pdf->Image($bg, 0, 0, 210, 297, '', '', '', false, 300);
+        $cursorY  = 20.0;
+        $gridBottom = $cursorY;
+        $colIndex = 0;
+      }
+
+      $gi = @getimagesize($path);
+      if (!$gi) continue;
+      $iw = (float)$gi[0];
+      $ih = (float)$gi[1];
+      if ($iw <= 0 || $ih <= 0) continue;
+
+      $ratio = $iw / $ih;
+      $drawW = $cellW;
+      $drawH = $drawW / $ratio;
+      if ($drawH > $cellH) {
+        $drawH = $cellH;
+        $drawW = $drawH * $ratio;
+      }
+
+      $xCell = $gridX + ($colIndex * ($cellW + $thumbGapX));
+      $yCell = $cursorY;
+
+      $xImg = $xCell + max(0, ($cellW - $drawW) / 2);
+      $yImg = $yCell + max(0, ($cellH - $drawH) / 2);
+
+      $pdf->Image($path, $xImg, $yImg, $drawW, $drawH, '', '', '', false, 300, '', false, false, 0, false, false, false);
+
+      $colIndex++;
+      if ($colIndex >= $cols) {
+        $colIndex = 0;
+        $cursorY += $cellH + $thumbGapY;
+        $gridBottom = max($gridBottom, $cursorY);
+      } else {
+        $gridBottom = max($gridBottom, $yCell + $cellH);
+      }
+    }
+
+    // Observaciones debajo de la grilla
+    $obsTop = max($C['obs'][1], $gridBottom + 6.0);
+    if ($obsTop + $C['obs'][3] > 285) {
       $pdf->AddPage();
       if (is_file($bg)) $pdf->Image($bg, 0, 0, 210, 297, '', '', '', false, 300);
-      $firmasY1 = 200.0;
-      $firmasY2 = 214.0;
+      $obsTop = 20.0;
     }
-  }
-  $put($C['elaboro_val'][0], $firmasY1, $elaboro);
-  $put($C['aprobo_val'][0],  $firmasY2, $aprobo);
+    $multi($C['obs'][0], $obsTop, $C['obs'][2], $C['obs'][3], $obs);
 
-  // 5) Salida
-  $mode    = $_POST['isv_mode'] ?? 'download';
-  $outMode = ($mode === 'print') ? 'I' : 'D';
-  $rawName = (string)($_POST['isv_cliente'] ?? ($_POST['razon_social'] ?? ''));
-  $norm = $rawName;
-  if (function_exists('iconv')) {
-    $norm = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $norm);
-  }
-  $norm = preg_replace('/[^A-Za-z0-9_\-]+/', '_', $norm);
-  $norm = trim($norm, '_');
-  if ($norm === '') {
-    $norm = 'sin_nombre';
-  }
+    // Firmas
+    $firmasY1 = 202.0;
+    $firmasY2 = 216.0;
+    if ($obsTop + $C['obs'][3] + 20.0 > 200.0) {
+      $firmasY1 = $obsTop + $C['obs'][3] + 8.0;
+      $firmasY2 = $firmasY1 + 14.0;
+      if ($firmasY2 > 285) {
+        $pdf->AddPage();
+        if (is_file($bg)) $pdf->Image($bg, 0, 0, 210, 297, '', '', '', false, 300);
+        $firmasY1 = 200.0;
+        $firmasY2 = 214.0;
+      }
+    }
+    $put($C['elaboro_val'][0], $firmasY1, $elaboro);
+    $put($C['aprobo_val'][0],  $firmasY2, $aprobo);
 
-  $fileName = "InfoServicio_{$norm}.pdf";
-  $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
-  self::persistGeneratedPdf($pdf, $fileName, 'form8_informe_servicio', [], $cc_para_nombre);
-  $pdf->Output($fileName, $outMode);
+    // 5) Salida
+    $mode    = $_POST['isv_mode'] ?? 'download';
+    $outMode = ($mode === 'print') ? 'I' : 'D';
+    $rawName = (string)($_POST['isv_cliente'] ?? ($_POST['razon_social'] ?? ''));
+    $norm = $rawName;
+    if (function_exists('iconv')) {
+      $norm = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $norm);
+    }
+    $norm = preg_replace('/[^A-Za-z0-9_\-]+/', '_', $norm);
+    $norm = trim($norm, '_');
+    if ($norm === '') {
+      $norm = 'sin_nombre';
+    }
 
-  foreach ($uploadedImgs as $p) { @unlink($p); }
-  exit;
-}
+    $fileName = "InfoServicio_{$norm}.pdf";
+    $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
+    self::persistGeneratedPdf($pdf, $fileName, 'form8_informe_servicio', [], $cc_para_nombre);
+    $pdf->Output($fileName, $outMode);
+
+    foreach ($uploadedImgs as $p) {
+      @unlink($p);
+    }
+    exit;
+  }
 
   /* ===============  FORMULARIO 9 (VERIFICACION DISEÑO 2p – TCPDF)  ================= */
   private static function storeEncuestaSatisfaccion(): void
@@ -4466,3 +4468,78 @@ class EvaluacionController
     exit;
   }
 }
+
+class ResumenController
+{
+  public static function build(PDO $pdo, ?string $areaFiltro = null): array
+  {
+    $ini  = (new DateTime('first day of this month 00:00:00'))->format('Y-m-d H:i:s');
+    $fin  = (new DateTime('last day of this month 23:59:59'))->format('Y-m-d H:i:s');
+    $pini = (new DateTime('first day of last month 00:00:00'))->format('Y-m-d H:i:s');
+    $pfin = (new DateTime('last day of last month 23:59:59'))->format('Y-m-d H:i:s');
+
+    $totalMes     = self::count($pdo, $ini, $fin, $areaFiltro, null);
+    $cafeMes      = self::count($pdo, $ini, $fin, ($areaFiltro ?: 'cafe'), null, $areaFiltro ? true : false, 'cafe');
+    $elecMes      = self::count($pdo, $ini, $fin, ($areaFiltro ?: 'electronica'), null, $areaFiltro ? true : false, 'electronica');
+    $atendidasNum = self::count($pdo, $ini, $fin, $areaFiltro, 'aceptada');
+    $pendNum      = self::count($pdo, $ini, $fin, $areaFiltro, 'pendiente');
+
+    $den = max(1, $totalMes);
+    $atPct  = (int)round($atendidasNum * 100 / $den);
+    $pePct  = (int)round($pendNum * 100 / $den);
+
+    $totalPrev = self::count($pdo, $pini, $pfin, $areaFiltro, null);
+    $growth    = $totalPrev > 0 ? (int)round((($totalMes - $totalPrev) / $totalPrev) * 100) : ($totalMes > 0 ? 100 : 0);
+
+    $top = self::topUser($pdo, $ini, $fin, $areaFiltro) ?: ['nombre' => 'N/A', 'total' => 0];
+
+    return [
+      'resumen' => [
+        'total' => $totalMes,
+        'cafe' => $cafeMes,
+        'electronica' => $elecMes,
+        'atendidas_pct' => $atPct,
+        'pendientes_pct' => $pePct,
+        'atendidas_num' => $atendidasNum,
+        'pendientes_num' => $pendNum,
+        'growth_pct' => $growth,
+      ],
+      'usuarioTop' => $top
+    ];
+  }
+
+  private static function count(PDO $pdo, string $ini, string $fin, ?string $area, ?string $estado, ?bool $ignore = false, ?string $forced = null): int
+  {
+    $sql = "SELECT COUNT(*) FROM solicitudes WHERE created_at BETWEEN :ini AND :fin";
+    $p = [":ini" => $ini, ":fin" => $fin];
+    $areaUse = $forced ?? $area;
+    if ($areaUse) {
+      $sql .= " AND area = :area";
+      $p[':area'] = $areaUse;
+    }
+    if ($estado) {
+      $sql .= " AND estado = :estado";
+      $p[':estado'] = $estado;
+    }
+    $st = $pdo->prepare($sql);
+    $st->execute($p);
+    return (int)$st->fetchColumn();
+  }
+
+  private static function topUser(PDO $pdo, string $ini, string $fin, ?string $area): ?array
+  {
+    $sql = "SELECT u.nombre, COUNT(*) total
+            FROM solicitudes s
+            JOIN usuarios u ON u.id = s.usuario_id
+            WHERE s.created_at BETWEEN :ini AND :fin " .
+      ($area ? "AND s.area = :area " : "") .
+      "GROUP BY u.id,u.nombre ORDER BY total DESC LIMIT 1";
+    $st = $pdo->prepare($sql);
+    $st->bindValue(':ini', $ini);
+    $st->bindValue(':fin', $fin);
+    if ($area) $st->bindValue(':area', $area);
+    $st->execute();
+    return $st->fetch(PDO::FETCH_ASSOC) ?: null;
+  }
+}
+

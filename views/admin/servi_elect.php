@@ -30,10 +30,12 @@ $servicios = $modelo->obtenerServicios();
                     <?php if (!empty($servicios)): ?>
                         <?php foreach ($servicios as $servicio): ?>
                             <tr class="hover-shadow text-center" data-aos="fade-up" data-aos-delay="200" id="fila-servicio-<?= $servicio['id_ele'] ?>">
-                                <td>
-                                    <div class="avatar avatar-md rounded-circle border shadow-sm overflow-hidden mx-auto" id="icono-container">
-                                        <img src="/sennova/img/<?= htmlspecialchars($servicio['icono_ele']) ?>" alt="Icono"
-                                            class="img-fluid rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
+                                <td class="text-center">
+                                    <div class="mx-auto rounded-circle overflow-hidden"
+                                        style="width:45px;height:45px;display:inline-block;">
+                                        <img src="/sennova/img/<?= htmlspecialchars($servicio['icono_ele']) ?>"
+                                            alt="Icono"
+                                            style="width:100%;height:100%;object-fit:cover;display:block;">
                                     </div>
                                 </td>
                                 <td class="fw-semibold" id="titulo-servicio"><?= htmlspecialchars($servicio['titulo']) ?></td>
@@ -127,7 +129,7 @@ $servicios = $modelo->obtenerServicios();
                     </div>
                     <div class="col-12">
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn px-4 py-2 shadow-sm" id="btn-registrar">
+                            <button type="submit" class="btn px-4 py-2 shadow-sm text-light" id="btn-registrar">
                                 <i class="fas fa-save me-2"></i>Registrar Servicio
                             </button>
                         </div>
@@ -139,7 +141,7 @@ $servicios = $modelo->obtenerServicios();
 
     <!-- Modal de edición -->
     <div class="modal fade" id="modalEditarServicioElec" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm-custom">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 overflow-hidden e-modal-radius" id="modal-editar-container">
                 <form id="form-editar-electronica" action="/sennova/routes/serviEle.php" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="id_ele" id="edit-id-ele">

@@ -1,26 +1,25 @@
 <?php
-$estado = $_GET['estado'] ?? 'todas';
+$rol        = $_SESSION['rol']  ?? null;
+$areaSesion = $_SESSION['area'] ?? null;
+$esVisualizadorElectronica = ($rol === 2 && $areaSesion === 'visualizador');
+$areaEfectiva = $esVisualizadorElectronica ? 'electronica' : $areaSesion;
+$esAdmin = empty($areaEfectiva);
+$estado   = $_GET['estado']   ?? 'todas';
 $busqueda = $_GET['busqueda'] ?? '';
-$esAdmin = empty($_SESSION['area']); // El admin no tiene área asignada
-$area = $esAdmin ? ($_GET['area'] ?? '') : $_SESSION['area'];
-
-// Este será el parámetro que usarás en los botones
+$area = $esAdmin ? ($_GET['area'] ?? '') : $areaEfectiva;
 $areaParam = $esAdmin && $area !== '' ? '&area=' . urlencode($area) : '';
-
 $controller = new SolicitudController();
 
 if ($esAdmin) {
     if (!empty($area)) {
-        // Admin viendo un área específica
         $solicitudes = $controller->obtenerSolicitudesPorArea($estado, $area, $busqueda);
     } else {
-        // Admin viendo todas las áreas
         $solicitudes = $controller->obtenerSolicitudesTodas($estado, $busqueda);
     }
 } else {
-    // Usuario de área específica
     $solicitudes = $controller->obtenerSolicitudesPorArea($estado, $area, $busqueda);
-} ?>
+}
+?>
 
 <div class="container mt-5">
     <div class="text-center my-4" data-aos="fade-up">
@@ -34,10 +33,8 @@ if ($esAdmin) {
             <?php endif; ?>
         </h2>
     </div>
-
-
     <?php if (isset($_GET['res']) && $_GET['res'] === 'ok'): ?>
-        <div class="success-modal active" id="successModal">
+        <div id="successModal" class="active">
             <div class="modal-content">
                 <button class="modal-close" id="closeModal">&times;</button>
                 <div class="modal-icon">
@@ -50,20 +47,18 @@ if ($esAdmin) {
         </div>
     <?php endif; ?>
 
-    <!-- Buscador -->
+
     <form method="GET" action="inAdmin.php?vista=atencion" id="form-busqueda-live" class="mb-4 position-relative">
         <input type="hidden" name="vista" value="atencion">
         <input type="hidden" name="estado" value="<?= htmlspecialchars($estado) ?>">
 
         <div class="input-group shadow-sm position-relative">
-            <!-- Campo de búsqueda con padding derecho -->
             <input type="text" name="busqueda" id="inputBusqueda"
                 class="form-control form-control-lg pe-5"
                 placeholder="Buscar por nombre, empresa o email"
                 value="<?= isset($_GET['busqueda']) ? htmlspecialchars($_GET['busqueda']) : '' ?>"
                 autocomplete="off">
 
-            <!-- Botón X con posición absoluta fuera del input -->
             <button type="button" id="limpiarBusqueda"
                 class="btn btn-sm btn-light border position-absolute"
                 style="top: 50%; right: 80px; transform: translateY(-50%); display: none;"
@@ -71,14 +66,12 @@ if ($esAdmin) {
                 <i class="fas fa-times text-muted"></i>
             </button>
 
-            <!-- Botón Buscar -->
             <button type="submit" class="btn btn-primary btn-lg">
                 <i class="fas fa-search me-1"></i> Buscar
             </button>
         </div>
     </form>
 
-    <!-- Botones tipo tarjetas -->
     <?php if ($esAdmin): ?>
         <div class="row text-center g-3 mb-4">
             <!-- Ambas Áreas -->
@@ -106,11 +99,9 @@ if ($esAdmin) {
             <style>
                 .bg-purple {
                     background-color: #6f42c1 !important;
-                    /* Bootstrap's "purple" */
                     color: white;
                 }
             </style>
-            <!-- Área Electrónica -->
             <div class="col-4">
                 <a href="inAdmin.php?vista=atencion&area=electronica" class="text-decoration-none">
                     <div class="card shadow-sm border-0 <?= $area == 'electronica' ? 'bg-info text-white' : '' ?>">
@@ -121,11 +112,8 @@ if ($esAdmin) {
                     </div>
                 </a>
             </div>
-
-
         </div>
     <?php endif; ?>
-
 
     <div class="row text-center g-3 mb-4">
         <div class="col-6 col-md-3">
@@ -143,8 +131,6 @@ if ($esAdmin) {
         <div class="col-6 col-md-3">
             <a href="inAdmin.php?vista=atencion&estado=pendiente<?= $areaParam ?>"
                 class="text-decoration-none">
-
-
                 <div class="card border-warning shadow-sm <?= $estado == 'pendiente' ? 'bg-warning text-dark' : '' ?>">
                     <div class="card-body py-3">
                         <i class="fas fa-hourglass-half fa-lg mb-1"></i>
@@ -157,8 +143,6 @@ if ($esAdmin) {
         <div class="col-6 col-md-3">
             <a href="inAdmin.php?vista=atencion&estado=aceptada<?= $areaParam ?>"
                 class="text-decoration-none">
-
-
                 <div class="card border-success shadow-sm <?= $estado == 'aceptada' ? 'bg-success text-white' : '' ?>">
                     <div class="card-body py-3">
                         <i class="fas fa-check-circle fa-lg mb-1"></i>
@@ -171,7 +155,6 @@ if ($esAdmin) {
         <div class="col-6 col-md-3">
             <a href="inAdmin.php?vista=atencion&estado=rechazada<?= $areaParam ?>"
                 class="text-decoration-none">
-
                 <div class="card border-danger shadow-sm <?= $estado == 'rechazada' ? 'bg-danger text-white' : '' ?>">
                     <div class="card-body py-3">
                         <i class="fas fa-times-circle fa-lg mb-1"></i>
@@ -195,9 +178,7 @@ if ($esAdmin) {
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm border-0 h-100 position-relative">
                         <div class="card-body">
-                            <!-- Botones arriba a la derecha -->
                             <div class="position-absolute top-0 end-0 m-2 d-flex gap-1">
-                                <!-- Botón destacar -->
                                 <form method="post" action="routes/destacarServi.php" class="d-inline">
                                     <input type="hidden" name="id_re" value="<?= $soli['id_re'] ?>">
                                     <button type="submit"
@@ -207,7 +188,6 @@ if ($esAdmin) {
                                     </button>
                                 </form>
 
-                                <!-- Botón eliminar -->
                                 <form method="post" action="routes/DeleteServi.php"
                                     onsubmit="return confirm('¿Estás seguro de eliminar esta solicitud?')" class="d-inline">
                                     <input type="hidden" name="id_re" value="<?= $soli['id_re'] ?>">
@@ -217,7 +197,6 @@ if ($esAdmin) {
                                 </form>
                             </div>
 
-                            <!-- Contenido de la solicitud -->
                             <h5 class="card-title fw-bold text-primary-emphasis mt-4"><?= htmlspecialchars($soli['nombre']) ?></h5>
                             <p class="mb-1"><strong>Cédula:</strong> <?= htmlspecialchars($soli['cc_cliente']) ?></p>
                             <p class="mb-1"><strong>Servicio:</strong> <?= htmlspecialchars($soli['servicio']) ?></p>
@@ -226,7 +205,6 @@ if ($esAdmin) {
                             <p class="mb-1"><strong>Email:</strong> <?= htmlspecialchars($soli['email']) ?></p>
                             <p><strong>Descripción:</strong><br><?= nl2br(htmlspecialchars($soli['descripcion'])) ?></p>
 
-                            <!-- Mostrar área solo si es admin -->
                             <?php if (empty($_SESSION['area'])): ?>
                                 <p class="mb-1">
                                     <strong>Área:</strong>
@@ -235,8 +213,6 @@ if ($esAdmin) {
                                         <?= ucfirst($soli['area']) ?>
                                     </span>
                                 </p>
-
-
                             <?php endif; ?>
 
                             <div class="d-flex justify-content-between align-items-center mt-3">
@@ -260,15 +236,13 @@ if ($esAdmin) {
                     </div>
                 </div>
 
-                <!-- Modal -->
                 <div class="modal fade" id="respuestaModal<?= $soli['id_re'] ?>" tabindex="-1"
                     aria-labelledby="modalLabel<?= $soli['id_re'] ?>" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered modal-narrow"><!-- modal-lg para PC -->
+                    <div class="modal-dialog modal-dialog-centered modal-narrow">
                         <div class="modal-content">
                             <form action="routes/Atendido.php" method="POST"
                                 class="respuesta-form" id="formResp<?= $soli['id_re'] ?>">
                                 <input type="hidden" name="id_soli" value="<?= $soli['id_re'] ?>">
-                                <!-- bandera si NO comenta: '1' = sin comentario, '0' = con comentario -->
                                 <input type="hidden" name="sin_opinion" id="sinOpinion<?= $soli['id_re'] ?>" value="0">
 
                                 <div class="modal-header">
@@ -277,7 +251,6 @@ if ($esAdmin) {
                                 </div>
 
                                 <div class="modal-body">
-                                    <!-- Toggle: Comentar (ACTIVADO por defecto) -->
                                     <div class="form-check form-switch mb-3">
                                         <input class="form-check-input" type="checkbox" role="switch"
                                             id="toggleComent<?= $soli['id_re'] ?>" checked>
@@ -286,13 +259,11 @@ if ($esAdmin) {
                                         </label>
                                     </div>
 
-                                    <!-- Aviso cuando no comenta -->
                                     <div id="avisoSinComent<?= $soli['id_re'] ?>"
                                         class="alert alert-info py-2 px-3 mb-3" style="display:none;">
                                         No se enviará ninguna notificación (medio: <strong>Ninguno</strong>).
                                     </div>
 
-                                    <!-- Comentario -->
                                     <div class="mb-3 comentario-container" id="comentarioContainer<?= $soli['id_re'] ?>">
                                         <div class="form-floating">
                                             <textarea class="form-control" placeholder="Escriba un mensaje para el usuario..."
@@ -301,7 +272,6 @@ if ($esAdmin) {
                                         </div>
                                     </div>
 
-                                    <!-- Acción -->
                                     <div class="mb-3">
                                         <label class="form-label">Acción</label>
                                         <div class="btn-group w-100" role="group">
@@ -319,7 +289,6 @@ if ($esAdmin) {
                                         </div>
                                     </div>
 
-                                    <!-- Medio de notificación -->
                                     <div class="mb-3">
                                         <label class="form-label">Notificar al Cliente Mediante</label>
                                         <div class="btn-group w-100" role="group">
@@ -411,7 +380,7 @@ if ($esAdmin) {
             }
 
             checkbox.addEventListener('change', toggleComentario);
-            toggleComentario(); // Ejecutar al cargar
+            toggleComentario(); 
         });
     });
 
@@ -448,10 +417,10 @@ if ($esAdmin) {
 
                 // ===== Estado inicial: switch ACTIVADO (comentar) =====
                 toggle.checked = true;
-                hiddenFlag.value = '0'; // 0 = con comentario
+                hiddenFlag.value = '0'; 
                 comentario.disabled = false;
-                comentarioWrap.style.display = ''; // visible
-                setMediosDisabled(modal, false); // medios habilitados
+                comentarioWrap.style.display = ''; 
+                setMediosDisabled(modal, false); 
                 aviso.style.display = 'none';
 
                 // si ningún medio está seleccionado aún, selecciona correo por defecto
@@ -462,19 +431,16 @@ if ($esAdmin) {
                 // ===== Cambio del switch =====
                 toggle.onchange = function() {
                     if (toggle.checked) {
-                        // Encendido → comentar y elegir medio
                         hiddenFlag.value = '0';
                         comentario.disabled = false;
                         comentarioWrap.style.display = '';
                         setMediosDisabled(modal, false);
-                        // si estaba en ninguno, deja al menos uno válido
                         if (medioNinguno.checked) {
                             medioNinguno.checked = false;
                             medioCorreo.checked = true;
                         }
                         aviso.style.display = 'none';
                     } else {
-                        // Apagado → no comentar, medio = ninguno
                         hiddenFlag.value = '1';
                         comentario.value = '';
                         comentario.disabled = true;
@@ -489,20 +455,17 @@ if ($esAdmin) {
                 // ===== Validación en submit =====
                 form.onsubmit = function(e) {
                     if (toggle.checked) {
-                        // si comenta, comentario obligatorio
                         if (comentario.value.trim() === '') {
                             e.preventDefault();
                             alert('Si activas la opción de comentar, debes escribir un comentario.');
                             return false;
                         }
-                        // y un medio distinto a ninguno
                         if (medioNinguno.checked) {
                             e.preventDefault();
                             alert('Selecciona Correo o WhatsApp para notificar, o apaga la opción de comentar.');
                             return false;
                         }
                     } else {
-                        // no comenta → limpia comentario y fuerza ninguno
                         comentario.value = '';
                         medioNinguno.checked = true;
                     }
@@ -512,7 +475,6 @@ if ($esAdmin) {
     })();
 
     // Modal de notificacion
-
     document.addEventListener('DOMContentLoaded', function() {
         const closeModal = document.getElementById('closeModal');
         const acceptButton = document.getElementById('acceptButton');
@@ -545,148 +507,289 @@ if ($esAdmin) {
             }
         }, 5000);
     });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById('successModal');
+        if (!modal) return;
+
+        const closeBtn = document.getElementById('closeModal');
+        const okBtn = document.getElementById('acceptButton');
+
+        function close() {
+            modal.classList.remove('active');
+        }
+        closeBtn?.addEventListener('click', close);
+        okBtn?.addEventListener('click', close);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
+    });
 </script>
 
 <style>
-    .btn-group .btn.disabled,
-    .btn-group .btn:disabled {
-        pointer-events: none;
-        opacity: .55;
+    #respuestaModal<?= $soli['id_re'] ?>.modal-content {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
     }
 
-    .modal .modal-dialog.modal-narrow {
-        width: auto !important;
-        max-width: 720px !important;
-        margin: 1.75rem auto !important;
+    #respuestaModal<?= $soli['id_re'] ?>.modal-header {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        color: #fff;
+        border-radius: 15px 15px 0 0;
+        padding: 15px 20px;
+        border-bottom: none;
     }
 
-    @media (min-width: 1400px) {
-        .modal .modal-dialog.modal-narrow {
-            max-width: 820px !important;
-        }
-    }
-
-    .modal .modal-dialog.modal-narrow.modal-dialog-scrollable .modal-content {
-        max-height: calc(100vh - 3.5rem);
-    }
-
-    .modal.modal-fullscreen,
-    .modal .modal-dialog.modal-fullscreen {
-        max-width: none !important;
-    }
-
-    /* Estilos para el modal de éxito */
-    .success-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 10000;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .success-modal.active {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .modal-content {
-        background: white;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 450px;
-        padding: 30px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        position: relative;
-        transform: translateY(50px);
-        transition: transform 0.4s ease;
-    }
-
-    .success-modal.active .modal-content {
-        transform: translateY(0);
-    }
-
-    .modal-icon {
-        width: 80px;
-        height: 80px;
-        background-color: #215c23ff;
-        border-radius: 50%;
-        margin: 0 auto 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: pulse 1.5s infinite;
-    }
-
-    .modal-icon i {
-        font-size: 40px;
-        color: white;
-    }
-
-    .modal-title {
-        font-size: 24px;
+    #respuestaModal<?= $soli['id_re'] ?>.modal-title {
         font-weight: 600;
-        margin-bottom: 15px;
-        color: #2c3e50;
+        font-size: 1.3rem;
     }
 
-    .modal-message {
-        font-size: 16px;
-        color: #7f8c8d;
-        margin-bottom: 25px;
+    #respuestaModal<?= $soli['id_re'] ?>.btn-close {
+        filter: invert(1);
+        opacity: .85;
     }
 
-    .modal-button {
-        background-color: #278828ff;
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: 500;
+    #respuestaModal<?= $soli['id_re'] ?>.btn-close:hover {
+        opacity: 1;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.modal-body {
+        padding: 25px;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check.form-switch {
+        margin-bottom: 20px;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        width: 44px;
+        height: 26px;
+        border-radius: 26px;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        position: relative;
         cursor: pointer;
-        transition: background-color 0.3s;
+        outline: none;
+        transition: background-color .2s, border-color .2s, box-shadow .2s;
     }
 
-    .modal-button:hover {
-        background-color: #337735ff;
-    }
-
-    .modal-close {
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input::before {
+        content: "";
         position: absolute;
-        top: 15px;
-        right: 15px;
-        background: none;
+        top: 2px;
+        left: 2px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+        transition: transform .2s;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input:focus {
+        box-shadow: 0 0 0 .2rem rgba(37, 117, 252, .25);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input:checked {
+        background-color: #2575fc;
+        border-color: #2575fc;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-check-input:checked::before {
+        transform: translateX(18px);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.alert-info {
+        background-color: rgba(37, 117, 252, .10);
+        border-color: rgba(37, 117, 252, .20);
+        color: #1a56db;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-floating textarea {
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+        transition: all .3s;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-floating textarea:focus {
+        border-color: #2575fc;
+        box-shadow: 0 0 0 .2rem rgba(37, 117, 252, .25);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 10px;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn {
+        border: 1px solid #dee2e6;
+        padding: 10px 15px;
+        transition: all .3s;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-check:checked+.btn-outline-success,
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-outline-success:hover {
+        background: #198754;
+        color: #fff;
+        border-color: #198754;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-check:checked+.btn-outline-danger,
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-outline-danger:hover {
+        background: #dc3545;
+        color: #fff;
+        border-color: #dc3545;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-check:checked+.btn-outline-primary,
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-outline-primary:hover {
+        background: #2575fc;
+        color: #fff;
+        border-color: #2575fc;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-check:checked+.btn-outline-secondary,
+    #respuestaModal<?= $soli['id_re'] ?>.btn-group .btn-outline-secondary:hover {
+        background: #6c757d;
+        color: #fff;
+        border-color: #6c757d;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.modal-footer {
+        border-top: 1px solid #e9ecef;
+        padding: 20px 25px;
+        background: #f8f9fa;
+        border-radius: 0 0 15px 15px;
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.modal-footer .btn-primary {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
         border: none;
-        font-size: 22px;
-        color: #95a5a6;
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 600;
+        transition: transform .2s, box-shadow .2s;
+        box-shadow: 0 4px 15px rgba(37, 117, 252, .3);
+    }
+
+    #respuestaModal<?= $soli['id_re'] ?>.modal-footer .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 117, 252, .4);
+    }
+
+    /* <!-- CSS exclusivo para este modal --> */
+
+    /* Overlay */
+    #successModal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(17, 24, 39, .6);
+        z-index: 1080;
+        padding: 1rem;
+    }
+
+    #successModal.active {
+        display: flex;
+    }
+
+    /* Caja */
+    #successModal .modal-content {
+        width: 100%;
+        max-width: 520px;
+        background: #fff;
+        border: 0;
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+        padding: 24px 24px 16px;
+        position: relative;
+        text-align: center;
+        animation: pop .2s ease-out;
+    }
+
+    @keyframes pop {
+        from {
+            transform: scale(.98);
+            opacity: .9
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1
+        }
+    }
+
+    /* Botón cerrar */
+    #successModal .modal-close {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        border: 0;
+        background: transparent;
+        font-size: 28px;
+        line-height: 1;
+        color: #9ca3af;
         cursor: pointer;
-        transition: color 0.3s;
     }
 
-    .modal-close:hover {
-        color: #2c3e50;
+    /* Icono */
+    #successModal .modal-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 12px;
+        border-radius: 50%;
+        background: #e6f4ea;
+        display: grid;
+        place-items: center;
     }
 
-    @keyframes pulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
-        }
+    #successModal .modal-icon i {
+        color: #22c55e;
+        font-size: 28px;
+    }
 
-        70% {
-            box-shadow: 0 0 0 15px rgba(76, 175, 80, 0);
-        }
+    #successModal .modal-title {
+        margin: 4px 0 6px;
+        font-weight: 800;
+        font-size: 24px;
+        color: #111827;
+    }
 
-        100% {
-            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-        }
+    #successModal .modal-message {
+        margin: 0 0 14px;
+        color: #4b5563;
+    }
+
+    /* Botón aceptar */
+    #successModal .modal-button {
+        display: inline-block;
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #16a34a, #15803d);
+        color: #fff;
+        font-weight: 600;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: transform .06s ease;
+    }
+
+    #successModal .modal-button:active {
+        transform: translateY(1px);
     }
 </style>

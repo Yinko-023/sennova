@@ -20,7 +20,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 echo 'Panel Admin';
             }
         } else {
-            echo 'Panel ';
+            echo 'Panel';
         }
         ?>
     </title>
@@ -169,6 +169,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
     <?php
     require_once __DIR__ . '/../controllers/PubliController.php';
+
+    $areaSesion = $_SESSION['area'] ?? null; 
 
     $solicitudController = new SolicitudController();
 
@@ -669,14 +671,14 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <span>Subir Publicaciones</span>
                             </a>
                         </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link <?= $vista === 'maps' ? 'active' : '' ?>" href="inAdmin.php?vista=maps">
-                                <i class="fa fa-file-signature"></i>
-                                <span>Registrar solicitud</span>
-                            </a>
-                        </li>
-
+                        <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) || ((isset($_SESSION['rol']) && $_SESSION['rol'] == 2) || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica'))): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?= $vista === 'maps' ? 'active' : '' ?>" href="inAdmin.php?vista=maps">
+                                    <i class="fa fa-file-signature"></i>
+                                    <span>Registrar solicitud</span>
+                                </a>
+                            </li>
+                        <?php endif; ?>
                         <li class="nav-item">
                             <a class="nav-link <?= $vista === 'servicio' ? 'active' : '' ?>" href="inAdmin.php?vista=servicio">
                                 <i class="fas fa-cog"></i>

@@ -1,14 +1,13 @@
 <?php
 $model = new GestionModel();
 $botones = $model->obtenerBotones();
-
 $rutaImagen = 'img/';
 $nombreImagen = file_exists($rutaImagen . 'imagen_actual.txt') ? trim(file_get_contents($rutaImagen . 'imagen_actual.txt')) : null;
 $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
 ?>
 
 <div class="process-container">
-   <!--Encabezado -->
+  <!--Encabezado -->
   <div class="process-header" data-aos="fade-down">
     <div class="process-icon">
       <img src="https://cdn-icons-png.flaticon.com/512/4383/4383290.png" alt="Mapa Icono">
@@ -16,8 +15,6 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
     <h1 class="process-title">Mapa De Gestion</h1>
     <p class="text-muted">Gestion de tus archivos</p>
   </div>
-
-
   <!-- Formulario SOLO PARA ADMIN/PUBLICADOR ELECTRÓNICA -->
   <?php if (
     isset($_SESSION['rol']) &&
@@ -39,7 +36,7 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
         </div>
         <style>
           input::placeholder {
-           color: rgba(255, 255, 255, 0.6) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
             opacity: 1;
           }
         </style>
@@ -89,9 +86,50 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
       </div>
     <?php endforeach; ?>
   </div>
-
 </div>
 
+<?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) || ((isset($_SESSION['rol']) && $_SESSION['rol'] == 2) || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica'))): ?>
+  <div class="text-center mb-4">
+    <button class="btn btn-primary me-2">
+      <i class="fas fa-upload me-1"></i> Subir Imagen
+    </button>
+    <button class="btn btn-outline-danger">
+      <i class="fas fa-trash me-1"></i> Eliminar Imagen
+    </button>
+  </div>
+<?php endif; ?>
+
+<?php if ($imagenURL): ?>
+  <div class="text-center">
+    <img id="main-process-image" src="<?= $imagenURL . '?v=' . time() ?>"
+      class="img-fluid rounded shadow-sm my-3"
+      style="cursor: zoom-in; max-width: 500px; width: 100%; height: auto;"
+      alt="Imagen del proceso"
+      data-bs-toggle="modal" data-bs-target="#custom-imagen-modal">
+  </div>
+
+  <div class="modal fade" id="custom-imagen-modal" tabindex="-1"
+    aria-labelledby="custom-imagen-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-white" id="custom-imagen-modal-label">Vista Ampliada</h5>
+          <button type="button" id="custom-close-button" class="btn-close btn-close-white"
+            data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body text-center p-4">
+          <img src="<?= $imagenURL . '?v=' . time() ?>" class="img-fluid rounded"
+            style="max-height: 70vh; width: auto;" alt="Imagen ampliada del proceso">
+        </div>
+      </div>
+    </div>
+  </div>
+<?php else: ?>
+  <div id="no-image-container" class="text-center text-muted mt-4">
+    <i id="no-image-icon" class="fas fa-image fa-3x mb-2"></i>
+    <p>No hay imagen cargada actualmente</p>
+  </div>
+<?php endif; ?>
 
 <style>
   .process-grid {
@@ -125,8 +163,6 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
     justify-content: space-between;
     height: 100%;
   }
-
-
 
   .process-delete-btn {
     margin-top: 1rem;
@@ -321,38 +357,6 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
     color: white;
   }
 
-
-  .image-upload {
-    margin-bottom: 1.5rem;
-  }
-
-  .image-upload .btn {
-    padding: 0.5rem 1.25rem;
-    font-weight: 500;
-    border-radius: 8px;
-  }
-
-  .process-image {
-    max-width: 100%;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-  }
-
-  .process-image:hover {
-    transform: scale(1.01);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-  }
-
-  .no-image {
-    color: #a0aec0;
-    padding: 3rem;
-    background: rgba(0, 0, 0, 0.02);
-    border-radius: 12px;
-    border: 1px dashed #e2e8f0;
-  }
-
   /* Botón de versiones */
   .version-btn {
     background: white;
@@ -375,55 +379,98 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
+
+  /* <!-- Imagen final --> */
+
+  #image-section-container {
+    background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    color: #fff;
+  }
+
+  /* Estilo para el modal personalizado */
+  #custom-imagen-modal .modal-content {
+    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  #custom-imagen-modal .modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #custom-imagen-modal .modal-title {
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  /* Estilo para la imagen principal */
+  #main-process-image {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #main-process-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Estilo para el área sin imagen */
+  #no-image-container {
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+  }
+
+  #no-image-icon {
+    opacity: 0.7;
+    margin-bottom: 15px;
+  }
+
+  /* Estilo para el botón de cerrar personalizado */
+  #custom-close-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+  }
+
+  #custom-close-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Estilo para el título de la sección */
+  #section-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    text-align: center;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, #3498db, #9b59b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Responsividad */
+  @media (max-width: 768px) {
+    #image-section-container {
+      padding: 20px 15px;
+      margin: 10px 0;
+    }
+
+    #section-title {
+      font-size: 1.5rem;
+    }
+  }
 </style>
-
-  <!-- Imagen final -->
-<?php /*
-<div class="image-section" data-aos="fade-up">
-  <?php if (
-    (isset($_SESSION['rol']) && $_SESSION['rol'] == 1) ||
-    (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
-  ): ?>
-    <!-- Código de subir/eliminar imagen -->
-  <?php endif; ?>
-
-  <?php if ($imagenURL): ?>
-    <div class="text-center">
-      <img src="<?= $imagenURL . '?v=' . time() ?>" class="img-fluid rounded shadow-sm my-3"
-        style="cursor: zoom-in; max-width: 500px; width: 100%; height: auto;" alt="Imagen del proceso"
-        data-bs-toggle="modal" data-bs-target="#imagenModal">
-    </div>
-
-    <div class="modal fade" id="imagenModal" tabindex="-1" aria-labelledby="imagenModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content bg-dark">
-          <div class="modal-header border-0">
-            <h5 class="modal-title text-white" id="imagenModalLabel">Vista Ampliada</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-              aria-label="Cerrar"></button>
-          </div>
-          <div class="modal-body text-center">
-            <img src="<?= $imagenURL . '?v=' . time() ?>" class="img-fluid" style="max-height: 50vh;"
-              alt="Imagen ampliada">
-          </div>
-        </div>
-      </div>
-    </div>
-  <?php else: ?>
-    <div class="no-image text-center text-muted mt-4">
-      <i class="fas fa-image fa-3x mb-2"></i>
-      <p>No hay imagen cargada actualmente</p>
-    </div>
-  <?php endif; ?>
-</div>
-*/ ?>
-
-
-
-
- <!-- Botón de versiones -->
-  <!-- <div class="text-center" data-aos="fade-up">
-    <a class="version-btn" href="inAdmin.php?vista=versiones" style="text-decoration: none;">
-      <i class="fas fa-history"></i> Ver historial de versiones
-    </a>
-  </div> -->

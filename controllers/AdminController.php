@@ -3,43 +3,88 @@ require_once __DIR__ . '/../models/PubliModel.php';
 
 class AdminController
 {
-    public function inicio()
-    {
-        if (!isset($_SESSION['usuario'])) {
-            header('Location: acceso-xz9x1d4.php?controller=login&action=index');
-            exit;
-        }
-
-        $userModel = new UserModel();
-        $visitaModel = new Publicacion();
-        $solicitudModel = new SolicitudModel();
-
-        $areaSesion = $_SESSION['area'] ?? null;
-        $resumen = $solicitudModel->obtenerResumenMensual($areaSesion);
-        $usuarioTop = $solicitudModel->obtenerUsuarioMasActivo($areaSesion);
-
-        // Registrar visita
-        $ip = $_SERVER['REMOTE_ADDR'];
-        $fecha = date('Y-m-d');
-        $visitaModel->registrarVisita($ip, $fecha);
-
-        $totalPublicaciones = $userModel->contarTodas();
-        $totalArchivos = $userModel->contarArchivos();
-        $totalUsuarios = $userModel->contarUsuarios();
-        $totalVisitas = $visitaModel->contarVisitas();
-
-        $busqueda = $_GET['buscar'] ?? '';
-        $paginaActual = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
-        $porPagina = 6;
-        $inicio = ($paginaActual - 1) * $porPagina;
-
-        $usuarios = $userModel->obtenerUsuariosConRol($inicio, $porPagina, $busqueda);
-        $totalUsuarios = $userModel->contarUsuarios($busqueda);
-        $totalPaginas = ceil($totalUsuarios / $porPagina);
-
-        $vista = 'inicio';
-        require __DIR__ . '/../views/admin.php';
+public function inicio()
+{
+    if (!isset($_SESSION['usuario'])) {
+        header('Location: acceso-xz9x1d4.php?controller=login&action=index');
+        exit;
     }
+
+    $userModel      = new UserModel();
+    $visitaModel    = new Publicacion();
+    $solicitudModel = new SolicitudModel();
+
+    // 🔹 Determinar área efectiva según rol
+    $rol        = $_SESSION['rol']  ?? null;
+    $areaSesion = $_SESSION['area'] ?? null;
+
+    if ($rol == 1) {                 // Admin
+        $areaFiltro = null;          // ve ambas áreas
+    } elseif ($rol == 2) {           // Visualizador
+        $areaFiltro = 'electronica'; // forzado a electrónica
+    } else {                         // Publicador / Usuario limitado
+        $areaFiltro = $areaSesion ?: null; // 'cafe' o 'electronica'
+    }
+
+    // 🔹 Resumen y usuario top filtrados por área
+    $resumen    = $solicitudModel->obtenerResumenMensual($areaFiltro);
+    $usuarioTop = $solicitudModel->obtenerUsuarioMasActivo($areaFiltro);
+
+    // === Actividad reciente (solo desde requests) ===
+    $pdo = conectaDb();              // obtiene PDO
+    $limiteActividad = 8;
+    $actividades = [];
+
+    $params = [];
+    $sql = "SELECT area, nombre, servicio, fecha_solicitud AS ts
+            FROM requests";
+    if (!is_null($areaFiltro)) {
+        // rol 2 “visualizador” queda en electrónica
+        $areaParam = ($areaFiltro === 'visualizador') ? 'electronica' : $areaFiltro;
+        $sql .= " WHERE area = :area";
+        $params[':area'] = $areaParam;
+    }
+    $sql .= " ORDER BY ts DESC LIMIT :lim";
+
+    $st = $pdo->prepare($sql);
+    foreach ($params as $k => $v) { $st->bindValue($k, $v); }
+    $st->bindValue(':lim', $limiteActividad, PDO::PARAM_INT);
+    $st->execute();
+
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $actividades[] = [
+            'ts'    => $r['ts'] ?? date('Y-m-d H:i:s'),
+            'title' => 'Solicitud ' . ucfirst($r['area'] ?? 'general'),
+            'text'  => 'Usuario: ' . ($r['nombre'] ?? 'N/A') . ' — ' . ($r['servicio'] ?? 'Servicio'),
+            'type'  => 'request',
+        ];
+    }
+    // === FIN actividad reciente ===
+
+    // Registrar visita
+    $ip = $_SERVER['REMOTE_ADDR'];
+    $fecha = date('Y-m-d');
+    $visitaModel->registrarVisita($ip, $fecha);
+
+    $totalPublicaciones = $userModel->contarTodas();
+    $totalArchivos      = $userModel->contarArchivos();
+    $totalUsuarios      = $userModel->contarUsuarios();
+    $totalVisitas       = $visitaModel->contarVisitas();
+
+    $busqueda      = $_GET['buscar'] ?? '';
+    $paginaActual  = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
+    $porPagina     = 6;
+    $inicio        = ($paginaActual - 1) * $porPagina;
+
+    $usuarios      = $userModel->obtenerUsuariosConRol($inicio, $porPagina, $busqueda);
+    $totalUsuarios = $userModel->contarUsuarios($busqueda);
+    $totalPaginas  = ceil($totalUsuarios / $porPagina);
+
+    // 🔹 Pasa $areaFiltro y $actividades a la vista
+    $vista = 'inicio';
+    require __DIR__ . '/../views/admin.php';
+}
+
 
     public function formularioEditarUsuario($id)
     {

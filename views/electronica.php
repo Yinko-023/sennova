@@ -3,15 +3,11 @@ require_once 'models/PubliModel.php';
 $model = new PortadaModel();
 $area = basename(__FILE__) === 'electronica.php' ? 'electronica' : 'cafe';
 $portada = $model->obtenerPortadaPorArea($area);
-
-// Datos con fallback
 $imagen = $portada ? $portada['ruta_img_port'] : 'img/default.jpg';
 $titulo = $portada ? $portada['title_port'] : 'Bienvenido al laboratorio';
 $descripcion = $portada ? $portada['desc_port'] : 'Descripción por defecto para el laboratorio.';
-
 $modelo = new ServicioElectronicaModel();
 $servicios = $modelo->obtenerServicios();
-
 $model = new VideoModel();
 $video = $model->obtenerVideoPorArea('electronica');
 ?>
@@ -24,14 +20,12 @@ $video = $model->obtenerVideoPorArea('electronica');
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Laboratorio de Electrónica</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/sennova/img/l2.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" />
   <link href="/sennova/css/electrony.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-
 
 <body>
 
@@ -45,25 +39,24 @@ $video = $model->obtenerVideoPorArea('electronica');
         </span>
       </a>
 
-<nav>
-  <ul class="flex space-x-4">
-    <li>
-      <a href="index.php" 
-         class="text-white font-semibold transition-all duration-200 hover:text-lg">
-        Inicio
-      </a>
-    </li>
-    <li>
-      <a href="inCalidad.php" 
-         class="text-white font-semibold transition-all duration-200 hover:text-lg">
-        Laboratorio de Café y Cacao
-      </a>
-    </li>
-  </ul>
-</nav>
-
-
+      <nav>
+        <ul class="flex space-x-4">
+          <li>
+            <a href="index.php"
+              class="text-white font-semibold transition-all duration-200 hover:text-lg">
+              Inicio
+            </a>
+          </li>
+          <li>
+            <a href="inCalidad.php"
+              class="text-white font-semibold transition-all duration-200 hover:text-lg">
+              Laboratorio de Café y Cacao
+            </a>
+          </li>
+        </ul>
+      </nav>
     </div>
+
   </header>
 
   <?php if (isset($_GET['exito'])): ?>
@@ -169,7 +162,7 @@ $video = $model->obtenerVideoPorArea('electronica');
     <p class="text-center text-white my-5">No se ha cargado aún un video para esta área.</p>
   <?php endif; ?>
 
-  <!-- Tarjetas informativas Bootstrap -->
+  <!-- Publicaciones -->
   <section id="nosotros" class="publications-section bg-light-gray py-12">
     <?php if (!empty($publications)): ?>
       <div class="container mx-auto px-4 my-8">
@@ -307,7 +300,7 @@ $video = $model->obtenerVideoPorArea('electronica');
     <?php endif; ?>
   </section>
 
-  <!-- Services Section -->
+  <!-- Servicios -->
   <section id="servicios" class="services-section py-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
     <div class="container">
       <!-- Encabezado -->
@@ -427,7 +420,7 @@ $video = $model->obtenerVideoPorArea('electronica');
     </div>
   </section>
 
-  <!-- Sección Nosotros -->
+  <!-- Nosotros -->
   <section id="nosotros" class="py-20 bg-gray-100" data-aos="fade-up">
     <div class="container mx-auto px-4">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -471,7 +464,7 @@ $video = $model->obtenerVideoPorArea('electronica');
     </div>
   </section>
 
-  <!-- Sección Contacto -->
+  <!-- Contacto -->
   <section id="contacto" class="py-20 bg-gray-300">
     <div class="container mx-auto px-4">
       <h2 class="text-4xl font-bold text-center text-gray-900 mb-16">Solicitar Servicio</h2>
@@ -657,7 +650,6 @@ $video = $model->obtenerVideoPorArea('electronica');
     </div>
   </footer>
 
-
   <!-- ===== CSS mínimo para quitar spinners en inputs numéricos ===== -->
   <style>
     .only-numbers::-webkit-outer-spin-button,
@@ -671,7 +663,6 @@ $video = $model->obtenerVideoPorArea('electronica');
     }
   </style>
   <!-- SCRIPTS -->
-  <!-- ===== Script: lógica "No tengo" y validación de contacto ===== -->
   <script>
     (function() {
       const form = document.getElementById("contactForm");
