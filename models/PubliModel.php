@@ -105,25 +105,28 @@ class PublicacionModel
         $this->conn = conectaDb();
     }
 
-    public function guardarPublicacion($titulo, $contenido, $categoria, $destacada, $nombreImagen, $fecha, $is_active, $lab_area)
+    public function guardarPublicacion($n_cliente, $titulo, $contenido, $categoria, $destacada, $nombreImagen, $fecha, $is_active, $lab_area)
     {
         try {
             if ($destacada) {
                 $this->conn->query("UPDATE publications SET destacada = 0 WHERE destacada = 1");
             }
 
-            $sql = "INSERT INTO publications (title, content, image_path, type_pu, published_at, destacada, is_active, lab_area)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            // Añadir 'n_cliente' al INSERT
+            $sql = "INSERT INTO publications (n_cliente, title, content, image_path, type_pu, published_at, destacada, is_active, lab_area)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(1, $titulo);
-            $stmt->bindParam(2, $contenido);
-            $stmt->bindParam(3, $nombreImagen);
-            $stmt->bindParam(4, $categoria);
-            $stmt->bindParam(5, $fecha);
-            $stmt->bindParam(6, $destacada, PDO::PARAM_INT);
-            $stmt->bindParam(7, $is_active, PDO::PARAM_INT);
-            $stmt->bindParam(8, $lab_area);
+            
+            $stmt->bindParam(1, $n_cliente);
+            $stmt->bindParam(2, $titulo);
+            $stmt->bindParam(3, $contenido);
+            $stmt->bindParam(4, $nombreImagen);
+            $stmt->bindParam(5, $categoria);
+            $stmt->bindParam(6, $fecha);
+            $stmt->bindParam(7, $destacada, PDO::PARAM_INT);
+            $stmt->bindParam(8, $is_active, PDO::PARAM_INT);
+            $stmt->bindParam(9, $lab_area);
 
             return $stmt->execute();
         } catch (PDOException $e) {

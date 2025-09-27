@@ -21,6 +21,7 @@ class PublicacionController
     $mensaje = '';
 
     // Obtener datos del formulario
+    $n_cliente = $_POST['n_cliente'] ?? '';
     $titulo = $_POST['title'] ?? '';
     $contenido = $_POST['content'] ?? '';
     $categoria = $_POST['type'] ?? '';
@@ -58,22 +59,27 @@ class PublicacionController
     // Guardar en la base de datos
     $modelo = new PublicacionModel();
     $exito = $modelo->guardarPublicacion(
-      $titulo,
-      $contenido,
-      $categoria,
-      $destacada,
-      $nombreImagen,
-      $fecha,
-      $is_active,
-      $lab_area
+        $n_cliente,
+        $titulo,
+        $contenido,
+        $categoria,
+        $destacada,
+        $nombreImagen,
+        $fecha,
+        $is_active,
+        $lab_area
     );
 
+    // Manejar el resultado de la operación
     if ($exito) {
-      header('Location: /sennova/inAdmin.php?vista=supubli&mensaje=publicado');
+        // Redireccionar o mostrar mensaje de éxito
+        header("Location: /sennova/inAdmin.php?vista=supubli&mensaje=guardado");
     } else {
-      header('Location: /sennova/inAdmin.php?vista=supubli&mensaje=error');
+        // Manejar el error
+        $mensaje = 'Error al guardar la publicación. Inténtalo de nuevo.';
+        // Redireccionar o mostrar mensaje de error
+        header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode($mensaje));
     }
-    exit;
   }
 
   public function verCalidadCafe()
