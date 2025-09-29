@@ -68,13 +68,10 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
             style="text-decoration: none;">
             <i class="fas fa-arrow-right me-2"></i> Ingresar
           </a>
-          <?php if (
-            isset($_SESSION['rol']) &&
-            (
-              $_SESSION['rol'] == 1 ||
-              ($_SESSION['rol'] == 3 && isset($_SESSION['area']) && $_SESSION['area'] === 'electronica' || $_SESSION['area'] === 'visualizador')
-            )
-          ): ?>
+<?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
+  || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
+  || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
+): ?>
             <form method="post"
               action="routes/createProces.php"
               class="js-confirm-delete"

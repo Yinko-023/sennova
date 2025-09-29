@@ -3,7 +3,7 @@ $modelo = new ServicioElectronicaModel();
 $servicios = $modelo->obtenerServicios();
 ?>
 
-<div class="area-elec" id="electronica-section">
+<div class="area-elec mt-5" id="electronica-section">
     <h2 class="text-center text-sena-green-500 fw-bold mb-5" data-aos="fade-down" id="electronica-titulo">Servicios de Electrónica Registrados</h2>
 
     <div class="card shadow-sm border-0 overflow-hidden mb-5" id="card-servicios-registrados">

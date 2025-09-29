@@ -2,7 +2,7 @@
 $modelo = new ServicioCafeModel();
 $servi = $modelo->obtenerServi();
 ?>
-<div class="area-cafe" id="cafe-section">
+<div class="area-cafe mt-5" id="cafe-section">
     <h2 class="text-center text-sena-green-500 fw-bold mb-5" data-aos="fade-down" id="cafe-titulo">Servicios de Café Y Cacao Registrados</h2>
 
     <div class="card shadow-sm border-0 overflow-hidden mb-5" id="card-servicios-cafe">

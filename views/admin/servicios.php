@@ -3,12 +3,8 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 $rol  = (int)($_SESSION['rol'] ?? 0);
 $area = strtolower(trim((string)($_SESSION['area'] ?? '')));
-
-// Admin o área general/visualizador/indefinida => ver ambas
 $isAdmin   = ($rol === 1) || strcasecmp($_SESSION['rol_nombre'] ?? '', 'admin') === 0;
 $showBoth  = $isAdmin || $area === '' || $area === 'general' || $area === 'visualizador';
-
-// Normaliza posibles acentos
 $esElect = ($area === 'electronica' || $area === 'electrónica');
 $esCafe  = ($area === 'cafe' || $area === 'café');
 ?>
