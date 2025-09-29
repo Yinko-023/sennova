@@ -744,6 +744,18 @@ class SolicitudModel
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function limpiarNotificaciones()
+    {
+        try {
+            $sql = "DELETE FROM notifications";
+            $stmt = $this->conn->prepare($sql);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error al limpiar notificaciones: " . $e->getMessage());
+            return false;
+        }
+    }
 }
 
 class ArchivoModel

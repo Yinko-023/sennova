@@ -330,25 +330,32 @@ $notificaciones = $solicitudModel->obtenerHistorialNotificaciones($area, $desde,
 
             Swal.showLoading();
             try {
-                const res = await fetch('routes/limpiar_notificaciones.php', { // <-- ajusta la ruta
+                const res = await fetch('routes/limpiar_notificaciones.php', {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
-                if (!res.ok) throw 0;
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.error || 'Error en la petición');
+                }
 
                 await Swal.fire({
                     icon: 'success',
                     title: 'Historial eliminado',
+                    text: data.message || 'El historial de notificaciones ha sido eliminado correctamente',
                     timer: 1600,
                     showConfirmButton: false
                 });
                 location.reload();
-            } catch {
+            } catch (error) {
                 Swal.fire({
                     icon: 'error',
                     title: 'No se pudo eliminar',
+                    text: error.message || 'Ocurrió un error al eliminar el historial',
                     confirmButtonText: 'Entendido',
                     customClass: {
                         confirmButton: 'btn btn-danger'
@@ -357,16 +364,5 @@ $notificaciones = $solicitudModel->obtenerHistorialNotificaciones($area, $desde,
                 });
             }
         });
-    });
-
-    // Script para manejar el botón de limpiar notificaciones
-    document.getElementById('btnLimpiarNotificaciones').addEventListener('click', function() {
-        var modal = new bootstrap.Modal(document.getElementById('confirmarLimpiarModal'));
-        modal.show();
-    });
-
-    document.getElementById('confirmarLimpiar').addEventListener('click', function() {
-        alert('Historial de notificaciones eliminado'); 
-        location.reload(); 
     });
 </script>
