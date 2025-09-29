@@ -94,7 +94,7 @@ foreach ($rows as $row) {
     <div class="row g-3 align-items-end">
       <div class="col-lg-3 col-md-4">
         <label class="form-label">🔍 Buscar por nombre o archivo</label>
-        <input type="text" name="q" class="form-control" placeholder="Ej: juan_perez o 1234567890" value="<?= htmlspecialchars($q) ?>">
+        <input type="text" name="q" class="form-control" value="<?= htmlspecialchars($q) ?>">
       </div>
       <div class="col-lg-3 col-md-4">
         <label class="form-label">👤 Filtrar por cliente</label>
