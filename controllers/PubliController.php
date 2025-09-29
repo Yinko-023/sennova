@@ -18,68 +18,61 @@ class PublicacionController
 
   public function procesarFormulario()
   {
-    $mensaje = '';
+    // Datos del form
+    $titulo    = $_POST['title']      ?? '';
+    $contenido = $_POST['content']    ?? '';
+    $categoria = $_POST['type']       ?? '';
+    $lab_area  = $_POST['lab_area']   ?? null;
 
-    // Obtener datos del formulario
-    $n_cliente = $_POST['n_cliente'] ?? '';
-    $titulo = $_POST['title'] ?? '';
-    $contenido = $_POST['content'] ?? '';
-    $categoria = $_POST['type'] ?? '';
-    $lab_area = $_POST['lab_area'] ?? null;
-    $fecha = $_POST['published_at'] ?? null;
+    // normaliza datetime-local a 'Y-m-d H:i:s'
+    $fechaRaw  = $_POST['published_at'] ?? '';
+    $fecha     = $fechaRaw ? str_replace('T', ' ', $fechaRaw) . ':00' : date('Y-m-d H:i:00');
+
     $destacada = isset($_POST['destacada']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
 
-    // Procesar imagen
-    $nombreImagen = null;
-    if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-      $db = basename($_FILES['image']['name']);
-      $nombreImagen = time() . '_' . $db;
-
-      // Ruta del directorio donde se guardará la imagen
-      $directorioDestino = realpath(__DIR__ . '/../img/');
-
-      // Verificar si existe la carpeta, si no, intentar crearla
-      if ($directorioDestino === false) {
-        $directorioDestino = __DIR__ . '/../img/';
-        if (!is_dir($directorioDestino)) {
-          mkdir($directorioDestino, 0777, true);
+    // Subida de imagen
+    $nombreImagen = null; // <- lo que guardaremos en DB
+    if (!empty($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+      $dirFS = realpath(__DIR__ . '/../img/');
+      if ($dirFS === false) {
+        $dirFS = __DIR__ . '/../img/';
+        if (!is_dir($dirFS)) {
+          mkdir($dirFS, 0777, true);
         }
       }
 
-      $rutaCompleta = $directorioDestino . DIRECTORY_SEPARATOR . $nombreImagen;
+      $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+      $nombreImagen = time() . '_' . bin2hex(random_bytes(4)) . '.' . strtolower($ext);
+      $destinoFS    = rtrim($dirFS, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $nombreImagen;
 
-      if (!move_uploaded_file($_FILES['image']['tmp_name'], $rutaCompleta)) {
-        $mensaje = "Error al subir la imagen.";
-        header('Location: /sennova/inAdmin.php?vista=supubli&mensaje=guardado');
+      if (!move_uploaded_file($_FILES['image']['tmp_name'], $destinoFS)) {
+        $msg = 'Error al subir la imagen.';
+        header('Location: /sennova/inAdmin.php?vista=supubli&error=' . urlencode($msg));
         exit;
       }
     }
 
-    // Guardar en la base de datos
+    // Guardar en DB
     $modelo = new PublicacionModel();
-    $exito = $modelo->guardarPublicacion(
-        $n_cliente,
-        $titulo,
-        $contenido,
-        $categoria,
-        $destacada,
-        $nombreImagen,
-        $fecha,
-        $is_active,
-        $lab_area
+    $ok = $modelo->guardarPublicacion(
+      $titulo,
+      $contenido,
+      $categoria,
+      $destacada,
+      $nombreImagen, // <- solo el nombre de archivo
+      $fecha,
+      $is_active,
+      $lab_area
     );
 
-    // Manejar el resultado de la operación
-    if ($exito) {
-        // Redireccionar o mostrar mensaje de éxito
-        header("Location: /sennova/inAdmin.php?vista=supubli&mensaje=guardado");
+    if ($ok) {
+      header("Location: /sennova/inAdmin.php?vista=supubli&mensaje=guardado");
     } else {
-        // Manejar el error
-        $mensaje = 'Error al guardar la publicación. Inténtalo de nuevo.';
-        // Redireccionar o mostrar mensaje de error
-        header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode($mensaje));
+      $msg = 'Error al guardar la publicación.';
+      header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode('Error al guardar la publicación.'));
     }
+    exit;
   }
 
   public function verCalidadCafe()
@@ -98,7 +91,9 @@ class PublicacionController
 
   public function subir()
   {
+    // 1) Iniciar sesión
     if (session_status() === PHP_SESSION_NONE) {
+      session_start();
     }
 
     $titulo = $_POST['title_ar'];
@@ -107,6 +102,7 @@ class PublicacionController
     $fecha = date('Y-m-d H:i:s');
     $user_id = $_SESSION['usuario'] ?? null;
 
+    $user_id = $_SESSION['usuario'] ?? null;
     if (!$user_id) {
       header('Location: /sennova/inAdmin.php?vista=archivo&mensaje=error_auth');
       exit;
@@ -226,24 +222,33 @@ class GestionController
   public function crear()
   {
     $nombre = trim($_POST['nombre'] ?? '');
-    $rutaOriginal = trim($_POST['ruta'] ?? '');
-    $color = $_POST['color'] ?? '#007bff';
+    $ruta   = trim($_POST['ruta'] ?? '');
+    $color  = $_POST['color'] ?? '#007bff';
 
-    if ($nombre !== '' && $rutaOriginal !== '') {
-      $ruta = strtolower(str_replace(' ', '_', $rutaOriginal));
-      if (!str_ends_with($ruta, '.php')) {
-        $ruta .= '.php';
-      }
-
-      $rutaConCarpeta = 'views/procesos/' . $ruta;
-
-      $this->model->crearBoton($nombre, $rutaConCarpeta, $color);
-      $this->crearArchivoSiNoExiste($ruta, $nombre);
+    if ($nombre === '' || $ruta === '') {
+      header("Location: ../inAdmin.php?vista=gestion&err=Nombre y ruta obligatorios");
+      exit;
     }
 
-    header("Location: ../inAdmin.php?vista=gestion");
-    exit();
+    $slug = strtolower(preg_replace('/[^a-z0-9_-]+/i', '_', $ruta));
+    if (!str_ends_with($slug, '.php')) $slug .= '.php';
+
+    $rutaBD = "views/procesos/$slug";
+    $rutaFS = __DIR__ . "/../$rutaBD";
+
+    if ($this->model->existeRuta($rutaBD) || file_exists($rutaFS)) {
+      header("Location: ../inAdmin.php?vista=gestion&err=La ruta ya existe");
+      exit;
+    }
+
+    $this->model->crearBoton($nombre, $rutaBD, $color);
+    $this->crearArchivoSiNoExiste($slug, $nombre);
+
+    header("Location: ../inAdmin.php?vista=gestion&res=Proceso creado con éxito");
+    exit;
   }
+
+
 
   public function eliminar()
   {
@@ -385,14 +390,13 @@ if (!\$proceso) {
             </div>
 
              <?php if ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 1) || ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 2) || (isset(\$_SESSION['rol'], \$_SESSION['area']) && \$_SESSION['rol'] == 3 && \$_SESSION['area'] === 'electronica'))): ?>
-
-            ): ?>
               <div class="mt-2">
-                <form method="post" action="/sennova/routes/createProces.php" class="d-inline">
+                <form method="post"
+                  action="/sennova/routes/createProces.php"
+                  class="d-inline js-confirm-delete-sub"
+                  data-name="<?= htmlspecialchars(\$sub['nombre_sub']) ?>">
                   <input type="hidden" name="id_sub" value="<?= \$sub['id_sub'] ?>">
-                  <button type="submit" name="eliminar_sub"
-                    class="btn btn-outline-danger btn-sm"
-                    onclick="return confirm('¿Estás seguro de eliminar este subproceso?')">
+                  <button type="button" class="btn btn-outline-danger btn-sm" data-role="btn-delete-sub">
                     <i class="fas fa-trash me-1"></i>Eliminar
                   </button>
                 </form>
@@ -411,8 +415,130 @@ if (!\$proceso) {
   </div>
 </div>
 
-<!-- Bootstrap Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('form.js-confirm-delete-sub').forEach((form) => {
+    const btn = form.querySelector('[data-role="btn-delete-sub"]');
+    if (!btn) return;
+
+    btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+
+      const nombre = form.dataset.name || 'el subproceso';
+
+      Swal.fire({
+        title: '¿Eliminar subproceso?',
+        html: `Se eliminará <b>\${nombre}</b>.<br><small>Puede contener archivos. Esta acción NO se puede deshacer.</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33'
+      }).then((res) => {
+        if (!res.isConfirmed) return;
+
+        let secs = 10, intervalId = null, submitTimeoutId = null;
+
+        const startCountdown = () => {
+          const el = Swal.getHtmlContainer().querySelector('#undo-countdown');
+          intervalId = setInterval(() => {
+            secs -= 1;
+            if (el) el.textContent = secs;
+            if (secs <= 0) clearInterval(intervalId);
+          }, 1000);
+        };
+
+        const clearTimers = () => {
+          if (intervalId) clearInterval(intervalId);
+          if (submitTimeoutId) clearTimeout(submitTimeoutId);
+        };
+
+        Swal.fire({
+          title: 'Eliminación programada',
+          html: `
+            <p>Tienes <b id="undo-countdown">10</b> segundos para <b>anular</b> tu decisión.</p>
+            <small>Si no haces nada, se eliminará automáticamente.</small>
+          `,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Eliminar ahora',
+          cancelButtonText: 'Anular',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          timerProgressBar: true,
+          didOpen: () => {
+            startCountdown();
+            submitTimeoutId = setTimeout(() => {
+              btn.disabled = true;
+              // Asegura el campo "eliminar_sub" para el POST
+              if (!form.querySelector('input[name="eliminar_sub"]')) {
+                const h = document.createElement('input');
+                h.type = 'hidden';
+                h.name = 'eliminar_sub';
+                h.value = '1';
+                form.appendChild(h);
+              }
+              form.submit();
+            }, 10000);
+          }
+        }).then((r2) => {
+          clearTimers();
+          if (r2.isConfirmed) {
+            btn.disabled = true;
+            if (!form.querySelector('input[name="eliminar_sub"]')) {
+              const h = document.createElement('input');
+              h.type = 'hidden';
+              h.name = 'eliminar_sub';
+              h.value = '1';
+              form.appendChild(h);
+            }
+            form.submit();
+          } else {
+            Swal.fire({ icon: 'info', title: 'Eliminación cancelada', timer: 1500, showConfirmButton: false });
+          }
+        });
+      });
+    });
+  });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const qs = new URLSearchParams(location.search);
+
+  if (qs.has('errSub')) {
+    const msg = qs.get('errSub') || 'Ocurrió un error.';
+    Swal.fire({
+      icon: 'error',
+      title: 'Ruta duplicada',
+      text: msg,
+      confirmButtonText: 'Entendido'
+    });
+    // Limpia el parámetro para que no se repita al refrescar
+    qs.delete('errSub');
+    qs.delete('resSub');
+    const newQuery = qs.toString();
+    history.replaceState(null, '', location.pathname + (newQuery ? '?' + newQuery : '') + location.hash);
+  }
+
+  if (qs.has('resSub')) {
+    Swal.fire({
+      icon: 'success',
+      title: 'Subproceso creado',
+      text: 'Se creó correctamente.',
+      timer: 1800,
+      showConfirmButton: false
+    });
+    qs.delete('resSub');
+    qs.delete('errSub');
+    const newQuery = qs.toString();
+    history.replaceState(null, '', location.pathname + (newQuery ? '?' + newQuery : '') + location.hash);
+  }
+});
+</script>
 
 <style>
   :root {
@@ -690,17 +816,56 @@ PHP;
   public function crearsub()
   {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_sub'])) {
-      $nombre = trim($_POST['nombre_sub'] ?? '');
-      $ruta = trim($_POST['ruta_sub'] ?? '');
-      $idProceso = intval($_POST['id_proceso'] ?? 0);
-      $archivoPadre = trim($_POST['archivo_padre'] ?? null); // puede ser null
+      $nombre       = trim($_POST['nombre_sub'] ?? '');
+      $rutaEntrada  = trim($_POST['ruta_sub'] ?? '');
+      $idProceso    = intval($_POST['id_proceso'] ?? 0);
+      $archivoPadre = trim($_POST['archivo_padre'] ?? null);
 
-      if ($nombre && $ruta && $idProceso > 0) {
-        $nombreArchivo = preg_replace('/[^a-zA-Z0-9_-]/', '', basename($ruta));
-        $archivoGenerado = __DIR__ . '/../views/procesos/sub/' . $nombreArchivo . '.php';
+      $back = $_SERVER['HTTP_REFERER'] ?? '../inAdmin.php?vista=gestion';
 
-        if (!file_exists($archivoGenerado)) {
-          $codigoGenerado = <<<PHP
+      if (!$nombre || !$rutaEntrada || $idProceso <= 0) {
+        header('Location: ' . $back . '&errSub=' . urlencode('Nombre, ruta e ID de proceso son obligatorios.'));
+        exit;
+      }
+
+      // slug simple (sin .php) y normalizado
+      $slug = preg_replace('/[^a-zA-Z0-9_-]/', '', basename($rutaEntrada));
+      $slug = strtolower($slug);
+      if ($slug === '') {
+        header('Location: ' . $back . '&errSub=' . urlencode('La ruta indicada no es válida.'));
+        exit;
+      }
+
+      $archivoGenerado = __DIR__ . '/../views/procesos/sub/' . $slug . '.php';
+
+      // 1) Chequeo de duplicados (BD + archivo)
+      if ($this->model->existeRutaSub($idProceso, $slug)) {
+        header('Location: ' . $back . '&errSub=' . urlencode('La ruta del subproceso ya existe en este proceso.'));
+        exit;
+      }
+      if (file_exists($archivoGenerado)) {
+        header('Location: ' . $back . '&errSub=' . urlencode('Ya existe un archivo con esa ruta.'));
+        exit;
+      }
+
+      // 2) Intentar crear en BD primero
+      $okInsert = false;
+      try {
+        $okInsert = $this->model->insertar($nombre, $slug, $idProceso, $archivoPadre);
+      } catch (Throwable $e) {
+        // Por si tu modelo lanza excepción (p.ej. índice único)
+        error_log('insertar subproceso error: ' . $e->getMessage());
+        $okInsert = false;
+      }
+
+      if (!$okInsert) {
+        header('Location: ' . $back . '&errSub=' . urlencode('No se pudo guardar en la base de datos (posible ruta duplicada).'));
+        exit;
+      }
+
+      // 3) Crear archivo físico; si falla, revertimos la BD
+      if (!file_exists($archivoGenerado)) {
+        $codigoGenerado = <<<PHP
 
 <?php
 error_reporting(E_ALL);
@@ -1499,17 +1664,24 @@ function obtenerIcono(\$ext)
     });
 </script>
 PHP;
+        $bytes = @file_put_contents($archivoGenerado, $codigoGenerado);
+        if ($bytes === false) {
+          try {
 
-          file_put_contents($archivoGenerado, $codigoGenerado);
+            $pdo = conectaDb();
+            $del = $pdo->prepare("DELETE FROM gestion_subprocesos WHERE id_proceso = ? AND ruta_sub = ? AND nombre_sub = ? LIMIT 1");
+            $del->execute([$idProceso, $slug, $nombre]);
+          } catch (Throwable $e) {
+            error_log('rollback subproceso fallido: ' . $e->getMessage());
+          }
+
+          header('Location: ' . $back . '&errSub=' . urlencode('No se pudo crear el archivo físico del subproceso.'));
+          exit;
         }
-
-        // Guarda en BD
-        $this->model->insertar($nombre, $ruta, $idProceso, $archivoPadre);
-
-        // Redirige de nuevo a la página anterior
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
-        exit;
       }
+
+      header('Location: ' . $back . '&resSub=ok');
+      exit;
     }
   }
 
@@ -2291,7 +2463,7 @@ class EvaluacionController
   private static function storeCotizacion(): void
   {
     self::ensureTcpdfLoaded();
-    
+
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
 
@@ -2323,7 +2495,7 @@ class EvaluacionController
 
     // ---------- 1) Datos ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
-    
+
     // ---------- 1.0) LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
     // Si no se proporciona n_cliente, generar uno nuevo
     if (empty($n_cliente)) {
@@ -2545,7 +2717,7 @@ class EvaluacionController
     $outMode = ($mode === 'print') ? 'I' : 'D';
     $baseName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $razon);
     $fileName = "Solicitud_{$baseName}.pdf";
-    
+
     // Guardar en base de datos
     $meta = [
       'numero_solicitud' => $nro,
@@ -2557,7 +2729,7 @@ class EvaluacionController
       ]
     ];
     self::persistGeneratedPdf($pdf, $fileName, 'form1_solicitud', $meta, $nit, $n_cliente);
-    
+
     $pdf->Output($fileName, $outMode);
     exit;
   }
@@ -2567,7 +2739,7 @@ class EvaluacionController
   {
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
-    
+
     // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
     if (empty($n_cliente)) {
@@ -2575,7 +2747,7 @@ class EvaluacionController
     } else {
       $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
     }
-    
+
     $v = [
       'nombre' => trim($_POST['nombre'] ?? ''),
       'fecha'  => trim($_POST['fecha'] ?? date('Y-m-d')),
@@ -2832,7 +3004,7 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
-    
+
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
 
@@ -2843,7 +3015,7 @@ class EvaluacionController
     $fecha         = (string)($_POST['fecha'] ?? date('Y-m-d'));
     $cot_no        = trim((string)($_POST['cotizacion_no'] ?? ''));   // ← se usará con autoincremento
     $comp_no       = trim((string)($_POST['comprobante_no'] ?? ''));
-    
+
     // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
     if (empty($n_cliente)) {
@@ -3122,7 +3294,7 @@ class EvaluacionController
     }
 
     self::ensureTcpdfLoaded();
-    
+
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
 
@@ -3161,7 +3333,7 @@ class EvaluacionController
     $asignado = trim($_POST['ot_asignado'] ?? '');
     $activ    = (string)($_POST['ot_actividades'] ?? '');
     $emitido  = trim($_POST['ot_emitido_por'] ?? '');
-    
+
     // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
     if (empty($n_cliente)) {
@@ -3389,7 +3561,7 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
-    
+
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
 
@@ -3606,7 +3778,7 @@ class EvaluacionController
       @ob_end_clean();
     }
     self::ensureTcpdfLoaded();
-    
+
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
 
@@ -3644,7 +3816,7 @@ class EvaluacionController
     $aprob    = trim((string)($_POST['v3d_aprobo'] ?? ''));
     $aprobado = (string)($_POST['v3d_aprobado'] ?? '');
     $fecha    = $fechaIso ? date('d/m/Y', strtotime($fechaIso)) : '';
-    
+
     // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
     if (empty($n_cliente)) {
@@ -3794,7 +3966,7 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
-    
+
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
 
@@ -3833,7 +4005,7 @@ class EvaluacionController
     $aprob   = strtoupper(trim((string)($_POST['ct_aprobado'] ?? ''))); // SI | NO | ''
     $reco    = (string)($_POST['ct_recomendaciones'] ?? '');
     $respLab = trim((string)($_POST['ct_responsable_gestion'] ?? ''));
-    
+
     // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
     if (empty($n_cliente)) {
@@ -3997,7 +4169,7 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
-    
+
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
 
@@ -4036,7 +4208,7 @@ class EvaluacionController
     $elaboro   = trim((string)($_POST['isv_elaboro'] ?? ''));
     $aprobo    = trim((string)($_POST['isv_aprobo'] ?? ''));
     $fecha     = $fechaIso ? date('d/m/Y', strtotime($fechaIso)) : '';
-    
+
     // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
     if (empty($n_cliente)) {
@@ -4323,7 +4495,7 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
-    
+
     // Incluir el sistema de contadores por cliente
     require_once __DIR__ . '/../includes/client_counter.php';
 
@@ -4340,7 +4512,7 @@ class EvaluacionController
     $cliente   = trim((string)($_POST['esc_cliente'] ?? ''));
     $telefono  = trim((string)($_POST['esc_telefono'] ?? ''));
     $direccion = trim((string)($_POST['esc_direccion'] ?? ''));
-    
+
     // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
     if (empty($n_cliente)) {

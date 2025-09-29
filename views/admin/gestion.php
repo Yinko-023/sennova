@@ -25,14 +25,14 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
     )
   ): ?>
     <div class="admin-form" data-aos="fade-up">
-      <h5>Crear nueva carpeta</h5>
+      <h5>Crear Nuevo Proceso</h5>
       <form method="post" action="routes/createProces.php" class="row g-4 align-items-end">
         <div class="col-md-5">
-          <label class="form-label">Nombre de la carpeta</label>
+          <label class="form-label">Nombre del Nuevo Proceso</label>
           <input type="text" name="nombre" class="form-control" required placeholder="Ej: Documentos">
         </div>
         <div class="col-md-4">
-          <label class="form-label">Ruta de la carpeta</label>
+          <label class="form-label">Ruta del Nuevo Proceso</label>
           <input type="text" name="ruta" class="form-control" required placeholder="Ej: document">
         </div>
         <style>
@@ -75,20 +75,25 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
               ($_SESSION['rol'] == 3 && isset($_SESSION['area']) && $_SESSION['area'] === 'electronica' || $_SESSION['area'] === 'visualizador')
             )
           ): ?>
-            <form method="post" action="routes/createProces.php">
-              <input type="hidden" name="id" value="<?= $btn['id_ges'] ?>">
+            <form method="post"
+              action="routes/createProces.php"
+              class="js-confirm-delete"
+              data-name="<?= htmlspecialchars($btn['nombre'] ?? 'el proceso') ?>">
+              <input type="hidden" name="id" value="<?= (int)$btn['id_ges'] ?>">
               <input type="hidden" name="archivo" value="<?= htmlspecialchars($btn['ruta_but']) ?>">
-              <button type="submit" name="eliminar" class="process-delete-btn">
+              <!-- 👇 OJO: ahora es type="button" -->
+              <button type="button" name="eliminar" class="process-delete-btn">
                 <i class="fas fa-trash me-1"></i> Eliminar proceso
               </button>
             </form>
+
+
           <?php endif; ?>
         </div>
       </div>
     <?php endforeach; ?>
   </div>
 </div>
-
 
 <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
   || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
@@ -158,8 +163,7 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
 <?php endif; ?>
 
 <!-- JS: disparar input y auto-enviar -->
-     <script>
-
+<script>
   document.getElementById('btn-subir-imagen')?.addEventListener('click', function() {
     document.getElementById('input-file-imagen').click();
   });
@@ -168,6 +172,153 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
       document.getElementById('form-subir-imagen').submit();
     }
   });
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const ok  = params.get('res');   // mensajes de éxito
+    const err = params.get('err');   // mensajes de error
+
+    if (!ok && !err) return;
+
+    // Config base
+    const base = {
+      confirmButtonText: 'Entendido',
+      allowEscapeKey: true,
+      allowOutsideClick: true,
+      width: 480,
+      showClass: { popup: 'swal2-show' },
+      hideClass: { popup: 'swal2-hide' }
+    };
+
+    if (ok) {
+      Swal.fire({
+        ...base,
+        icon: 'success',
+        title: '¡Éxito!',
+        html: ok,
+        background: '#ffffff',
+      });
+    } else if (err) {
+      Swal.fire({
+        ...base,
+        icon: 'warning',
+        title: 'Atención',
+        html: err,
+        background: '#ffffff',
+      });
+    }
+
+    // Limpia la URL para que el popup no reaparezca en refresh
+    const url = new URL(window.location.href);
+    url.searchParams.delete('res');
+    url.searchParams.delete('err');
+    window.history.replaceState({}, '', url);
+  });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('form.js-confirm-delete').forEach((form) => {
+    const btn = form.querySelector('button[name="eliminar"]');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      const proceso = form.dataset.name || 'el proceso';
+
+      // 1) Confirmación inicial
+      Swal.fire({
+        title: '¿Eliminar proceso?',
+        html: `Se eliminará <b>${proceso}</b>.<br><small>Puede contener archivos dentro. Esta acción NO se puede deshacer.</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33'
+      }).then((res) => {
+        if (!res.isConfirmed) return;
+
+        // 2) Ventana de deshacer (10s)
+        let secs = 10;
+        let intervalId = null;
+        let submitTimeoutId = null;
+
+        const startCountdown = () => {
+          const counterEl = Swal.getHtmlContainer().querySelector('#undo-countdown');
+          intervalId = setInterval(() => {
+            secs -= 1;
+            if (counterEl) counterEl.textContent = secs;
+            if (secs <= 0) {
+              clearInterval(intervalId);
+            }
+          }, 1000);
+        };
+
+        const clearTimers = () => {
+          if (intervalId) clearInterval(intervalId);
+          if (submitTimeoutId) clearTimeout(submitTimeoutId);
+        };
+
+        Swal.fire({
+          title: 'Eliminación programada',
+          html: `
+            <p>Tienes <b id="undo-countdown">10</b> segundos para <b>anular</b> tu decisión.</p>
+            <small>Si no haces nada, se eliminará automáticamente.</small>
+          `,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Eliminar ahora',
+          cancelButtonText: 'Anular',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          timerProgressBar: true,
+          didOpen: () => {
+            startCountdown();
+            // envía automáticamente cuando acabe el tiempo (10s)
+            submitTimeoutId = setTimeout(() => {
+              // bloquear doble clic
+              btn.disabled = true;
+              // asegura el parámetro "eliminar" en el POST
+              if (!form.querySelector('input[name="eliminar"]')) {
+                const h = document.createElement('input');
+                h.type = 'hidden';
+                h.name = 'eliminar';
+                h.value = '1';
+                form.appendChild(h);
+              }
+              form.submit();
+            }, 10000);
+          }
+        }).then((r2) => {
+          // Se cerró por botón Confirmar (Eliminar ahora) o Cancelar (Anular)
+          clearTimers();
+
+          if (r2.isConfirmed) {
+            // Eliminar YA
+            btn.disabled = true;
+            if (!form.querySelector('input[name="eliminar"]')) {
+              const h = document.createElement('input');
+              h.type = 'hidden';
+              h.name = 'eliminar';
+              h.value = '1';
+              form.appendChild(h);
+            }
+            form.submit();
+          } else {
+            // Anulado por el usuario
+            Swal.fire({
+              icon: 'info',
+              title: 'Eliminación cancelada',
+              timer: 1500,
+              showConfirmButton: false
+            });
+          }
+        });
+      });
+    });
+  });
+});
 </script>
 
 <style>

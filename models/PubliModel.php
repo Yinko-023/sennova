@@ -105,36 +105,38 @@ class PublicacionModel
         $this->conn = conectaDb();
     }
 
-    public function guardarPublicacion($n_cliente, $titulo, $contenido, $categoria, $destacada, $nombreImagen, $fecha, $is_active, $lab_area)
+    public function guardarPublicacion($titulo, $contenido, $categoria, $destacada, $nombreImagen, $fecha, $is_active, $lab_area)
     {
         try {
+            // Si marcas una destacada, desmarca las demás
             if ($destacada) {
                 $this->conn->query("UPDATE publications SET destacada = 0 WHERE destacada = 1");
             }
 
-            // Añadir 'n_cliente' al INSERT
-            $sql = "INSERT INTO publications (n_cliente, title, content, image_path, type_pu, published_at, destacada, is_active, lab_area)
+            // Si quieres guardar thumbnail_path en NULL por ahora:
+            $thumbnail = null;
+
+            $sql = "INSERT INTO publications (title, content, image_path, thumbnail_path, type_pu, lab_area, published_at, is_active, destacada)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $this->conn->prepare($sql);
-            
-            $stmt->bindParam(1, $n_cliente);
-            $stmt->bindParam(2, $titulo);
-            $stmt->bindParam(3, $contenido);
-            $stmt->bindParam(4, $nombreImagen);
+            $stmt->bindParam(1, $titulo);
+            $stmt->bindParam(2, $contenido);
+            $stmt->bindParam(3, $nombreImagen);
+            $stmt->bindParam(4, $thumbnail);     // NULL por ahora
             $stmt->bindParam(5, $categoria);
-            $stmt->bindParam(6, $fecha);
-            $stmt->bindParam(7, $destacada, PDO::PARAM_INT);
-            $stmt->bindParam(8, $is_active, PDO::PARAM_INT);
-            $stmt->bindParam(9, $lab_area);
+            $stmt->bindParam(6, $lab_area);
+            $stmt->bindParam(7, $fecha);         // 'YYYY-mm-dd HH:ii:ss'
+            $stmt->bindValue(8, (int)$is_active, PDO::PARAM_INT);
+            $stmt->bindValue(9, (int)$destacada, PDO::PARAM_INT);
 
             return $stmt->execute();
         } catch (PDOException $e) {
-            // Log del error
             error_log("Error al insertar publicación: " . $e->getMessage());
             return false;
         }
     }
+
 
     public function obtenerPublicacionesCafe()
     {
@@ -334,7 +336,20 @@ class UserModel
             return false;
         }
     }
+    public function actualizarContacto(int $id, string $username, string $telefono, string $direccion)
+    {
+        // (opcional) evitar username duplicado
+        $sqlCheck = "SELECT COUNT(*) FROM users WHERE username = ? AND id != ?";
+        $stmtCheck = $this->conn->prepare($sqlCheck);
+        $stmtCheck->execute([$username, $id]);
+        if ($stmtCheck->fetchColumn() > 0) return 'username_duplicado';
 
+        $sql = "UPDATE users
+            SET username = ?, telefono = ?, direccion = ?, updated_at = NOW()
+            WHERE id = ? LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([$username, $telefono, $direccion, $id]);
+    }
 
     public function verificarCorreoConToken($token)
     {
@@ -346,8 +361,6 @@ class UserModel
 
         return $stmt->rowCount() > 0;
     }
-
-
 
     public function obtenerRolesActivos()
     {
@@ -452,7 +465,6 @@ class UserModel
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute($valores);
     }
-
 
     public function eliminarUsuarioPorId($id)
     {
@@ -953,6 +965,7 @@ class GestionModel
         return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
+
     public function crearBoton($nombre, $ruta, $color)
     {
         $sql = "INSERT INTO gestion_botones (name_but, ruta_but, color_but) VALUES (?, ?, ?)";
@@ -991,14 +1004,16 @@ class GestionModel
 
 
     // subprocesos
-    public function insertar($subname, $ruta_sub, $idProceso, $archivo_padre = null)
+
+
+    // Insertar subproceso
+    public function insertar(string $nombre, string $ruta_sub, int $idProceso, ?string $archivo_padre = null): bool
     {
         $sql = $this->conn->prepare("
-            INSERT INTO gestion_subprocesos 
-            (nombre_sub, ruta_sub, id_proceso, Pro_padre)
-            VALUES ( ?, ?, ?, ?)
+            INSERT INTO gestion_subprocesos (nombre_sub, ruta_sub, id_proceso, Pro_padre)
+            VALUES (?, ?, ?, ?)
         ");
-        return $sql->execute([$subname, $ruta_sub, $idProceso, $archivo_padre]);
+        return $sql->execute([$nombre, $ruta_sub, $idProceso, $archivo_padre]);
     }
 
     public function obtenerPorProceso($idProceso)
@@ -1007,6 +1022,34 @@ class GestionModel
         $sql->execute([$idProceso]);
         return $sql->fetchAll(PDO::FETCH_ASSOC);
     }
+    // ¿Existe ya esta ruta de proceso en la BD?
+    public function existeRuta(string $rutaBD): bool
+    {
+        $st = $this->conn->prepare("SELECT COUNT(*) FROM gestion_botones WHERE ruta_but = ?");
+        $st->execute([$rutaBD]);
+        return (bool)$st->fetchColumn();
+    }
+
+    public function existeSubPro(int $idProceso, string $rutaSub): bool
+    {
+        $st = $this->conn->prepare("SELECT COUNT(*) FROM gestion_subprocesos WHERE id_proceso = ? AND ruta_sub = ?");
+        $st->execute([$idProceso, $rutaSub]);
+        return (bool)$st->fetchColumn();
+    }
+
+
+    public function buscarSubprocesoPorRuta(string $rutaSub, int $idProceso): ?array
+    {
+        $st = $this->conn->prepare("
+        SELECT *
+        FROM gestion_subprocesos
+        WHERE ruta_sub = ? AND id_proceso = ?
+        LIMIT 1
+    ");
+        $st->execute([$rutaSub, $idProceso]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
 
     public function obtenerPorArchivoPadre($archivo)
     {
@@ -1014,27 +1057,51 @@ class GestionModel
         $sql->execute([$archivo]);
         return $sql->fetchAll(PDO::FETCH_ASSOC);
     }
-
-    public function eliminarsub($id_sub)
+    public function existeRutaSub(int $idProceso, string $rutaSub): bool
     {
-        // Primero obtenemos la ruta del archivo
-        $stmt = $this->conn->prepare("SELECT ruta_sub FROM gestion_subprocesos WHERE id_sub = ?");
-        $stmt->execute([$id_sub]);
-        $sub = $stmt->fetch(PDO::FETCH_ASSOC);
+        $st = $this->conn->prepare(
+            "SELECT 1 FROM gestion_subprocesos WHERE id_proceso = ? AND ruta_sub = ? LIMIT 1"
+        );
+        $st->execute([$idProceso, $rutaSub]);
+        return (bool)$st->fetchColumn();
+    }
 
-        if ($sub) {
-            $rutaArchivo = '../views/procesos/sub/' . $sub['ruta_sub'] . '.php';
-            if (file_exists($rutaArchivo)) {
-                unlink($rutaArchivo); // Elimina el archivo físico
+    public function eliminarsub($id_sub): bool
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $stmt = $this->conn->prepare("SELECT ruta_sub FROM gestion_subprocesos WHERE id_sub = ? FOR UPDATE");
+            $stmt->execute([$id_sub]);
+            $sub = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$sub) {
+                $this->conn->rollBack();
+                return false;
             }
 
-            // Luego eliminamos el registro de la base de datos
-            $sql = $this->conn->prepare("DELETE FROM gestion_subprocesos WHERE id_sub = ?");
-            return $sql->execute([$id_sub]);
-        }
+            $slug = basename((string)$sub['ruta_sub']);
+            $projectRoot = dirname(__DIR__);
+            $filePath = $projectRoot . '/views/procesos/sub/' . $slug . '.php';
 
-        return false;
+            if (is_file($filePath)) {
+                @unlink($filePath);
+            }
+
+            $del = $this->conn->prepare("DELETE FROM gestion_subprocesos WHERE id_sub = ?");
+            $del->execute([$id_sub]);
+
+            $this->conn->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log('eliminarsub error: ' . $e->getMessage());
+            return false;
+        }
     }
+
 
     public function obtenerSubprocesoPorId($id_sub)
     {
@@ -1272,7 +1339,7 @@ class PortadaModel
 
     public function __construct()
     {
-        $this->conn = conectaDb(); 
+        $this->conn = conectaDb();
     }
 
     public function obtenerPortadaPorArea($area)

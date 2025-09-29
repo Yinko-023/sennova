@@ -3,28 +3,15 @@
 </div>
 
 <div class="container py-5">
-  <!-- Modal de notificación -->
-  <div class="modal fade notification-modal" id="notificationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="progress-bar">
-          <div class="progress-bar-fill"></div>
-        </div>
-        <div class="modal-header">
-          <h5 class="modal-title">Notificación</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="icon-container">
-            <i class="fas fa-check-circle"></i>
-          </div>
-          <h4 class="modal-title mb-3">Título del mensaje</h4>
-          <p class="mb-4">Contenido del mensaje aparecerá aquí</p>
-          <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">Entendido</button>
-        </div>
-      </div>
+<!-- Toasts -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:1080">
+  <div id="uploadToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body" id="uploadToastMsg">...</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
   </div>
+</div>
 
   <!-- Tarjeta de subida -->
   <div class="card upload-card border-0 mb-4 no-dark">
@@ -105,7 +92,7 @@
 
 <script>
   // Configuración inicial de fecha
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', function() {
     const dateInput = document.getElementById('date_publi_ar');
     const now = new Date();
     const formattedNow = now.toISOString().slice(0, 16);
@@ -122,7 +109,7 @@
       otro: '*/*'
     };
 
-    typeSelect.addEventListener('change', function () {
+    typeSelect.addEventListener('change', function() {
       fileInput.setAttribute('accept', acceptMap[this.value] || '');
     });
 
@@ -136,7 +123,7 @@
       themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
     }
 
-    themeToggle.addEventListener('click', function () {
+    themeToggle.addEventListener('click', function() {
       body.classList.toggle('dark');
       if (body.classList.contains('dark')) {
         localStorage.setItem('theme', 'dark');
@@ -149,7 +136,7 @@
 
     // Validación de tamaño de archivo
     const form = document.querySelector('form');
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', function(e) {
       const fileInput = document.getElementById('archivo');
       const maxSize = 10 * 1024 * 1024; // 10MB
 
@@ -269,8 +256,13 @@
   }
 
   @keyframes progressBar {
-    0% { width: 100%; }
-    100% { width: 0%; }
+    0% {
+      width: 100%;
+    }
+
+    100% {
+      width: 0%;
+    }
   }
 
   /* Tarjeta de subida */
@@ -307,14 +299,16 @@
   }
 
   /* Formulario */
-  .form-control, .form-select {
+  .form-control,
+  .form-select {
     border-radius: 8px;
     padding: 0.75rem 1rem;
     border: 1px solid #e0e0e0;
     transition: all 0.3s;
   }
 
-  .form-control:focus, .form-select:focus {
+  .form-control:focus,
+  .form-select:focus {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 0.25rem rgba(76, 201, 240, 0.25);
   }
@@ -410,4 +404,34 @@
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const msg = params.get('mensaje');
+  if (!msg) return;
 
+  const map = {
+    subido:       { cls: 'text-bg-success', text: 'Archivo subido correctamente.' },
+    error_bd:     { cls: 'text-bg-danger',  text: 'Error al guardar en la base de datos.' },
+    error_mover:  { cls: 'text-bg-warning', text: 'No se pudo mover el archivo al servidor.' },
+    error_archivo:{ cls: 'text-bg-warning', text: 'No se seleccionó un archivo válido.' },
+    error_auth:   { cls: 'text-bg-danger',  text: 'Acceso denegado: usuario no autenticado.' }
+  };
+
+  const cfg = map[msg];
+  if (!cfg) return;
+
+  const toastEl = document.getElementById('uploadToast');
+  toastEl.className = `toast align-items-center ${cfg.cls} border-0`;
+  document.getElementById('uploadToastMsg').textContent = cfg.text;
+
+  const toast = new bootstrap.Toast(toastEl, { delay: 3500, autohide: true });
+  toast.show();
+
+  // Limpia el querystring para que no se repita al refrescar
+  params.delete('mensaje');
+  const qs = params.toString();
+  const newUrl = qs ? `${location.pathname}?${qs}${location.hash}` : `${location.pathname}${location.hash}`;
+  history.replaceState({}, '', newUrl);
+});
+</script>

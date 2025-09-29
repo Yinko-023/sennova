@@ -44,6 +44,7 @@ $subprocesos = $model->obtenerPorProceso($idProceso);
 <div class="container py-section">
   <!-- FORMULARIO -->
   <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) || ((isset($_SESSION['rol']) && $_SESSION['rol'] == 2) || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica'))): ?>
+
     <div class="row justify-content-center mb-5">
       <div class="col-lg-10">
         <div class="card-form">
@@ -108,13 +109,14 @@ $subprocesos = $model->obtenerPorProceso($idProceso);
               </a>
             </div>
 
-            <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) || ((isset($_SESSION['rol']) && $_SESSION['rol'] == 2) || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica'))): ?>
+             <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) || ((isset($_SESSION['rol']) && $_SESSION['rol'] == 2) || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica'))): ?>
               <div class="mt-2">
-                <form method="post" action="/sennova/routes/createProces.php" class="d-inline">
+                <form method="post"
+                  action="/sennova/routes/createProces.php"
+                  class="d-inline js-confirm-delete-sub"
+                  data-name="<?= htmlspecialchars($sub['nombre_sub']) ?>">
                   <input type="hidden" name="id_sub" value="<?= $sub['id_sub'] ?>">
-                  <button type="submit" name="eliminar_sub"
-                    class="btn btn-outline-danger btn-sm"
-                    onclick="return confirm('¿Estás seguro de eliminar este subproceso?')">
+                  <button type="button" class="btn btn-outline-danger btn-sm" data-role="btn-delete-sub">
                     <i class="fas fa-trash me-1"></i>Eliminar
                   </button>
                 </form>
@@ -133,8 +135,130 @@ $subprocesos = $model->obtenerPorProceso($idProceso);
   </div>
 </div>
 
-<!-- Bootstrap Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('form.js-confirm-delete-sub').forEach((form) => {
+    const btn = form.querySelector('[data-role="btn-delete-sub"]');
+    if (!btn) return;
+
+    btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+
+      const nombre = form.dataset.name || 'el subproceso';
+
+      Swal.fire({
+        title: '¿Eliminar subproceso?',
+        html: `Se eliminará <b>sd</b>.<br><small>Puede contener archivos. Esta acción NO se puede deshacer.</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33'
+      }).then((res) => {
+        if (!res.isConfirmed) return;
+
+        let secs = 10, intervalId = null, submitTimeoutId = null;
+
+        const startCountdown = () => {
+          const el = Swal.getHtmlContainer().querySelector('#undo-countdown');
+          intervalId = setInterval(() => {
+            secs -= 1;
+            if (el) el.textContent = secs;
+            if (secs <= 0) clearInterval(intervalId);
+          }, 1000);
+        };
+
+        const clearTimers = () => {
+          if (intervalId) clearInterval(intervalId);
+          if (submitTimeoutId) clearTimeout(submitTimeoutId);
+        };
+
+        Swal.fire({
+          title: 'Eliminación programada',
+          html: `
+            <p>Tienes <b id="undo-countdown">10</b> segundos para <b>anular</b> tu decisión.</p>
+            <small>Si no haces nada, se eliminará automáticamente.</small>
+          `,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Eliminar ahora',
+          cancelButtonText: 'Anular',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          timerProgressBar: true,
+          didOpen: () => {
+            startCountdown();
+            submitTimeoutId = setTimeout(() => {
+              btn.disabled = true;
+              // Asegura el campo "eliminar_sub" para el POST
+              if (!form.querySelector('input[name="eliminar_sub"]')) {
+                const h = document.createElement('input');
+                h.type = 'hidden';
+                h.name = 'eliminar_sub';
+                h.value = '1';
+                form.appendChild(h);
+              }
+              form.submit();
+            }, 10000);
+          }
+        }).then((r2) => {
+          clearTimers();
+          if (r2.isConfirmed) {
+            btn.disabled = true;
+            if (!form.querySelector('input[name="eliminar_sub"]')) {
+              const h = document.createElement('input');
+              h.type = 'hidden';
+              h.name = 'eliminar_sub';
+              h.value = '1';
+              form.appendChild(h);
+            }
+            form.submit();
+          } else {
+            Swal.fire({ icon: 'info', title: 'Eliminación cancelada', timer: 1500, showConfirmButton: false });
+          }
+        });
+      });
+    });
+  });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const qs = new URLSearchParams(location.search);
+
+  if (qs.has('errSub')) {
+    const msg = qs.get('errSub') || 'Ocurrió un error.';
+    Swal.fire({
+      icon: 'error',
+      title: 'Ruta duplicada',
+      text: msg,
+      confirmButtonText: 'Entendido'
+    });
+    // Limpia el parámetro para que no se repita al refrescar
+    qs.delete('errSub');
+    qs.delete('resSub');
+    const newQuery = qs.toString();
+    history.replaceState(null, '', location.pathname + (newQuery ? '?' + newQuery : '') + location.hash);
+  }
+
+  if (qs.has('resSub')) {
+    Swal.fire({
+      icon: 'success',
+      title: 'Subproceso creado',
+      text: 'Se creó correctamente.',
+      timer: 1800,
+      showConfirmButton: false
+    });
+    qs.delete('resSub');
+    qs.delete('errSub');
+    const newQuery = qs.toString();
+    history.replaceState(null, '', location.pathname + (newQuery ? '?' + newQuery : '') + location.hash);
+  }
+});
+</script>
 
 <style>
   :root {
