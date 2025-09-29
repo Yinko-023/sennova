@@ -1,9 +1,10 @@
 <?php
 $model = new GestionModel();
 $botones = $model->obtenerBotones();
-$rutaImagen = 'img/';
-$nombreImagen = file_exists($rutaImagen . 'imagen_actual.txt') ? trim(file_get_contents($rutaImagen . 'imagen_actual.txt')) : null;
-$imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
+$txtPath   = dirname(__DIR__, 2) . '/img/imagen_actual.txt';
+$imgNombre = is_file($txtPath) ? trim((string)file_get_contents($txtPath)) : null;
+$imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL pública incluye /sennova
+
 ?>
 
 <div class="process-container">
@@ -88,15 +89,39 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
   </div>
 </div>
 
-<?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1) || ((isset($_SESSION['rol']) && $_SESSION['rol'] == 2) || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica'))): ?>
+
+<?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
+  || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
+  || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
+): ?>
+
   <div class="text-center mb-4">
-    <button class="btn btn-primary me-2">
-      <i class="fas fa-upload me-1"></i> Subir Imagen
-    </button>
-    <button class="btn btn-outline-danger">
-      <i class="fas fa-trash me-1"></i> Eliminar Imagen
-    </button>
+    <!-- SUBIR -->
+    <form id="form-subir-imagen"
+      action="/sennova/routes/SaveImg.php"
+      method="POST"
+      enctype="multipart/form-data"
+      class="d-inline">
+      <input type="hidden" name="accion" value="subir">
+      <input type="file" name="imagen" id="input-file-imagen"
+        accept=".jpg,.jpeg,.png,.webp" style="display:none">
+      <button type="button" class="btn btn-primary me-2" id="btn-subir-imagen">
+        <i class="fas fa-upload me-1"></i> Subir Imagen
+      </button>
+    </form>
+
+    <!-- ELIMINAR -->
+    <?php if (!empty($imagenURL)): ?>
+      <form id="form-eliminar-imagen" action="/sennova/routes/SaveImg.php" method="POST" class="d-inline"
+        onsubmit="return confirm('¿Eliminar la imagen actual?');">
+        <input type="hidden" name="accion" value="eliminar">
+        <button type="submit" class="btn btn-outline-danger">
+          <i class="fas fa-trash me-1"></i> Eliminar Imagen
+        </button>
+      </form>
+    <?php endif; ?>
   </div>
+
 <?php endif; ?>
 
 <?php if ($imagenURL): ?>
@@ -108,12 +133,13 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
       data-bs-toggle="modal" data-bs-target="#custom-imagen-modal">
   </div>
 
+  <!-- Modal zoom -->
   <div class="modal fade" id="custom-imagen-modal" tabindex="-1"
     aria-labelledby="custom-imagen-modal-label" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
-      <div class="modal-content">
-        <div class="modal-header border-0">
-          <h5 class="modal-title text-white" id="custom-imagen-modal-label">Vista Ampliada</h5>
+      <div class="modal-content" id="modal-actividad">
+        <div class="modal-header border-0 text-white" id="modal-actividad-header">
+          <h5 class="modal-title" id="custom-imagen-modal-label">Vista Ampliada</h5>
           <button type="button" id="custom-close-button" class="btn-close btn-close-white"
             data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
@@ -131,7 +157,33 @@ $imagenURL = $nombreImagen ? $rutaImagen . $nombreImagen : null;
   </div>
 <?php endif; ?>
 
+<!-- JS: disparar input y auto-enviar -->
+     <script>
+
+  document.getElementById('btn-subir-imagen')?.addEventListener('click', function() {
+    document.getElementById('input-file-imagen').click();
+  });
+  document.getElementById('input-file-imagen')?.addEventListener('change', function() {
+    if (this.files && this.files.length > 0) {
+      document.getElementById('form-subir-imagen').submit();
+    }
+  });
+</script>
+
 <style>
+  /* CSS por IDs (gradient y bordes del modal) */
+  #modal-actividad {
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  #modal-actividad-header {
+    background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+    border-bottom: none;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
   .process-grid {
     display: flex;
     flex-wrap: wrap;

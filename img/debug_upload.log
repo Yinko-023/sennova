@@ -1,0 +1,60 @@
+[2025-09-29 15:52:05] accion=subir
+POST: Array
+(
+    [accion] => subir
+)
+FILES: Array
+(
+    [imagen] => Array
+        (
+            [name] => ge.png
+            [full_path] => ge.png
+            [type] => image/png
+            [tmp_name] => C:\xampp\tmp\php4ADF.tmp
+            [error] => 0
+            [size] => 6463191
+        )
+
+)
+
+[2025-09-29 15:52:05] ERROR: El archivo supera 3MB.
+[2025-09-29 15:52:51] accion=subir
+POST: Array
+(
+    [accion] => subir
+)
+FILES: Array
+(
+    [imagen] => Array
+        (
+            [name] => ge.png
+            [full_path] => ge.png
+            [type] => image/png
+            [tmp_name] => C:\xampp\tmp\phpE2.tmp
+            [error] => 0
+            [size] => 6463191
+        )
+
+)
+
+[2025-09-29 15:52:51] ERROR: El archivo supera 3MB.
+[2025-09-29 15:56:33] accion=subir
+POST: Array
+(
+    [accion] => subir
+)
+FILES: Array
+(
+    [imagen] => Array
+        (
+            [name] => ge.png
+            [full_path] => ge.png
+            [type] => image/png
+            [tmp_name] => C:\xampp\tmp\php6442.tmp
+            [error] => 0
+            [size] => 6463191
+        )
+
+)
+
+[2025-09-29 15:56:33] ERROR: El archivo supera 3MB.

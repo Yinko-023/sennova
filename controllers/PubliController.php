@@ -312,9 +312,8 @@ if (!\$proceso) {
 <!-- Main Content -->
 <div class="container py-section">
   <!-- FORMULARIO -->
-  <?php if ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 1) ||
-    (isset(\$_SESSION['rol'], \$_SESSION['area']) && \$_SESSION['rol'] == 3 && \$_SESSION['area'] === 'electronica')
-  ): ?>
+  <?php if ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 1) || ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 2) || (isset(\$_SESSION['rol'], \$_SESSION['area']) && \$_SESSION['rol'] == 3 && \$_SESSION['area'] === 'electronica'))): ?>
+
     <div class="row justify-content-center mb-5">
       <div class="col-lg-10">
         <div class="card-form">
@@ -379,8 +378,8 @@ if (!\$proceso) {
               </a>
             </div>
 
-            <?php if ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 1) ||
-              (isset(\$_SESSION['rol'], \$_SESSION['area']) && \$_SESSION['rol'] == 3 && \$_SESSION['area'] === 'electronica')
+             <?php if ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 1) || ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 2) || (isset(\$_SESSION['rol'], \$_SESSION['area']) && \$_SESSION['rol'] == 3 && \$_SESSION['area'] === 'electronica'))): ?>
+
             ): ?>
               <div class="mt-2">
                 <form method="post" action="/sennova/routes/createProces.php" class="d-inline">
@@ -783,13 +782,8 @@ function obtenerIcono(\$ext)
             </div>
 
             <!-- Sección de carga de archivos -->
-            <?php if (
-                isset(\$_SESSION['rol']) &&
-                (
-                    \$_SESSION['rol'] == 1 ||
-                    (\$_SESSION['rol'] == 3 && isset(\$_SESSION['area']) && \$_SESSION['area'] === 'electronica')
-                )
-            ): ?>
+            <?php if ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 1) || ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 2) || (isset(\$_SESSION['rol'], \$_SESSION['area']) && \$_SESSION['rol'] == 3 && \$_SESSION['area'] === 'electronica'))): ?>
+
                 <p style="color: white;" class="mb-0 px-3 mt-5 text-center">
                     Gestiona los documentos relacionados con
                     <span style="color: var(--accent-color);">
@@ -854,13 +848,8 @@ function obtenerIcono(\$ext)
                                                 onclick="mostrarVistaPrevia('<?= htmlspecialchars(\$archivo['ruta_ar']) ?>', '<?= strtolower(\$archivo['extension_ar']) ?>')">
                                                 <i class="fas fa-eye me-1"></i>Ver
                                             </button>
-                                            <?php if (
-                                                isset(\$_SESSION['rol']) &&
-                                                (
-                                                    \$_SESSION['rol'] == 1 ||
-                                                    (\$_SESSION['rol'] == 3 && isset(\$_SESSION['area']) && \$_SESSION['area'] === 'electronica')
-                                                )
-                                            ): ?>
+
+                                             <?php if ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 1) || ((isset(\$_SESSION['rol']) && \$_SESSION['rol'] == 2) || (isset(\$_SESSION['rol'], \$_SESSION['area']) && \$_SESSION['rol'] == 3 && \$_SESSION['area'] === 'electronica'))): ?>
                                                 <a href="/sennova/routes/archiveSubproces.php?action=eliminar&id=<?= \$archivo['id_ar'] ?>&origen=<?= urlencode(\$origen) ?>"
                                                     class="btn btn-delete"
                                                     onclick="return confirm('¿Estás seguro de que deseas eliminar este archivo?')">
@@ -4536,4 +4525,3 @@ class ResumenController
     return $st->fetch(PDO::FETCH_ASSOC) ?: null;
   }
 }
-
