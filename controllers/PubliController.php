@@ -21,6 +21,7 @@ class PublicacionController
     $mensaje = '';
 
     // Obtener datos del formulario
+    $n_cliente = $_POST['n_cliente'] ?? '';
     $titulo = $_POST['title'] ?? '';
     $contenido = $_POST['content'] ?? '';
     $categoria = $_POST['type'] ?? '';
@@ -58,22 +59,27 @@ class PublicacionController
     // Guardar en la base de datos
     $modelo = new PublicacionModel();
     $exito = $modelo->guardarPublicacion(
-      $titulo,
-      $contenido,
-      $categoria,
-      $destacada,
-      $nombreImagen,
-      $fecha,
-      $is_active,
-      $lab_area
+        $n_cliente,
+        $titulo,
+        $contenido,
+        $categoria,
+        $destacada,
+        $nombreImagen,
+        $fecha,
+        $is_active,
+        $lab_area
     );
 
+    // Manejar el resultado de la operación
     if ($exito) {
-      header('Location: /sennova/inAdmin.php?vista=supubli&mensaje=publicado');
+        // Redireccionar o mostrar mensaje de éxito
+        header("Location: /sennova/inAdmin.php?vista=supubli&mensaje=guardado");
     } else {
-      header('Location: /sennova/inAdmin.php?vista=supubli&mensaje=error');
+        // Manejar el error
+        $mensaje = 'Error al guardar la publicación. Inténtalo de nuevo.';
+        // Redireccionar o mostrar mensaje de error
+        header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode($mensaje));
     }
-    exit;
   }
 
   public function verCalidadCafe()
@@ -2159,7 +2165,7 @@ class EvaluacionController
     }
   }
   /* ===================== ALMACENAMIENTO DE PDF Y REGISTRO ===================== */
-  private static function persistGeneratedPdf(\TCPDF $pdf, string $suggestedName, string $formType, array $metadata = [], ?string $documentNumber = null): array
+  private static function persistGeneratedPdf(\TCPDF $pdf, string $suggestedName, string $formType, array $metadata = [], ?string $documentNumber = null, ?string $n_cliente = null): array
   {
     // 1) Preparar directorio destino: /public/pdfs/YYYY/MM
     $root = dirname(__DIR__); // sennova/
@@ -2208,8 +2214,8 @@ class EvaluacionController
     $mime = 'application/pdf';
 
     $stmt = $pdo->prepare('INSERT INTO generated_pdfs
-      (filename, original_name, relative_path, mime_type, size_bytes, area, form_type, created_by_user, sha256_hash, metadata_json)
-      VALUES (:filename, :original_name, :relative_path, :mime_type, :size_bytes, :area, :form_type, :created_by_user, :sha256_hash, :metadata_json)');
+      (filename, original_name, relative_path, mime_type, size_bytes, area, form_type, created_by_user, sha256_hash, metadata_json, n_cliente)
+      VALUES (:filename, :original_name, :relative_path, :mime_type, :size_bytes, :area, :form_type, :created_by_user, :sha256_hash, :metadata_json, :n_cliente)');
     $stmt->execute([
       ':filename' => $filename,
       ':original_name' => $original,
@@ -2221,6 +2227,7 @@ class EvaluacionController
       ':created_by_user' => $userId,
       ':sha256_hash' => $hash,
       ':metadata_json' => !empty($metadata) ? json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+      ':n_cliente' => $n_cliente,
     ]);
 
     return [
@@ -2284,6 +2291,9 @@ class EvaluacionController
   private static function storeCotizacion(): void
   {
     self::ensureTcpdfLoaded();
+    
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
 
     // ---------- 0) AUTO–INCREMENTO DEL CÓDIGO (PROPIO DE ESTE FORM) ----------
     $root = dirname(__DIR__, 2);
@@ -2313,6 +2323,15 @@ class EvaluacionController
 
     // ---------- 1) Datos ----------
     $n_cliente = trim($_POST['n_cliente'] ?? '');
+    
+    // ---------- 1.0) LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    // Si no se proporciona n_cliente, generar uno nuevo
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      // Si se proporciona, validar que sea numérico y formatear
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
     $viaSel  = (array)($_POST['solicitud_via'] ?? []);
     $viaOtro = trim($_POST['solicitud_via_otro'] ?? '');
     $fecha   = $_POST['fecha'] ?? date('Y-m-d');
@@ -2526,6 +2545,19 @@ class EvaluacionController
     $outMode = ($mode === 'print') ? 'I' : 'D';
     $baseName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $razon);
     $fileName = "Solicitud_{$baseName}.pdf";
+    
+    // Guardar en base de datos
+    $meta = [
+      'numero_solicitud' => $nro,
+      'fecha' => $fecha,
+      'cliente' => [
+        'razon' => $razon,
+        'nit' => $nit,
+        'email' => $email
+      ]
+    ];
+    self::persistGeneratedPdf($pdf, $fileName, 'form1_solicitud', $meta, $nit, $n_cliente);
+    
     $pdf->Output($fileName, $outMode);
     exit;
   }
@@ -2533,6 +2565,17 @@ class EvaluacionController
   /* ===============  FORMULARIO 2 (EVALUACIÓN 2p – TCPDF)  ================= */
   public static function store(): void
   {
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
+    
+    // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    $n_cliente = trim($_POST['n_cliente'] ?? '');
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
+    
     $v = [
       'nombre' => trim($_POST['nombre'] ?? ''),
       'fecha'  => trim($_POST['fecha'] ?? date('Y-m-d')),
@@ -2541,6 +2584,7 @@ class EvaluacionController
       'serviciosMarcados' => [],
       'itemsValores'      => [],
       'aprobado'          => null,
+      'n_cliente'         => $n_cliente,
     ];
 
     if (!empty($_POST['servicio']) && is_array($_POST['servicio'])) {
@@ -2776,7 +2820,7 @@ class EvaluacionController
       'codigo' => $codigo,
     ];
 
-    self::persistGeneratedPdf($pdf, $fileName, 'form2_evaluacion', $meta, null);
+    self::persistGeneratedPdf($pdf, $fileName, 'form2_evaluacion', $meta, null, $v['n_cliente']);
     $pdf->Output($fileName, $outMode);
     exit;
   }
@@ -2788,6 +2832,9 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
+    
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
 
     /* ========== 1) POST ========== */
     $sol_via       = trim((string)($_POST['solicitud_via'] ?? ''));
@@ -2796,6 +2843,14 @@ class EvaluacionController
     $fecha         = (string)($_POST['fecha'] ?? date('Y-m-d'));
     $cot_no        = trim((string)($_POST['cotizacion_no'] ?? ''));   // ← se usará con autoincremento
     $comp_no       = trim((string)($_POST['comprobante_no'] ?? ''));
+    
+    // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    $n_cliente = trim($_POST['n_cliente'] ?? '');
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
 
     $razon_social  = trim((string)($_POST['razon_social'] ?? ''));
     $nit_cc        = trim((string)($_POST['nit_cc'] ?? ''));
@@ -3053,7 +3108,7 @@ class EvaluacionController
       'razon_social' => $razon_social,
       'fecha'        => $fecha,
     ];
-    self::persistGeneratedPdf($pdf, $fileName, 'form3_cotizacion', $meta, $nit_cc);
+    self::persistGeneratedPdf($pdf, $fileName, 'form3_cotizacion', $meta, $nit_cc, $n_cliente);
 
     $pdf->Output($fileName, $outMode);
     exit;
@@ -3067,6 +3122,9 @@ class EvaluacionController
     }
 
     self::ensureTcpdfLoaded();
+    
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
 
     // ===== 0) AUTO–INCREMENTO DEL CÓDIGO (PROPIO DE ESTE FORM – F4) =====
     $root        = dirname(__DIR__, 2);
@@ -3103,6 +3161,14 @@ class EvaluacionController
     $asignado = trim($_POST['ot_asignado'] ?? '');
     $activ    = (string)($_POST['ot_actividades'] ?? '');
     $emitido  = trim($_POST['ot_emitido_por'] ?? '');
+    
+    // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    $n_cliente = trim($_POST['n_cliente'] ?? '');
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
 
     // ===== 1.1) Resolver número con las reglas =====
     if ($resetFlag) {
@@ -3310,7 +3376,7 @@ class EvaluacionController
 
     $fileName = "OrdenTrabajo_{$norm}.pdf";
     $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
-    self::persistGeneratedPdf($pdf, $fileName, 'form4_orden_trabajo', [], $cc_para_nombre);
+    self::persistGeneratedPdf($pdf, $fileName, 'form4_orden_trabajo', [], $cc_para_nombre, $n_cliente);
     $pdf->Output($fileName, $outMode);
     exit;
   }
@@ -3323,6 +3389,9 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
+    
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
 
     // ===== 0) AUTO–INCREMENTO (contador exclusivo F5) =====
     $root        = dirname(__DIR__, 2);
@@ -3349,6 +3418,14 @@ class EvaluacionController
     // Flags desde el form
     $advanceFlag = (string)($_POST['advance_code'] ?? '') === '1'; // consumir/avanzar
     $resetFlag   = (string)($_POST['reset_code']   ?? '') === '1'; // reiniciar a 001
+
+    // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    $n_cliente = trim($_POST['n_cliente'] ?? '');
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
 
     // 1) Datos
     $vd = [
@@ -3516,7 +3593,7 @@ class EvaluacionController
 
     $fileName = "VerificacionPCB_{$norm}.pdf";
     $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
-    self::persistGeneratedPdf($pdf, $fileName, 'form5_verificacion_pcb', [], $cc_para_nombre);
+    self::persistGeneratedPdf($pdf, $fileName, 'form5_verificacion_pcb', [], $cc_para_nombre, $n_cliente);
     $pdf->Output($fileName, $outMode);
     exit;
   }
@@ -3529,6 +3606,9 @@ class EvaluacionController
       @ob_end_clean();
     }
     self::ensureTcpdfLoaded();
+    
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
 
     /* ===== 0) AUTO–INCREMENTO (contador exclusivo F6) ===== */
     $root        = dirname(__DIR__, 2);
@@ -3564,6 +3644,14 @@ class EvaluacionController
     $aprob    = trim((string)($_POST['v3d_aprobo'] ?? ''));
     $aprobado = (string)($_POST['v3d_aprobado'] ?? '');
     $fecha    = $fechaIso ? date('d/m/Y', strtotime($fechaIso)) : '';
+    
+    // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    $n_cliente = trim($_POST['n_cliente'] ?? '');
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
 
     // 1.1) Resolver correlativo (v3d_ot)
     if ($resetFlag) {
@@ -3693,7 +3781,7 @@ class EvaluacionController
 
     $fileName = "Verificacion3D_{$norm}.pdf";
     $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
-    self::persistGeneratedPdf($pdf, $fileName, 'form6_verificacion_3d', [], $cc_para_nombre);
+    self::persistGeneratedPdf($pdf, $fileName, 'form6_verificacion_3d', [], $cc_para_nombre, $n_cliente);
     $pdf->Output($fileName, $outMode);
     exit;
   }
@@ -3706,6 +3794,9 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
+    
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
 
     /* ========== AUTO–INCREMENTO (contador exclusivo F7) ========== */
     $root        = dirname(__DIR__, 2);
@@ -3742,6 +3833,14 @@ class EvaluacionController
     $aprob   = strtoupper(trim((string)($_POST['ct_aprobado'] ?? ''))); // SI | NO | ''
     $reco    = (string)($_POST['ct_recomendaciones'] ?? '');
     $respLab = trim((string)($_POST['ct_responsable_gestion'] ?? ''));
+    
+    // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    $n_cliente = trim($_POST['n_cliente'] ?? '');
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
 
     // 1.1) Resolver correlativo para ct_ot
     if ($resetFlag) {
@@ -3885,7 +3984,7 @@ class EvaluacionController
 
     $fileName = "ContinuidadPCB_{$norm}.pdf";
     $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
-    self::persistGeneratedPdf($pdf, $fileName, 'form7_continuidad_pcb', [], $cc_para_nombre);
+    self::persistGeneratedPdf($pdf, $fileName, 'form7_continuidad_pcb', [], $cc_para_nombre, $n_cliente);
     $pdf->Output($fileName, $outMode);
     exit;
   }
@@ -3898,6 +3997,9 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
+    
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
 
     /* ========== AUTO–INCREMENTO (contador exclusivo F8) ========== */
     $projectRoot = dirname(__DIR__, 2);
@@ -3934,6 +4036,14 @@ class EvaluacionController
     $elaboro   = trim((string)($_POST['isv_elaboro'] ?? ''));
     $aprobo    = trim((string)($_POST['isv_aprobo'] ?? ''));
     $fecha     = $fechaIso ? date('d/m/Y', strtotime($fechaIso)) : '';
+    
+    // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    $n_cliente = trim($_POST['n_cliente'] ?? '');
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
 
     // 1.1) Resolver correlativo para isv_ot
     if ($resetFlag) {
@@ -4196,7 +4306,7 @@ class EvaluacionController
 
     $fileName = "InfoServicio_{$norm}.pdf";
     $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
-    self::persistGeneratedPdf($pdf, $fileName, 'form8_informe_servicio', [], $cc_para_nombre);
+    self::persistGeneratedPdf($pdf, $fileName, 'form8_informe_servicio', [], $cc_para_nombre, $n_cliente);
     $pdf->Output($fileName, $outMode);
 
     foreach ($uploadedImgs as $p) {
@@ -4213,6 +4323,9 @@ class EvaluacionController
       ob_end_clean();
     }
     self::ensureTcpdfLoaded();
+    
+    // Incluir el sistema de contadores por cliente
+    require_once __DIR__ . '/../includes/client_counter.php';
 
     // ---------- 1) POST ----------
     $serv         = (array)($_POST['esc_servicio'] ?? []);         // checkboxes
@@ -4227,6 +4340,14 @@ class EvaluacionController
     $cliente   = trim((string)($_POST['esc_cliente'] ?? ''));
     $telefono  = trim((string)($_POST['esc_telefono'] ?? ''));
     $direccion = trim((string)($_POST['esc_direccion'] ?? ''));
+    
+    // ---------- LÓGICA DE ID DE CLIENTE CONSISTENTE ----------
+    $n_cliente = trim($_POST['n_cliente'] ?? '');
+    if (empty($n_cliente)) {
+      $n_cliente = ClientCounter::formatClientId(ClientCounter::getNextClientId());
+    } else {
+      $n_cliente = ClientCounter::formatClientId((int)preg_replace('/\D+/', '', $n_cliente));
+    }
 
     // radios (1..5) o vacío
     $r = [
@@ -4446,7 +4567,7 @@ class EvaluacionController
 
     $fileName = "Satisfaccion_{$norm}.pdf";
     $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['esc_cc'] ?? ''));
-    self::persistGeneratedPdf($pdf, $fileName, 'form9_satisfaccion', [], $cc_para_nombre);
+    self::persistGeneratedPdf($pdf, $fileName, 'form9_satisfaccion', [], $cc_para_nombre, $n_cliente);
     $pdf->Output($fileName, $outMode);
     exit;
   }

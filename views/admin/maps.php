@@ -271,6 +271,7 @@
         <div>
           <!-- Aquí va el contenido completo del primer formulario que ya tienes -->
           <form method="POST" action="routes/estres.php">
+            <input type="hidden" name="n_cliente" id="n_cliente_form2">
             <input type="hidden" name="form_action" value="generate">
             <input type="hidden" name="advance_code" value="1">
             <div class="grid grid-3">
@@ -673,6 +674,7 @@
         </header>
         <div>
           <form id="form-cotizacion-3" class="cot-wrap" method="POST" action="routes/estres.php">
+            <input type="hidden" name="n_cliente" id="n_cliente_form3">
             <input type="hidden" name="advance_code" id="f3_advance_code" value="1">
             <input type="hidden" name="reset_code" id="f3_reset_code" value="0">
             <input type="hidden" name="accion" value="cotizacion">
@@ -836,6 +838,7 @@
         <div>
           <!-- ===== ORDEN DE TRABAJO ===== -->
           <form id="form-ot" method="POST" action="routes/estres.php" class="ot-wrap">
+            <input type="hidden" name="n_cliente" id="n_cliente_form4">
             <!-- Campos ocultos -->
             <input type="hidden" name="action" value="generate_ot">
             <input type="hidden" id="ot_materiales_json" name="ot_materiales_json" value="[]">
@@ -1011,6 +1014,7 @@
         </header>
         <div>
           <form method="POST" action="routes/estres.php" id="vd-form" class="mb-4">
+            <input type="hidden" name="n_cliente" id="n_cliente_form5">
             <input type="hidden" name="action" value="generate_verificacion_pcb">
             <input type="hidden" name="advance_code" value="1">
             <input type="hidden" name="reset_code" value="0">
@@ -1206,6 +1210,7 @@
         <div>
           <!-- ================== Verificación Diseño e Impresión 3D ================== -->
           <form method="POST" action="routes/estres.php" id="v3d-form" class="mb-4">
+            <input type="hidden" name="n_cliente" id="n_cliente_form6">
             <input type="hidden" name="action" value="generate_verificacion_3d">
             <input type="hidden" name="advance_code" value="1">
             <input type="hidden" name="reset_code" value="0">
@@ -1413,6 +1418,7 @@
         <div>
           <!-- ===== Continuidad de Tarjeta (CT) ===== -->
           <form id="ct-form" class="ct-wrap" method="POST" action="routes/estres.php">
+            <input type="hidden" name="n_cliente" id="n_cliente_form7">
             <input type="hidden" name="action" value="generate_continuidad">
             <input type="hidden" name="advance_code" value="1">
             <input type="hidden" name="reset_code" value="0">
@@ -1645,6 +1651,7 @@
         <div>
           <!-- ========= Informe de Servicio (HTML + CSS) ========= -->
           <form method="POST" action="routes/estres.php" id="isv-form" class="mb-4" enctype="multipart/form-data">
+            <input type="hidden" name="n_cliente" id="n_cliente_form8">
             <input type="hidden" name="action" value="generate_informe_servicio">
             <input type="hidden" name="advance_code" value="1">
             <input type="hidden" name="reset_code" value="0">
@@ -1749,6 +1756,7 @@
         <div>
           <!-- ========= Encuesta de Satisfacción del Cliente ========= -->
           <form method="POST" action="routes/estres.php" id="esc-form" class="mb-4">
+            <input type="hidden" name="n_cliente" id="n_cliente_form9">
             <input type="hidden" name="action" value="generate_satisfaccion">
 
             <!-- Servicio -->
@@ -2072,8 +2080,35 @@
     </div>
   </div>
 <?php endif; ?>
-
 <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Escuchar cambios en el input principal de n_cliente
+    const nClienteInput = document.getElementById('n_cliente');
+    nClienteInput.addEventListener('input', function() {
+      const nClienteValue = this.value;
+      // Actualizar todos los campos ocultos de los demás formularios
+      for (let i = 2; i <= 9; i++) {
+        const hiddenInput = document.getElementById('n_cliente_form' + i);
+        if (hiddenInput) {
+          hiddenInput.value = nClienteValue;
+        }
+      }
+    });
+
+    // Escuchar el clic en los botones de "Siguiente" de las pestañas
+    const tabButtons = document.querySelectorAll('.nav-link');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const nClienteValue = nClienteInput.value;
+        const targetFormId = this.getAttribute('data-bs-target').substring(1); // Obtiene 'form2', 'form3', etc.
+        const hiddenInput = document.getElementById('n_cliente_' + targetFormId);
+        if (hiddenInput) {
+          hiddenInput.value = nClienteValue;
+        }
+      });
+    });
+  });
+
   (function() {
     const ENDPOINT = 'routes/reset_counters.php';
 
@@ -2216,13 +2251,9 @@
 
     if (!window.bootstrap) console.error('Falta bootstrap.bundle.min.js');
   })();
-</script>
 
-<script>
   window.APP_ROLE = <?= (int)($_SESSION['rol'] ?? 0) ?>;
-</script>
 
-<script>
   (() => {
     if (window.__APP_INIT__) return;
     window.__APP_INIT__ = true;
