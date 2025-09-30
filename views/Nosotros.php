@@ -7,8 +7,7 @@
     <title>Sobre Nosotros</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-      <link rel="icon" type="image/x-icon" href="/sennova/img/l2.png">
-
+    <link rel="icon" type="image/x-icon" href="/sennova/img/l2.png">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
 
@@ -53,7 +52,7 @@
         <div class="container">
             <h2 class="section-title" data-aos="fade-up">Nuestros Laboratorios</h2>
             <p class="section-subtitle" data-aos="fade-up" data-aos-delay="200">
-                Contamos con dos laboratorios especializados que combinan tradición e innovación para ofrecer los mejores servicios. 
+                Contamos con dos laboratorios especializados que combinan tradición e innovación para ofrecer los mejores servicios.
                 Cada uno está equipado con tecnología de vanguardia y personal altamente calificado.
             </p>
 
@@ -233,8 +232,8 @@
                     <h5 class="footer-title">Laboratorios Sennova</h5>
                     <p class="mb-4">Innovación, calidad y excelencia en cada proyecto que emprendemos. Comprometidos con el desarrollo tecnológico del país.</p>
                     <div class="footer-links">
-                        <a href="#"><i class="fas fa-home"></i> Calle 123 #45-67, Bogotá D.C.</a>
-                        <a href="mailto:info@sennova.com"><i class="fas fa-envelope"></i> info@sennova.com</a>
+                        <a href="https://maps.app.goo.gl/9VyGqmHhsQgXH9Dw5"><i class="fas fa-home"></i> Cra. 7 #591 5-1 a, La Plata, Huila</a>
+                        <a href="mailto:cdathlaplata@sena.edu.co"><i class="fas fa-envelope"></i> cdathlaplata@sena.edu.co</a>
                         <a href="tel:+571234567890"><i class="fas fa-phone"></i> +57 (1) 234 5678</a>
                     </div>
                 </div>
@@ -243,32 +242,22 @@
                 <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3" data-aos="fade-up" data-aos-delay="100">
                     <h5 class="footer-title">Enlaces Rápidos</h5>
                     <div class="footer-links">
-                        <a href="/publicaciones"><i class="fas fa-newspaper"></i> Publicaciones</a>
-                        <a href="/eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
-                        <a href="/nosotros"><i class="fas fa-users"></i> Sobre Nosotros</a>
-                        <a href="/contacto"><i class="fas fa-envelope"></i> Contacto</a>
+                        <a href="index.php #publicaciones"><i class="fas fa-newspaper"></i> Publicaciones</a>
+                        <a href="index.php #eventos"><i class="fas fa-calendar-alt"></i> Destacados</a>
                     </div>
                 </div>
 
                 <!-- Info -->
-                <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3" data-aos="fade-up" data-aos-delay="200">
-                    <h5 class="footer-title">Información</h5>
-                    <div class="footer-links">
-                        <a href="/privacidad"><i class="fas fa-shield-alt"></i> Política de Privacidad</a>
-                        <a href="/terminos"><i class="fas fa-file-contract"></i> Términos y Condiciones</a>
-                        <a href="/preguntas-frecuentes"><i class="fas fa-question-circle"></i> Preguntas Frecuentes</a>
-                        <a href="/mapa-sitio"><i class="fas fa-sitemap"></i> Mapa del Sitio</a>
-                    </div>
-                </div>
+
 
                 <!-- Redes y Newsletter -->
                 <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3" data-aos="fade-up" data-aos-delay="300">
                     <h5 class="footer-title">Síguenos</h5>
                     <div class="social-icons mb-4">
-                        <a href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" target="_blank"><i class="fab fa-twitter"></i></a>
-                        <a href="#" target="_blank"><i class="fab fa-instagram"></i></a>
-                        <a href="#" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="https://www.facebook.com/SENA/" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://twitter.com/SENAComunica" target="_blank"><i class="fab fa-twitter"></i></a>
+                        <a href="https://www.tiktok.com/@senacomunica_" target="_blank"><i class="fa-brands fa-tiktok"></i></a>
+                        <a href="https://www.youtube.com/user/SENATV" target="_blank"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
             </div>
@@ -290,11 +279,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- Back to top button -->
-    <a href="#" class="back-to-top">
-        <i class="fas fa-arrow-up"></i>
-    </a>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -318,7 +302,7 @@
 
         // Back to top button
         const backToTopButton = document.querySelector('.back-to-top');
-        
+
         window.addEventListener('scroll', function() {
             if (window.pageYOffset > 300) {
                 backToTopButton.classList.add('active');
@@ -326,7 +310,7 @@
                 backToTopButton.classList.remove('active');
             }
         });
-        
+
         backToTopButton.addEventListener('click', function(e) {
             e.preventDefault();
             window.scrollTo({
@@ -337,7 +321,7 @@
 
         // Smooth scrolling for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', function(e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
@@ -349,7 +333,7 @@
             });
         });
     </script>
-        <style>
+    <style>
         :root {
             --color-primary: #14532d;
             --color-primary-dark: #0e4221;
@@ -409,7 +393,8 @@
             transition: var(--transition);
         }
 
-        .nav-link:hover, .nav-link.active {
+        .nav-link:hover,
+        .nav-link.active {
             background: rgba(255, 255, 255, 0.15);
             transform: translateY(-2px);
         }
@@ -429,7 +414,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
+            background:
                 radial-gradient(circle at 20% 80%, rgba(46, 140, 43, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 40% 40%, rgba(52, 152, 219, 0.1) 0%, transparent 50%);
@@ -475,7 +460,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
             transition: 0.5s;
         }
 
@@ -547,7 +532,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(45deg, rgba(0,0,0,0.1), rgba(255,255,255,0.1));
+            background: linear-gradient(45deg, rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
         }
 
         #coffee-lab .lab-header {
@@ -563,7 +548,7 @@
             margin-bottom: 1.5rem;
             position: relative;
             z-index: 1;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
         }
 
         .lab-name {
@@ -572,7 +557,7 @@
             margin-bottom: 0.5rem;
             position: relative;
             z-index: 1;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         .lab-description {
@@ -634,9 +619,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 10% 20%, rgba(255,255,255,0.05) 0%, transparent 50%),
-                radial-gradient(circle at 90% 80%, rgba(255,255,255,0.05) 0%, transparent 50%);
+            background:
+                radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
         }
 
         #client-title {
@@ -644,7 +629,7 @@
             margin-bottom: 4rem;
             position: relative;
             font-size: 2.8rem;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
         .client-value {
@@ -655,13 +640,13 @@
             backdrop-filter: blur(15px);
             transition: var(--transition);
             height: 100%;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .client-value:hover {
             transform: translateY(-15px);
             background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
         }
 
         .client-icon {
@@ -739,7 +724,7 @@
             box-shadow: var(--shadow);
             transition: var(--transition);
             height: 100%;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .service-card:hover {
@@ -836,14 +821,14 @@
             color: white;
             margin-right: 1rem;
             transition: var(--transition);
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .social-icons a:hover {
             background: white;
             color: var(--color-primary);
             transform: translateY(-8px) scale(1.1);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
 
         .copyright {
@@ -891,15 +876,15 @@
             #hero-title {
                 font-size: 2.8rem;
             }
-            
+
             .section-title {
                 font-size: 2.2rem;
             }
-            
+
             .lab-name {
                 font-size: 1.8rem;
             }
-            
+
             .hero-btn {
                 padding: 0.8rem 2rem;
                 font-size: 1rem;

@@ -552,88 +552,87 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
         </div>
 
         <!-- Filtros - Tarjeta moderna -->
-<div class="bg-white rounded-xl shadow-md overflow-hidden mb-8" data-aos="fade-up">
-  <form id="filtroForm" class="p-6">
-    <!-- hidden necesarios para tu backend -->
-    <input type="hidden" name="controller" value="home">
-    <input type="hidden" name="action" value="index">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8" data-aos="fade-up">
+            <form id="filtroForm" class="p-6">
+                <!-- hidden necesarios para tu backend -->
+                <input type="hidden" name="controller" value="home">
+                <input type="hidden" name="action" value="index">
 
-    <!-- Encabezado -->
-    <div class="flex items-center mb-6">
-      <div class="p-3 bg-green-800 rounded-lg mr-4">
-        <i class="fas fa-sliders-h text-light text-xl"></i>
-      </div>
-      <h3 class="text-xl font-bold text-gray-800">Filtrar contenido</h3>
-    </div>
+                <!-- Encabezado -->
+                <div class="flex items-center mb-6">
+                    <div class="p-3 bg-green-800 rounded-lg mr-4">
+                        <i class="fas fa-sliders-h text-light text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">Filtrar contenido</h3>
+                </div>
 
-    <!-- Grid de filtros -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <!-- Ordenar -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          <i class="fas fa-sort mr-2 text-emerald-600"></i>Ordenar por
-        </label>
-        <div class="relative">
-          <select name="orden"
-                  class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
-            <option value="recientes">Recientes</option>
-            <option value="antiguos">Antiguos</option>
-          </select>
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-sort text-gray-400"></i>
-          </div>
+                <!-- Grid de filtros -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Ordenar -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-sort mr-2 text-emerald-600"></i>Ordenar por
+                        </label>
+                        <div class="relative">
+                            <select name="orden"
+                                class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
+                                <option value="recientes">Recientes</option>
+                                <option value="antiguos">Antiguos</option>
+                            </select>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-sort text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt mr-2 text-emerald-600"></i>Filtrar por fecha
+                        </label>
+                        <div class="relative">
+                            <select name="filtro_fecha"
+                                class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
+                                <option value="todos">Todos</option>
+                                <option value="hoy">Hoy</option>
+                                <option value="semana">Esta semana</option>
+                                <option value="mes">Este mes</option>
+                                <option value="anio">Este año</option>
+                            </select>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-calendar-alt text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Laboratorio / Área -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-network-wired mr-2 text-emerald-600"></i>Laboratorio
+                        </label>
+                        <div class="relative">
+                            <select name="area"
+                                class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
+                                <option value="">Todos</option>
+                                <option value="electronica">Electrónica</option>
+                                <option value="cafe">Café</option>
+                            </select>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-network-wired text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón (alineado al fondo y derecha del grid) -->
+                    <div class="col-span-1 md:col-span-2 lg:col-span-1 flex items-end justify-end">
+                        <button type="submit"
+                            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-emerald-800 to-emerald-600 hover:from-emerald-900 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-all duration-200">
+                            <i class="fas fa-filter mr-2"></i> Aplicar filtros
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
-      </div>
-
-      <!-- Fecha -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          <i class="fas fa-calendar-alt mr-2 text-emerald-600"></i>Filtrar por fecha
-        </label>
-        <div class="relative">
-          <select name="filtro_fecha"
-                  class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
-            <option value="todos">Todos</option>
-            <option value="hoy">Hoy</option>
-            <option value="semana">Esta semana</option>
-            <option value="mes">Este mes</option>
-            <option value="anio">Este año</option>
-          </select>
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-calendar-alt text-gray-400"></i>
-          </div>
-        </div>
-      </div>
-
-      <!-- Laboratorio / Área -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          <i class="fas fa-network-wired mr-2 text-emerald-600"></i>Laboratorio
-        </label>
-        <div class="relative">
-          <select name="area"
-                  class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
-            <option value="">Todos</option>
-            <option value="electronica">Electrónica</option>
-            <option value="cafe">Café</option>
-          </select>
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-network-wired text-gray-400"></i>
-          </div>
-        </div>
-      </div>
-
-      <!-- Botón (alineado al fondo y derecha del grid) -->
-      <div class="col-span-1 md:col-span-2 lg:col-span-1 flex items-end justify-end">
-        <button type="submit"
-                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-emerald-800 to-emerald-600 hover:from-emerald-900 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-all duration-200">
-          <i class="fas fa-filter mr-2"></i> Aplicar filtros
-        </button>
-      </div>
-    </div>
-  </form>
-</div>
-
 
         <!-- Listado de publicaciones -->
         <?php
@@ -764,32 +763,6 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
-
-        <style>
-            .transition-shadow {
-                transition-property: box-shadow;
-            }
-
-            .transition-transform {
-                transition-property: transform;
-            }
-
-            .duration-300 {
-                transition-duration: 300ms;
-            }
-
-            .duration-500 {
-                transition-duration: 500ms;
-            }
-
-            .hover\:shadow-lg:hover {
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            }
-
-            .hover\:scale-105:hover {
-                transform: scale(1.05);
-            }
-        </style>
     </section>
 
 </div>
@@ -803,8 +776,8 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                 <h5 class="footer-title">Laboratorios Sennova</h5>
                 <p class="mb-4">Innovación, calidad y excelencia en cada proyecto que emprendemos. Comprometidos con el desarrollo tecnológico del país.</p>
                 <div class="footer-links">
-                    <a href="#"><i class="fas fa-home"></i> Calle 123 #45-67, Bogotá D.C.</a>
-                    <a href="mailto:info@sennova.com"><i class="fas fa-envelope"></i> info@sennova.com</a>
+                    <a href="https://maps.app.goo.gl/9VyGqmHhsQgXH9Dw5"><i class="fas fa-home"></i> Cra. 7 #591 5-1 a, La Plata, Huila</a>
+                    <a href="mailto:cdathlaplata@sena.edu.co"><i class="fas fa-envelope"></i> cdathlaplata@sena.edu.co</a>
                     <a href="tel:+571234567890"><i class="fas fa-phone"></i> +57 (1) 234 5678</a>
                 </div>
             </div>
@@ -813,32 +786,20 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
             <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
                 <h5 class="footer-title">Enlaces Rápidos</h5>
                 <div class="footer-links">
-                    <a href="/publicaciones"><i class="fas fa-newspaper"></i> Publicaciones</a>
-                    <a href="/eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
-                    <a href="/nosotros"><i class="fas fa-users"></i> Sobre Nosotros</a>
-                    <a href="/contacto"><i class="fas fa-envelope"></i> Contacto</a>
+                    <a href="#publicaciones"><i class="fas fa-newspaper"></i> Publicaciones</a>
+                    <a href="#eventos"><i class="fas fa-calendar-alt"></i> Destacados</a>
+                    <a href="info.php"><i class="fas fa-users"></i> Sobre Nosotros</a>
                 </div>
             </div>
-
-            <!-- Info -->
-            <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
-                <h5 class="footer-title">Información</h5>
-                <div class="footer-links">
-                    <a href="/privacidad"><i class="fas fa-shield-alt"></i> Política de Privacidad</a>
-                    <a href="/terminos"><i class="fas fa-file-contract"></i> Términos y Condiciones</a>
-                    <a href="/preguntas-frecuentes"><i class="fas fa-question-circle"></i> Preguntas Frecuentes</a>
-                    <a href="/mapa-sitio"><i class="fas fa-sitemap"></i> Mapa del Sitio</a>
-                </div>
-            </div>
-
+            
             <!-- Redes y Newsletter -->
             <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3">
                 <h5 class="footer-title">Síguenos</h5>
                 <div class="social-icons mb-4">
-                    <a href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" target="_blank"><i class="fab fa-twitter"></i></a>
-                    <a href="#" target="_blank"><i class="fab fa-instagram"></i></a>
-                    <a href="#" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="https://www.facebook.com/SENA/" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://twitter.com/SENAComunica" target="_blank"><i class="fab fa-twitter"></i></a>
+                    <a href="https://www.tiktok.com/@senacomunica_" target="_blank"><i class="fa-brands fa-tiktok"></i></a>
+                    <a href="https://www.youtube.com/user/SENATV" target="_blank"><i class="fab fa-youtube"></i></a>
                 </div>
 
             </div>
@@ -862,6 +823,31 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
     </div>
 </footer>
 
+<style>
+    .transition-shadow {
+        transition-property: box-shadow;
+    }
+
+    .transition-transform {
+        transition-property: transform;
+    }
+
+    .duration-300 {
+        transition-duration: 300ms;
+    }
+
+    .duration-500 {
+        transition-duration: 500ms;
+    }
+
+    .hover\:shadow-lg:hover {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .hover\:scale-105:hover {
+        transform: scale(1.05);
+    }
+</style>
 <style>
     :root {
         --color-primary: #14532d;

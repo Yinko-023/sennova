@@ -137,8 +137,6 @@ $servi = $modelo->obtenerServi();
     </div>
   </section>
 
-
-
   <!-- Sección de video profesional -->
   <?php
   require_once 'models/PubliModel.php';
@@ -167,7 +165,6 @@ $servi = $modelo->obtenerServi();
   <?php else: ?>
     <p class="text-center text-white my-5">No se ha cargado aún un video para esta área.</p>
   <?php endif; ?>
-
 
   <!-- Publicaciones -->
   <section id="nosotros" class="publications-section bg-light-gray py-12">
@@ -430,7 +427,6 @@ $servi = $modelo->obtenerServi();
     </div>
   </section>
 
-
   <!-- Nosotros -->
   <section id="nosotros" class="py-20 bg-gray-300" data-aos="fade-up">
     <div class="container mx-auto px-4">
@@ -571,64 +567,55 @@ $servi = $modelo->obtenerServi();
   </section>
 
   <!-- PIE DE PAGINA -->
-  <footer class="footer text-white pt-5 pb-4 mt-3" style="background: #273d35ff;">
+  <footer class="footer text-white pt-5 pb-4 mt-3" style="background: #273d35ff;" >
     <div class="container">
       <div class="row g-4">
 
         <!-- Contacto -->
-        <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3" data-aos="fade-up">
-          <h5 class="text-uppercase mb-4 font-weight-bold" style="color: #22c55e;">Tu Empresa/Sitio</h5>
+        <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3 text-center text-md-start" data-aos="fade-up">
+          <h5 class="text-uppercase mb-4 font-weight-bold" style="color:#22c55e;">Tu Empresa/Sitio</h5>
           <p>Una breve descripción sobre tu sitio, misión o lema principal.</p>
-          <p><i class="fas fa-home me-3"></i> Dirección de la Calle, Ciudad</p>
-          <p><i class="fas fa-envelope me-3"></i> info@tudominio.com</p>
-          <p><i class="fas fa-phone me-3"></i> +XX XXX XXX XXX</p>
+          <p><i class="fas fa-home me-3"></i> Cra. 7 #591 5-1 a, La Plata, Huila</p>
+          <p><i class="fas fa-envelope me-3"></i> cdathlaplata@sena.edu.co</p>
+          <p class="mb-0"><i class="fas fa-phone me-3"></i> +XX XXX XXX XXX</p>
         </div>
 
         <!-- Enlaces -->
-        <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3" data-aos="fade-up" data-aos-delay="100">
-          <h5 class="text-uppercase mb-4 font-weight-bold" style="color: #22c55e;">Enlaces Rápidos</h5>
-          <p><a href="/publicaciones" class="text-white text-decoration-none">Publicaciones</a></p>
-          <p><a href="/eventos" class="text-white text-decoration-none">Eventos</a></p>
-          <p><a href="/nosotros" class="text-white text-decoration-none">Sobre Nosotros</a></p>
-          <p><a href="/contacto" class="text-white text-decoration-none">Contacto</a></p>
-        </div>
-
-        <!-- Info -->
-        <div class="col-md-3 col-lg-2 col-xl-2 mx-auto mt-3" data-aos="fade-up" data-aos-delay="200">
-          <h5 class="text-uppercase mb-4 font-weight-bold" style="color: #22c55e;">Información</h5>
-          <p><a href="/privacidad" class="text-white text-decoration-none">Política de Privacidad</a></p>
-          <p><a href="/terminos" class="text-white text-decoration-none">Términos y Condiciones</a></p>
-          <p><a href="/preguntas-frecuentes" class="text-white text-decoration-none">Preguntas
-              Frecuentes</a></p>
-          <p><a href="/mapa-sitio" class="text-white text-decoration-none">Mapa del Sitio</a></p>
+        <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3 text-center text-md-start" data-aos="fade-up" data-aos-delay="100">
+          <h5 class="text-uppercase mb-4 font-weight-bold" style="color:#22c55e;">Enlaces Rápidos</h5>
+          <p class="mb-2"><a href="#publi" class="text-white text-decoration-none">Publicaciones</a></p>
+          <p class="mb-2"><a href="index.php #eventos" class="text-white text-decoration-none">Eventos</a></p>
+          <p class="mb-0"><a href="info.php" class="text-white text-decoration-none">Sobre Nosotros</a></p>
         </div>
 
         <!-- Redes y Newsletter -->
-        <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3" data-aos="fade-up" data-aos-delay="300">
-          <h5 class="text-uppercase mb-4 font-weight-bold" style="color: #22c55e;">Síguenos</h5>
-          <div class="mb-3">
-            <a href="#" target="_blank" class="text-white me-3 fs-5"><i class="bi bi-facebook"></i></a>
-            <a href="#" target="_blank" class="text-white me-3 fs-5"><i class="bi bi-twitter"></i></a>
-            <a href="#" target="_blank" class="text-white me-3 fs-5"><i class="bi bi-instagram"></i></a>
-            <a href="#" target="_blank" class="text-white fs-5"><i class="bi bi-linkedin"></i></a>
+        <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3 text-center text-md-start" data-aos="fade-up" data-aos-delay="300">
+          <h5 class="text-uppercase mb-4 font-weight-bold" style="color:#22c55e;">Síguenos</h5>
+          <div class="d-flex justify-content-center justify-content-md-start align-items-center flex-wrap gap-3 mb-3">
+            <a href="https://www.facebook.com/SENA/" class="text-white fs-5"><i class="bi bi-facebook"></i></a>
+            <a href="https://twitter.com/SENAComunica" class="text-white fs-5"><i class="bi bi-twitter"></i></a>
+            <a href="https://www.tiktok.com/@senacomunica_" class="text-white fs-5"><i class="bi bi-tiktok"></i></a>
+            <a href="https://www.youtube.com/user/SENATV" class="text-white fs-5"><i class="bi bi-youtube"></i></a>
           </div>
+          <p class="mb-0">Suscríbete para recibir noticias:</p>
+          <form class="mt-2"></form>
         </div>
       </div>
 
       <hr class="my-4 text-white">
 
       <!-- Pie final -->
-      <div class="row align-items-center" data-aos="fade-up" data-aos-delay="400">
-        <div class="col-md-7 col-lg-8">
+      <div class="row align-items-center text-center text-md-start" data-aos="fade-up" data-aos-delay="400">
+        <div class="col-md-7 col-lg-8 mb-2 mb-md-0">
           <p class="mb-0">&copy;
             <script>
               document.write(new Date().getFullYear());
-            </script> SENA. Todos los
-            derechos reservados.
+            </script>
+            TuEmpresa/Sitio. Todos los derechos reservados.
           </p>
         </div>
         <div class="col-md-5 col-lg-4 text-center text-md-end">
-          <p class="mb-0">Hecho <i class="fas fa-heart text-danger"></i> por <strong>SENNOVA</strong></p>
+          <p class="mb-0">Hecho con <i class="fas fa-heart text-danger"></i> por <strong>[Tu Nombre o Empresa]</strong></p>
         </div>
       </div>
     </div>
