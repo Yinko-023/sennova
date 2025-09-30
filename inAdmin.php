@@ -69,8 +69,7 @@ if ($vista === 'usuario') {
 
 if ($vista === 'editarUsuario' && isset($_GET['id'])) {
     // FIX: requerir los modelos correctos
-    require_once __DIR__ . '/models/UserModel.php';
-    require_once __DIR__ . '/models/RolModel.php';
+    require_once __DIR__ . '/models/PubliModel.php';
 
     $userModel = new UserModel();
     $usuario   = $userModel->obtenerUsuarioPorId((int)$_GET['id']);

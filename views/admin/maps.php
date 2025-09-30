@@ -66,7 +66,7 @@
             <input type="hidden" name="form_action" value="solicitud">
 
             <div class="form-group">
-              <label for="n_cliente">N° Cliente:</label>
+              <label for="n_cliente">Numero De Cedula del Cliente:</label>
               <input type="text" id="n_cliente" name="n_cliente" class="form-control">
             </div>
 
@@ -91,11 +91,6 @@
                 <div class="soli-group">
                   <label for="fecha">Fecha</label>
                   <input type="date" id="fecha" name="fecha" class="form-control" required>
-                </div>
-                <div class="soli-group">
-                  <label for="numero_solicitud">No. de Solicitud</label>
-                  <input type="text" id="numero_solicitud" name="numero_solicitud" class="form-control" readonly>
-                  <small class="muted">Se llena automáticamente (puedes editar si lo manejas desde backend).</small>
                 </div>
               </div>
             </div>

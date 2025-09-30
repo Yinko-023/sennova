@@ -82,6 +82,12 @@ class PublicacionController
     require 'views/calidad.php';
   }
 
+    public function verNosotros()
+  {
+    require 'views/Nosotros.php';
+  }
+
+
   public function verElectronica()
   {
     $modelo = new PublicacionModel();

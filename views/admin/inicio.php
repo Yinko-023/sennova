@@ -71,9 +71,7 @@ $resumen['growth_pct']      = $growthPct;
         <div class="card-body">
           <h6 class="metric-title">Publicaciones</h6>
           <h2 class="metric-value"><?= $totalPublicaciones ?? '0' ?></h2>
-          <div class="metric-change positive">
-            <i class="fas fa-arrow-up me-1"></i> 5.2% vs mes anterior
-          </div>
+ 
           <i class="fas fa-newspaper metric-icon"></i>
         </div>
       </div>
@@ -84,9 +82,7 @@ $resumen['growth_pct']      = $growthPct;
         <div class="card-body">
           <h6 class="metric-title">Archivos</h6>
           <h2 class="metric-value"><?= $totalArchivos ?? '0' ?></h2>
-          <div class="metric-change positive">
-            <i class="fas fa-arrow-up me-1"></i> 12.7% vs mes anterior
-          </div>
+
           <i class="fas fa-file-alt metric-icon"></i>
         </div>
       </div>
@@ -97,9 +93,7 @@ $resumen['growth_pct']      = $growthPct;
         <div class="card-body">
           <h6 class="metric-title">Usuarios</h6>
           <h2 class="metric-value"><?= $totalUsuarios ?? '0' ?></h2>
-          <div class="metric-change positive">
-            <i class="fas fa-arrow-up me-1"></i> 3.1% vs mes anterior
-          </div>
+
           <i class="fas fa-users metric-icon"></i>
         </div>
       </div>
@@ -110,9 +104,7 @@ $resumen['growth_pct']      = $growthPct;
         <div class="card-body">
           <h6 class="metric-title">Visitas</h6>
           <h2 class="metric-value"><?= $totalVisitas ?? '0' ?></h2>
-          <div class="metric-change negative">
-            <i class="fas fa-arrow-down me-1"></i> 2.4% vs mes anterior
-          </div>
+
           <i class="fas fa-eye metric-icon"></i>
         </div>
       </div>
@@ -458,7 +450,7 @@ $resumen['growth_pct']      = $growthPct;
     </div>
   </div>
 </div>
-<!-- Modal: Actividad Reciente -->
+
 <!-- Modal: Actividad Reciente -->
 <div class="modal fade" id="modalActividadReciente" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">

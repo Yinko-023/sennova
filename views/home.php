@@ -29,43 +29,28 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
 <header class="header-suave uk-sticky shadow-sm" uk-sticky="sel-target: .header-suave; cls-active: uk-navbar-sticky">
     <div
         class="container d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center py-2 px-3 gap-2">
-
         <a href="index.php" class="text-decoration-none text-white fw-bold fs-6 lh-sm mb-1 mb-md-0">
             Centro de Desarrollo Agroempresarial<br />
             y Turístico del Huila
         </a>
-
         <nav>
-            <ul
-                class="nav d-flex flex-column flex-md-row align-items-start align-items-md-center gap-1 gap-md-2 mb-0 ps-0">
+            <ul class="nav d-flex flex-column flex-md-row align-items-start align-items-md-center gap-1 gap-md-2 mb-0 ps-0">
                 <li class="nav-item">
-                    <a href="#" class="nav-link sin-subrayado text-white fw-semibold px-2" data-bs-toggle="modal"
-                        data-bs-target="#programasModal">Programas</a>
+                    <a id="navCalidad" href="inCalidad.php" class="nav-link sin-subrayado text-white fw-semibold px-2">
+                        Calidad de Café y Cacao
+                    </a>
                 </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link sin-subrayado text-white dropdown-toggle fw-semibold px-2" href="#" role="button"
-                        id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">Laboratorios</a>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
-                        <li><a class="dropdown-item" href="inCalidad.php">Calidad de café y cacao</a></li>
-                        <li><a class="dropdown-item" href="inElectronica.php">Electrónica</a></li>
-                    </ul>
+                <li class="nav-item">
+                    <a id="navElectronica" href="inElectronica.php" class="nav-link sin-subrayado text-white fw-semibold px-2">
+                        Electrónica
+                    </a>
                 </li>
             </ul>
         </nav>
+
     </div>
 
     <style>
-        .nav-link {
-            color: #ffffff !important;
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: color 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: #f0fdf4 !important;
-        }
-
         .sin-subrayado {
             text-decoration: none !important;
         }
@@ -247,16 +232,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                     </a>
                 </div>
             </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div
-                    class="bloque-navegacion d-flex flex-column justify-content-center align-items-center text-center p-4">
-                    <i class="bi bi-search fs-2"></i>
-                    <a href="/buscar"
-                        class="text-white text-decoration-none d-flex flex-column align-items-center w-100 h-100">
-                        <p class="mb-0 fw-bold">Buscar Contenido</p>
-                    </a>
-                </div>
-            </div>
+
             <div class="col-6 col-md-4 col-lg-2">
                 <div
                     class="bloque-navegacion d-flex flex-column justify-content-center align-items-center text-center p-4">
@@ -273,7 +249,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                     <i class="bi bi-calendar-event-fill fs-2"></i>
                     <a href="#eventos"
                         class="text-white text-decoration-none d-flex flex-column align-items-center w-100 h-100">
-                        <p class="mb-0 fw-bold">Eventos Destacados</p>
+                        <p class="mb-0 fw-bold">Destacados</p>
                     </a>
                 </div>
             </div>
@@ -281,7 +257,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                 <div
                     class="bloque-navegacion d-flex flex-column justify-content-center align-items-center text-center p-4">
                     <i class="bi bi-person-lines-fill fs-2"></i>
-                    <a href="/nosotros"
+                    <a href="info.php"
                         class="text-white text-decoration-none d-flex flex-column align-items-center w-100 h-100">
                         <p class="mb-0 fw-bold">Sobre Nosotros</p>
                     </a>
@@ -576,130 +552,133 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
         </div>
 
         <!-- Filtros - Tarjeta moderna -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8" data-aos="fade-up">
-            <form id="filtroForm" class="p-6">
-                <input type="hidden" name="controller" value="home">
-                <input type="hidden" name="action" value="index">
+<div class="bg-white rounded-xl shadow-md overflow-hidden mb-8" data-aos="fade-up">
+  <form id="filtroForm" class="p-6">
+    <!-- hidden necesarios para tu backend -->
+    <input type="hidden" name="controller" value="home">
+    <input type="hidden" name="action" value="index">
 
-                <div class="flex items-center mb-6">
-                    <div class="p-3 bg-green-800 rounded-lg mr-4">
-                        <i class="fas fa-sliders-h text-light text-xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-800">Filtrar contenido</h3>
-                </div>
+    <!-- Encabezado -->
+    <div class="flex items-center mb-6">
+      <div class="p-3 bg-green-800 rounded-lg mr-4">
+        <i class="fas fa-sliders-h text-light text-xl"></i>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800">Filtrar contenido</h3>
+    </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Ordenar -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-sort mr-2 text-emerald-600"></i>Ordenar por
-                        </label>
-                        <div class="relative">
-                            <select name="orden"
-                                class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
-                                <option value="recientes">Recientes</option>
-                                <option value="antiguos">Antiguos</option>
-                            </select>
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-sort text-gray-400"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fecha -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-calendar-alt mr-2 text-emerald-600"></i>Filtrar por fecha
-                        </label>
-                        <div class="relative">
-                            <select name="filtro_fecha"
-                                class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
-                                <option value="todos">Todos</option>
-                                <option value="hoy">Hoy</option>
-                                <option value="semana">Esta semana</option>
-                                <option value="mes">Este mes</option>
-                                <option value="anio">Este año</option>
-                            </select>
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-calendar-alt text-gray-400"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Categoría -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-tags mr-2 text-emerald-600"></i>Categoría
-                        </label>
-                        <div class="relative">
-                            <select name="categoria"
-                                class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
-                                <option value="">Todas</option>
-                                <option value="noticias">Noticias</option>
-                                <option value="eventos">Eventos</option>
-                                <option value="articulos">Artículos</option>
-                            </select>
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-tags text-gray-400"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Laboratorio -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-network-wired mr-2 text-emerald-600"></i>Laboratorio
-                        </label>
-                        <div class="relative">
-                            <select name="area"
-                                class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
-                                <option value="">Todos</option>
-                                <option value="electronica">Electrónica</option>
-                                <option value="cafe">Café</option>
-                            </select>
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-network-wired text-gray-400"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Botón de acción -->
-                <div class="mt-6 flex justify-end">
-                    <button type="submit"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-emerald-800 to-emerald-600 hover:from-emerald-900 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-all duration-200">
-                        <i class="fas fa-filter mr-2"></i> Aplicar filtros
-                    </button>
-                </div>
-            </form>
+    <!-- Grid de filtros -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Ordenar -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <i class="fas fa-sort mr-2 text-emerald-600"></i>Ordenar por
+        </label>
+        <div class="relative">
+          <select name="orden"
+                  class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
+            <option value="recientes">Recientes</option>
+            <option value="antiguos">Antiguos</option>
+          </select>
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-sort text-gray-400"></i>
+          </div>
         </div>
+      </div>
+
+      <!-- Fecha -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <i class="fas fa-calendar-alt mr-2 text-emerald-600"></i>Filtrar por fecha
+        </label>
+        <div class="relative">
+          <select name="filtro_fecha"
+                  class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
+            <option value="todos">Todos</option>
+            <option value="hoy">Hoy</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes">Este mes</option>
+            <option value="anio">Este año</option>
+          </select>
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-calendar-alt text-gray-400"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Laboratorio / Área -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <i class="fas fa-network-wired mr-2 text-emerald-600"></i>Laboratorio
+        </label>
+        <div class="relative">
+          <select name="area"
+                  class="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 rounded-lg">
+            <option value="">Todos</option>
+            <option value="electronica">Electrónica</option>
+            <option value="cafe">Café</option>
+          </select>
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-network-wired text-gray-400"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón (alineado al fondo y derecha del grid) -->
+      <div class="col-span-1 md:col-span-2 lg:col-span-1 flex items-end justify-end">
+        <button type="submit"
+                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-emerald-800 to-emerald-600 hover:from-emerald-900 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-all duration-200">
+          <i class="fas fa-filter mr-2"></i> Aplicar filtros
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
 
         <!-- Listado de publicaciones -->
+        <?php
+        // Helpers (una sola vez en la página)
+        if (!function_exists('e')) {
+            function e($s)
+            {
+                return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+            }
+        }
+        if (!function_exists('area_route')) {
+            function area_route(?string $area): ?string
+            {
+                $a = strtolower(trim($area ?? ''));
+                return match ($a) {
+                    'cafe'        => 'inAdmin.php?vista=cafe',
+                    'electronica' => 'inAdmin.php?vista=electronica',
+                    default       => null, // otras áreas → modal
+                };
+            }
+        }
+        ?>
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="contenedorPublicaciones">
             <?php if (empty($publicaciones)): ?>
-                <div
-                    class="col-span-full flex flex-col items-center justify-center p-8 rounded-xl bg-gradient-to-br from-green-50 to-white border border-emerald-100 shadow-sm">
-                    <svg class="w-24 h-24 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <div class="col-span-full flex flex-col items-center justify-center p-8 rounded-xl bg-gradient-to-br from-green-50 to-white border border-emerald-100 shadow-sm">
+                    <svg class="w-24 h-24 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <h3 class="text-xl font-semibold text-gray-800 mb-2">No hay resultados</h3>
-                    <p class="text-gray-600 max-w-md text-center mb-4">Prueba ajustando los filtros usando términos
-                        diferentes</p>
-
+                    <p class="text-gray-600 max-w-md text-center mb-4">Prueba ajustando los filtros usando términos diferentes</p>
                 </div>
             <?php else: ?>
-                <?php foreach ($publicaciones as $pub): ?>
+                <?php foreach ($publicaciones as $i => $pub):
+                    $areaPub = $pub['area'] ?? $pub['categoria'] ?? 'general';
+                    $route   = area_route($areaPub);
+                    $pid     = $pub['id'] ?? $pub['id_publicacion'] ?? $i;
+                    $modalId = 'pubModal-' . $pid;
+                ?>
                     <div class="flex" data-aos="fade-up" data-aos-duration="800">
-                        <div
-                            class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col w-full hover:shadow-lg transition-shadow duration-300">
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col w-full hover:shadow-lg transition-shadow duration-300">
                             <!-- Imagen -->
                             <?php if (!empty($pub['image_path'])): ?>
                                 <div class="h-48 overflow-hidden">
-                                    <img src="/sennova/img/<?= htmlspecialchars($pub['image_path']) ?>"
-                                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                                        alt="Imagen de publicación">
+                                    <img src="/sennova/img/<?= e($pub['image_path']) ?>" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" alt="Imagen de publicación">
                                 </div>
                             <?php else: ?>
                                 <div class="h-48 bg-gray-100 flex items-center justify-center">
@@ -713,24 +692,79 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                             <!-- Contenido -->
                             <div class="p-6 flex flex-col flex-grow">
                                 <div class="flex-1">
-                                    <h3 class="text-xl font-semibold text-gray-800 mb-2"><?= htmlspecialchars($pub['title']) ?>
-                                    </h3>
-                                    <p class="text-gray-600 mb-4 line-clamp-3"><?= htmlspecialchars($pub['content']) ?></p>
+                                    <h3 class="text-xl font-semibold text-gray-800 mb-2"><?= e($pub['title'] ?? '') ?></h3>
+                                    <p class="text-gray-600 mb-4 line-clamp-3"><?= e($pub['content'] ?? '') ?></p>
                                 </div>
+
                                 <div class="mt-auto pt-4 border-t border-gray-100">
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm text-gray-500">
                                             <i class="far fa-clock mr-1"></i>
-                                            <?= htmlspecialchars($pub['published_at']) ?>
+                                            <?= e($pub['published_at'] ?? '') ?>
                                         </span>
+
+                                        <!-- Acciones -->
+                                        <div class="flex items-center gap-2">
+                                            <?php if ($route): ?>
+                                                <a href="<?= e($route) ?>"
+                                                    class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700 transition"
+                                                    title="Ir al área">
+                                                    <i class="fas fa-arrow-right mr-2"></i> Visitar
+                                                </a>
+                                            <?php else: ?>
+                                                <button type="button"
+                                                    class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700 transition"
+                                                    data-bs-toggle="modal" data-bs-target="#<?= e($modalId) ?>">
+                                                    <i class="fas fa-eye mr-2"></i> Ver detalles
+                                                </button>
+
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <?php if (!$route): ?>
+                        <!-- Modal Detalles -->
+                        <div class="modal fade" id="<?= e($modalId) ?>" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title"><?= e($pub['title'] ?? 'Detalle de publicación') ?></h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <?php if (!empty($pub['image_path'])): ?>
+                                            <img src="/sennova/img/<?= e($pub['image_path']) ?>" class="w-100 rounded mb-3" alt="Imagen">
+                                        <?php endif; ?>
+
+                                        <dl class="row mb-3">
+                                            <dt class="col-sm-3">Área</dt>
+                                            <dd class="col-sm-9"><?= e(ucfirst($areaPub)) ?></dd>
+
+                                            <dt class="col-sm-3">Publicado</dt>
+                                            <dd class="col-sm-9"><?= e($pub['published_at'] ?? '') ?></dd>
+                                        </dl>
+
+                                        <div class="border-top pt-3">
+                                            <p class="mb-0" style="white-space:pre-wrap"><?= e($pub['content'] ?? '') ?></p>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                            <i class="fas fa-times me-1"></i> Cerrar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
+
         <style>
             .transition-shadow {
                 transition-property: box-shadow;
@@ -757,82 +791,198 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
             }
         </style>
     </section>
-    
+
 </div>
 
 <!-- Footer -->
-<footer class="bg-[#134e4a] text-white text-center py-6" id="contactos">
-    <div class="container">
-        <div class="row g-4">
-
+<footer class="mt-5" id="contactos">
+    <div class="container footer-content">
+        <div class="row g-5">
             <!-- Contacto -->
-            <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3" data-aos="fade-up">
-                <h5 class="text-uppercase mb-4 font-weight-bold" style="color: #22c55e;">Tu Empresa/Sitio</h5>
-                <p>Una breve descripción sobre tu sitio, misión o lema principal.</p>
-                <p><i class="fas fa-home me-3"></i> Dirección de la Calle, Ciudad</p>
-                <p><i class="fas fa-envelope me-3"></i> info@tudominio.com</p>
-                <p><i class="fas fa-phone me-3"></i> +XX XXX XXX XXX</p>
+            <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mt-3">
+                <h5 class="footer-title">Laboratorios Sennova</h5>
+                <p class="mb-4">Innovación, calidad y excelencia en cada proyecto que emprendemos. Comprometidos con el desarrollo tecnológico del país.</p>
+                <div class="footer-links">
+                    <a href="#"><i class="fas fa-home"></i> Calle 123 #45-67, Bogotá D.C.</a>
+                    <a href="mailto:info@sennova.com"><i class="fas fa-envelope"></i> info@sennova.com</a>
+                    <a href="tel:+571234567890"><i class="fas fa-phone"></i> +57 (1) 234 5678</a>
+                </div>
             </div>
 
             <!-- Enlaces -->
-            <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3" data-aos="fade-up" data-aos-delay="100">
-                <h5 class="text-uppercase mb-4 font-weight-bold" style="color: #22c55e;">Enlaces Rápidos</h5>
-                <p><a href="/publicaciones" class="text-white text-decoration-none">Publicaciones</a></p>
-                <p><a href="/eventos" class="text-white text-decoration-none">Eventos</a></p>
-                <p><a href="/nosotros" class="text-white text-decoration-none">Sobre Nosotros</a></p>
-                <p><a href="/contacto" class="text-white text-decoration-none">Contacto</a></p>
+            <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+                <h5 class="footer-title">Enlaces Rápidos</h5>
+                <div class="footer-links">
+                    <a href="/publicaciones"><i class="fas fa-newspaper"></i> Publicaciones</a>
+                    <a href="/eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
+                    <a href="/nosotros"><i class="fas fa-users"></i> Sobre Nosotros</a>
+                    <a href="/contacto"><i class="fas fa-envelope"></i> Contacto</a>
+                </div>
             </div>
 
             <!-- Info -->
-            <div class="col-md-3 col-lg-2 col-xl-2 mx-auto mt-3" data-aos="fade-up" data-aos-delay="200">
-                <h5 class="text-uppercase mb-4 font-weight-bold" style="color: #22c55e;">Información</h5>
-                <p><a href="/privacidad" class="text-white text-decoration-none">Política de Privacidad</a></p>
-                <p><a href="/terminos" class="text-white text-decoration-none">Términos y Condiciones</a></p>
-                <p><a href="/preguntas-frecuentes" class="text-white text-decoration-none">Preguntas
-                        Frecuentes</a></p>
-                <p><a href="/mapa-sitio" class="text-white text-decoration-none">Mapa del Sitio</a></p>
+            <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+                <h5 class="footer-title">Información</h5>
+                <div class="footer-links">
+                    <a href="/privacidad"><i class="fas fa-shield-alt"></i> Política de Privacidad</a>
+                    <a href="/terminos"><i class="fas fa-file-contract"></i> Términos y Condiciones</a>
+                    <a href="/preguntas-frecuentes"><i class="fas fa-question-circle"></i> Preguntas Frecuentes</a>
+                    <a href="/mapa-sitio"><i class="fas fa-sitemap"></i> Mapa del Sitio</a>
+                </div>
             </div>
 
             <!-- Redes y Newsletter -->
-            <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3" data-aos="fade-up" data-aos-delay="300">
-                <h5 class="text-uppercase mb-4 font-weight-bold" style="color: #22c55e;">Síguenos</h5>
-                <div class="mb-3">
-                    <a href="#" target="_blank" class="text-white me-3 fs-5"><i class="bi bi-facebook"></i></a>
-                    <a href="#" target="_blank" class="text-white me-3 fs-5"><i class="bi bi-twitter"></i></a>
-                    <a href="#" target="_blank" class="text-white me-3 fs-5"><i class="bi bi-instagram"></i></a>
-                    <a href="#" target="_blank" class="text-white fs-5"><i class="bi bi-linkedin"></i></a>
+            <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3">
+                <h5 class="footer-title">Síguenos</h5>
+                <div class="social-icons mb-4">
+                    <a href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" target="_blank"><i class="fab fa-twitter"></i></a>
+                    <a href="#" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="#" target="_blank"><i class="fab fa-linkedin-in"></i></a>
                 </div>
-                <p>Suscríbete para recibir noticias:</p>
-                <form>
-                    <div class="input-group mb-3">
-                        <input type="email" class="form-control" placeholder="Tu correo electrónico">
-                        <button class="btn" type="button"
-                            style="background-color: #22c55e; color: white;">Suscribir</button>
-                    </div>
-                </form>
+
             </div>
         </div>
 
-        <hr class="my-4 text-white">
+        <hr class="my-5 text-white">
 
         <!-- Pie final -->
-        <div class="row align-items-center" data-aos="fade-up" data-aos-delay="400">
+        <div class="row align-items-center">
             <div class="col-md-7 col-lg-8">
                 <p class="mb-0">&copy;
                     <script>
                         document.write(new Date().getFullYear());
-                    </script> TuEmpresa/Sitio. Todos los
-                    derechos reservados.
+                    </script> SENA - Servicio Nacional de Aprendizaje. Todos los derechos reservados.
                 </p>
             </div>
             <div class="col-md-5 col-lg-4 text-center text-md-end">
-                <p class="mb-0">Hecho con <i class="fas fa-heart text-danger"></i> por <strong>[Tu Nombre o
-                        Empresa]</strong></p>
+                <p class="mb-0">Hecho con <i class="fas fa-heart text-danger"></i> por <strong>SENNOVA</strong></p>
             </div>
         </div>
     </div>
 </footer>
 
+<style>
+    :root {
+        --color-primary: #14532d;
+        --color-primary-dark: #0e4221;
+        --color-accent: #e67e22;
+    }
+
+    footer {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        color: white;
+        padding: 5rem 0 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    footer::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23000000" fill-opacity="0.1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,192C672,181,768,139,864,138.7C960,139,1056,181,1152,181.3C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+        background-size: cover;
+        background-position: center bottom;
+    }
+
+    .footer-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .footer-title {
+        font-weight: 700;
+        margin-bottom: 1.8rem;
+        font-size: 1.4rem;
+        background: linear-gradient(45deg, #fff, #e8f5e8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .footer-links a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        display: block;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+    }
+
+    .footer-links a i {
+        margin-right: 0.8rem;
+        width: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .footer-links a:hover {
+        color: white;
+        transform: translateX(8px);
+    }
+
+    .footer-links a:hover i {
+        transform: scale(1.2);
+    }
+
+    .social-icons a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 45px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        color: white;
+        margin-right: 1rem;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .social-icons a:hover {
+        background: white;
+        color: var(--color-primary);
+        transform: translateY(-8px) scale(1.1);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .copyright {
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        padding-top: 2.5rem;
+        margin-top: 4rem;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .newsletter-input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 8px;
+    }
+
+    .newsletter-input::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .newsletter-btn {
+        background: linear-gradient(45deg, var(--color-accent), #f39c12);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .newsletter-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('filtroForm');
