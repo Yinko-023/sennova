@@ -17,12 +17,9 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
     <p class="text-muted">Gestion de tus archivos</p>
   </div>
   <!-- Formulario SOLO PARA ADMIN/PUBLICADOR ELECTRÓNICA -->
-  <?php if (
-    isset($_SESSION['rol']) &&
-    (
-      $_SESSION['rol'] == 1 ||
-      ($_SESSION['rol'] == 3 && isset($_SESSION['area']) && $_SESSION['area'] === 'electronica' || $_SESSION['area'] === 'visualizador')
-    )
+  <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
+    || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
+    || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
   ): ?>
     <div class="admin-form" data-aos="fade-up">
       <h5>Crear Nuevo Proceso</h5>
@@ -68,10 +65,10 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
             style="text-decoration: none;">
             <i class="fas fa-arrow-right me-2"></i> Ingresar
           </a>
-<?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
-  || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
-  || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
-): ?>
+          <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
+            || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
+            || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
+          ): ?>
             <form method="post"
               action="routes/createProces.php"
               class="js-confirm-delete"
@@ -174,8 +171,8 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    const ok  = params.get('res');   // mensajes de éxito
-    const err = params.get('err');   // mensajes de error
+    const ok = params.get('res'); // mensajes de éxito
+    const err = params.get('err'); // mensajes de error
 
     if (!ok && !err) return;
 
@@ -185,8 +182,12 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
       allowEscapeKey: true,
       allowOutsideClick: true,
       width: 480,
-      showClass: { popup: 'swal2-show' },
-      hideClass: { popup: 'swal2-hide' }
+      showClass: {
+        popup: 'swal2-show'
+      },
+      hideClass: {
+        popup: 'swal2-hide'
+      }
     };
 
     if (ok) {
@@ -216,67 +217,84 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('form.js-confirm-delete').forEach((form) => {
-    const btn = form.querySelector('button[name="eliminar"]');
-    if (!btn) return;
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('form.js-confirm-delete').forEach((form) => {
+      const btn = form.querySelector('button[name="eliminar"]');
+      if (!btn) return;
 
-    btn.addEventListener('click', () => {
-      const proceso = form.dataset.name || 'el proceso';
+      btn.addEventListener('click', () => {
+        const proceso = form.dataset.name || 'el proceso';
 
-      // 1) Confirmación inicial
-      Swal.fire({
-        title: '¿Eliminar proceso?',
-        html: `Se eliminará <b>${proceso}</b>.<br><small>Puede contener archivos dentro. Esta acción NO se puede deshacer.</small>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#d33'
-      }).then((res) => {
-        if (!res.isConfirmed) return;
-
-        // 2) Ventana de deshacer (10s)
-        let secs = 10;
-        let intervalId = null;
-        let submitTimeoutId = null;
-
-        const startCountdown = () => {
-          const counterEl = Swal.getHtmlContainer().querySelector('#undo-countdown');
-          intervalId = setInterval(() => {
-            secs -= 1;
-            if (counterEl) counterEl.textContent = secs;
-            if (secs <= 0) {
-              clearInterval(intervalId);
-            }
-          }, 1000);
-        };
-
-        const clearTimers = () => {
-          if (intervalId) clearInterval(intervalId);
-          if (submitTimeoutId) clearTimeout(submitTimeoutId);
-        };
-
+        // 1) Confirmación inicial
         Swal.fire({
-          title: 'Eliminación programada',
-          html: `
+          title: '¿Eliminar proceso?',
+          html: `Se eliminará <b>${proceso}</b>.<br><small>Puede contener archivos dentro. Esta acción NO se puede deshacer.</small>`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#d33'
+        }).then((res) => {
+          if (!res.isConfirmed) return;
+
+          // 2) Ventana de deshacer (10s)
+          let secs = 10;
+          let intervalId = null;
+          let submitTimeoutId = null;
+
+          const startCountdown = () => {
+            const counterEl = Swal.getHtmlContainer().querySelector('#undo-countdown');
+            intervalId = setInterval(() => {
+              secs -= 1;
+              if (counterEl) counterEl.textContent = secs;
+              if (secs <= 0) {
+                clearInterval(intervalId);
+              }
+            }, 1000);
+          };
+
+          const clearTimers = () => {
+            if (intervalId) clearInterval(intervalId);
+            if (submitTimeoutId) clearTimeout(submitTimeoutId);
+          };
+
+          Swal.fire({
+            title: 'Eliminación programada',
+            html: `
             <p>Tienes <b id="undo-countdown">10</b> segundos para <b>anular</b> tu decisión.</p>
             <small>Si no haces nada, se eliminará automáticamente.</small>
           `,
-          icon: 'info',
-          showCancelButton: true,
-          confirmButtonText: 'Eliminar ahora',
-          cancelButtonText: 'Anular',
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          timerProgressBar: true,
-          didOpen: () => {
-            startCountdown();
-            // envía automáticamente cuando acabe el tiempo (10s)
-            submitTimeoutId = setTimeout(() => {
-              // bloquear doble clic
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Eliminar ahora',
+            cancelButtonText: 'Anular',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            timerProgressBar: true,
+            didOpen: () => {
+              startCountdown();
+              // envía automáticamente cuando acabe el tiempo (10s)
+              submitTimeoutId = setTimeout(() => {
+                // bloquear doble clic
+                btn.disabled = true;
+                // asegura el parámetro "eliminar" en el POST
+                if (!form.querySelector('input[name="eliminar"]')) {
+                  const h = document.createElement('input');
+                  h.type = 'hidden';
+                  h.name = 'eliminar';
+                  h.value = '1';
+                  form.appendChild(h);
+                }
+                form.submit();
+              }, 10000);
+            }
+          }).then((r2) => {
+            // Se cerró por botón Confirmar (Eliminar ahora) o Cancelar (Anular)
+            clearTimers();
+
+            if (r2.isConfirmed) {
+              // Eliminar YA
               btn.disabled = true;
-              // asegura el parámetro "eliminar" en el POST
               if (!form.querySelector('input[name="eliminar"]')) {
                 const h = document.createElement('input');
                 h.type = 'hidden';
@@ -285,37 +303,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 form.appendChild(h);
               }
               form.submit();
-            }, 10000);
-          }
-        }).then((r2) => {
-          // Se cerró por botón Confirmar (Eliminar ahora) o Cancelar (Anular)
-          clearTimers();
-
-          if (r2.isConfirmed) {
-            // Eliminar YA
-            btn.disabled = true;
-            if (!form.querySelector('input[name="eliminar"]')) {
-              const h = document.createElement('input');
-              h.type = 'hidden';
-              h.name = 'eliminar';
-              h.value = '1';
-              form.appendChild(h);
+            } else {
+              // Anulado por el usuario
+              Swal.fire({
+                icon: 'info',
+                title: 'Eliminación cancelada',
+                timer: 1500,
+                showConfirmButton: false
+              });
             }
-            form.submit();
-          } else {
-            // Anulado por el usuario
-            Swal.fire({
-              icon: 'info',
-              title: 'Eliminación cancelada',
-              timer: 1500,
-              showConfirmButton: false
-            });
-          }
+          });
         });
       });
     });
   });
-});
 </script>
 
 <style>
