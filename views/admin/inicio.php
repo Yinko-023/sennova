@@ -1,44 +1,82 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+date_default_timezone_set('America/Bogota');
 
-$rol        = $_SESSION['rol']  ?? null;
-$areaSesion = $_SESSION['area'] ?? null;
+/* ====== GUARD CLAUSE / NORMALIZACIÓN ====== */
+
+// 1) Rol y área de sesión
+$rol        = (int)($_SESSION['rol']  ?? 0);
+$areaSesion = $_SESSION['area']       ?? null;
+
+// 2) Asegura que $resumen sea array
+$resumen = is_array($resumen ?? null) ? $resumen : [];
+
+// 3) Define $areaFiltro si no viene seteado
 if (!isset($areaFiltro)) {
-  if ($rol == 1) {
-    $areaFiltro = null;
-  } elseif ($rol == 2) {
-    $areaFiltro = 'electronica';
+  if ($rol === 1) {
+    $areaFiltro = null;                // Super admin: sin filtro
+  } elseif ($rol === 2) {
+    $areaFiltro = 'electronica';       // Rol 2: electrónica
   } else {
-    $areaFiltro = $areaSesion ?: null;
+    $areaFiltro = $areaSesion ?: null; // Lo que tenga en sesión (o null)
   }
 }
 
-$areaNombre = $areaFiltro ? ucfirst($areaFiltro) : 'General';
-$areaClase  = $areaFiltro === 'cafe'
-  ? 'area-cafe'
-  : ($areaFiltro === 'electronica' ? 'area-electronica' : 'area-general');
-$atendidasNum   = $resumen['atendidas_num']   ?? $resumen['aceptadas']   ?? 0;
-$pendientesNum  = $resumen['pendientes_num']  ?? $resumen['pendientes']  ?? 0;
-$rechazadasNum  = $resumen['rechazadas_num']  ?? $resumen['rechazadas']  ?? 0;
-$totalResumen   = $resumen['total'] ?? ($atendidasNum + $pendientesNum + $rechazadasNum);
-$den            = max(1, (int)$totalResumen);
-$atendidasPct   = $resumen['atendidas_pct']   ?? (int)round($atendidasNum  * 100 / $den);
-$rechazadasPct  = $resumen['rechazadas_pct']  ?? (int)round($rechazadasNum * 100 / $den);
-$growthPct      = $resumen['growth_pct'] ?? 0;
-$displayTotal = $totalResumen;
-if ($areaFiltro === 'cafe') {
-  $displayTotal = (int)($resumen['cafe'] ?? 0);
-}
-if ($areaFiltro === 'electronica') {
-  $displayTotal = (int)($resumen['electronica'] ?? 0);
-}
+// 4) Normaliza claves/valores por defecto
+$defaultsResumen = [
+  'total'            => 0,
+  'cafe'             => 0,
+  'electronica'      => 0,
+  'atendidas_num'    => 0,
+  'pendientes_num'   => 0,
+  'rechazadas_num'   => 0,
+  'atendidas_pct'    => 0,
+  'rechazadas_pct'   => 0,
+  'growth_pct'       => 0,
+];
+$resumen = $defaultsResumen + $resumen; // completa faltantes
 
+// 5) Derivados para la vista
+$areaKey    = $areaFiltro ? strtolower($areaFiltro) : null;
+$areaNombre = $areaFiltro ? ucfirst($areaFiltro)    : 'General';
+$areaClase  = ($areaKey === 'cafe')
+  ? 'area-cafe'
+  : (($areaKey === 'electronica') ? 'area-electronica' : 'area-general');
+
+// Números y porcentajes
+$atendidasNum   = (int)$resumen['atendidas_num'];
+$pendientesNum  = (int)$resumen['pendientes_num'];
+$rechazadasNum  = (int)$resumen['rechazadas_num'];
+
+$totalResumen = (int)($resumen['total'] ?: ($atendidasNum + $pendientesNum + $rechazadasNum));
+$den          = max(1, $totalResumen);
+
+$atendidasPct  = (int)($resumen['atendidas_pct']  ?: round($atendidasNum  * 100 / $den));
+$rechazadasPct = (int)($resumen['rechazadas_pct'] ?: round($rechazadasNum * 100 / $den));
+$growthPct     = (float)$resumen['growth_pct'];
+
+// Total mostrado según área
+$displayTotal = $totalResumen;
+if     ($areaKey === 'cafe')        $displayTotal = (int)$resumen['cafe'];
+elseif ($areaKey === 'electronica') $displayTotal = (int)$resumen['electronica'];
+
+// Reinyecta normalizado (por si el HTML usa estas claves)
 $resumen['atendidas_num']   = $atendidasNum;
 $resumen['pendientes_num']  = $pendientesNum;
 $resumen['rechazadas_num']  = $rechazadasNum;
 $resumen['atendidas_pct']   = $atendidasPct;
 $resumen['rechazadas_pct']  = $rechazadasPct;
 $resumen['growth_pct']      = $growthPct;
+
+// 6) Asegura arrays para otras secciones
+$usuarios     = is_array($usuarios     ?? null) ? $usuarios     : [];
+$actividades  = is_array($actividades  ?? null) ? $actividades  : [];
+$totalUsuarios = (int)($totalUsuarios ?? 0);
+$totalVisitas  = (int)($totalVisitas  ?? 0);
+$totalArchivos = (int)($totalArchivos ?? 0);
+$totalPublicaciones = (int)($totalPublicaciones ?? 0);
 ?>
+
 
 <div class="container-fluid dashboard-container ">
   <!-- Encabezado -->

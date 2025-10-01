@@ -72,12 +72,12 @@
 
                             <div class="mission-vision">
                                 <h5><i class="fas fa-bullseye me-2"></i>Misión</h5>
-                                <p>Producir y analizar cafés de la más alta calidad, promoviendo prácticas sostenibles y contribuyendo al desarrollo de la industria cafetalera nacional mediante investigación aplicada.</p>
+                                <p>El laboratorio está comprometido en satisfacer, en el menor tiempo posible, las necesidades de los empresarios, emprendedores, productores, académicos y principalmente campesinos relacionados a la industria del café y el cacao en la Zona Suroccidente del Huila; a través de la oferta de los servicios tecnológicos altamente calificados del SENA - La Plata, fortalecidos por la relación entre la academia, los productores y sus clientes finales.</p>
                             </div>
 
                             <div class="mission-vision">
                                 <h5><i class="fas fa-eye me-2"></i>Visión</h5>
-                                <p>Ser referente nacional en investigación y desarrollo de cafés especiales, reconocidos por su excelencia y contribución al sector agroindustrial colombiano.</p>
+                                <p>Para el 2025, ser el aliado estratégico de la población rural, empresarial, emprendedora, académica y principalmente campesina del suroccidente del Huila como el Laboratorio de Calidad de Café y Cacao altamente calificado, en procesos de producción, transformación y/o comercialización de la industria cafetera y cacaotera regional.</p>
                             </div>
                         </div>
                     </div>
@@ -98,12 +98,12 @@
 
                             <div class="mission-vision">
                                 <h5><i class="fas fa-bullseye me-2"></i>Misión</h5>
-                                <p>Desarrollar soluciones electrónicas innovadoras que respondan a las necesidades del mercado, fomentando la investigación y el desarrollo tecnológico con enfoque sostenible.</p>
+                                <p>Proporcionar a los aprendices y clientes de diversos sectores del occidente del Huila servicios de diseño, fabricación y desarrollo de dispositivos en el área de electrónica, utilizando equipos modernos y tecnología de vanguardia. Nuestro compromiso es fomentar en los aprendices la aplicación práctica de la tecnología, ofreciendo oportunidades de aprendizaje experiencial, e incentivar en la comunidad la tecnificación de los procesos productivos.</p>
                             </div>
 
                             <div class="mission-vision">
                                 <h5><i class="fas fa-eye me-2"></i>Visión</h5>
-                                <p>Posicionarnos como centro de excelencia en investigación y desarrollo electrónico, contribuyendo al avance tecnológico del país y formando talento especializado.</p>
+                                <p>Para el año 2030, consolidarnos como un referente en el campo de la electrónica y como uno de los principales motores de cambio y progreso en el occidente del Huila, orientando de manera efectiva a clientes y aprendices en la adopción y aplicación de soluciones tecnológicas que impulsen la productividad, competitividad y sostenibilidad en diversos sectores.</p>
                             </div>
                         </div>
                     </div>
