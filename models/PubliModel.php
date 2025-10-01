@@ -693,69 +693,94 @@ class SolicitudModel
 
     public function obtenerResumenMensual($area = null)
     {
-        // Tu tabla maneja estados: pendiente / aceptada / rechazada
         $sql = "SELECT 
-                    COUNT(*) AS total,
-                    SUM(CASE WHEN area = 'cafe' THEN 1 ELSE 0 END) AS cafe,
-                    SUM(CASE WHEN area = 'electronica' THEN 1 ELSE 0 END) AS electronica,
-                    SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
-                    SUM(CASE WHEN estado = 'aceptada'  THEN 1 ELSE 0 END) AS aceptadas,
-                    SUM(CASE WHEN estado = 'rechazada' THEN 1 ELSE 0 END) AS rechazadas
-                FROM requests
-                WHERE MONTH(fecha_solicitud) = MONTH(CURRENT_DATE())
-                  AND YEAR(fecha_solicitud) = YEAR(CURRENT_DATE())";
+                COUNT(*) AS total,
+                SUM(CASE WHEN LOWER(area)='cafe'        THEN 1 ELSE 0 END) AS cafe,
+                SUM(CASE WHEN LOWER(area)='electronica' THEN 1 ELSE 0 END) AS electronica,
+                SUM(CASE WHEN LOWER(estado)='pendiente' THEN 1 ELSE 0 END) AS pendientes,
+                SUM(CASE WHEN LOWER(estado)='aceptada'  THEN 1 ELSE 0 END) AS aceptadas,
+                SUM(CASE WHEN LOWER(estado)='rechazada' THEN 1 ELSE 0 END) AS rechazadas
+            FROM requests
+            WHERE fecha_solicitud >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $params = [];
 
-        if ($area) {
-            $sql .= " AND area = :area";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':area', $area);
-            $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } else {
-            return $this->conn->query($sql)->fetch(PDO::FETCH_ASSOC);
+        if (!empty($area)) {
+            $sql .= " AND LOWER(area) = :area";
+            $params[':area'] = strtolower($area);
         }
+
+        $st = $this->conn->prepare($sql);
+        $st->execute($params);
+        return $st->fetch(PDO::FETCH_ASSOC) ?: [
+            'total' => 0,
+            'cafe' => 0,
+            'electronica' => 0,
+            'pendientes' => 0,
+            'aceptadas' => 0,
+            'rechazadas' => 0
+        ];
     }
 
-    public function obtenerUsuarioMasActivo($area = null)
+    public function obtenerUsuarioMasActivo(?string $area = null): ?array
     {
-        $sql = "SELECT nombre, COUNT(*) as total 
-                FROM requests 
-                WHERE MONTH(fecha_solicitud) = MONTH(CURRENT_DATE())
-                  AND YEAR(fecha_solicitud) = YEAR(CURRENT_DATE())";
+        // Mes actual
+        $start = (new DateTime('first day of this month 00:00:00'))->format('Y-m-d H:i:s');
+        $end   = (new DateTime('first day of next month 00:00:00'))->format('Y-m-d H:i:s');
+        $top   = $this->topPorRango($start, $end, $area);
 
-        if ($area) {
-            $sql .= " AND area = :area";
+        // Si no hay, mirar mes anterior
+        if (!$top) {
+            $start = (new DateTime('first day of last month 00:00:00'))->format('Y-m-d H:i:s');
+            $end   = (new DateTime('first day of this month 00:00:00'))->format('Y-m-d H:i:s');
+            $top   = $this->topPorRango($start, $end, $area);
         }
-
-        $sql .= " GROUP BY nombre 
-                  ORDER BY total DESC 
-                  LIMIT 1";
-
-        if ($area) {
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':area', $area);
-            $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } else {
-            return $this->conn->query($sql)->fetch(PDO::FETCH_ASSOC);
-        }
+        return $top;
     }
 
-    public function obtenerSolicitudesPorCedula($cc_cliente, $area = null)
-    {
-        $sql = "SELECT * FROM requests WHERE cc_cliente = ?";
-        $params = [$cc_cliente];
+private function topPorRango(string $start, string $end, ?string $area = null): ?array
+{
+    // Filtro base por rango
+    $where  = 'fecha_solicitud >= :start AND fecha_solicitud < :end';
+    $params = [':start' => $start, ':end' => $end];
 
-        if ($area) {
-            $sql .= " AND area = ?";
-            $params[] = $area;
-        }
-
-        $sql .= " ORDER BY fecha_solicitud DESC";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Filtro opcional por área (normalizado)
+    if ($area !== null && $area !== '') {
+        $where .= ' AND LOWER(area) = :area';
+        $params[':area'] = strtolower($area);
     }
+
+    // NOTA:
+    // - TRIM para ignorar espacios errantes en nombre
+    // - COALESCE(NULLIF(...)) para usar email si nombre viene vacío
+    // - COUNT(*) como total y casteo al final a int
+    $sql = "
+        SELECT
+            COALESCE(NULLIF(TRIM(nombre), ''), email) AS nombre,
+            email,
+            COUNT(*) AS total
+        FROM requests
+        WHERE $where
+        GROUP BY email, nombre
+        ORDER BY total DESC
+        LIMIT 1
+    ";
+
+    $st = $this->conn->prepare($sql);
+    $st->execute($params);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+
+    if (!$row) {
+        return null;
+    }
+
+    // Asegura tipos
+    $row['total'] = (int)$row['total'];
+    $row['nombre'] = (string)$row['nombre'];
+    $row['email']  = (string)$row['email'];
+
+    return $row;
+}
+
 
     public function limpiarNotificaciones()
     {

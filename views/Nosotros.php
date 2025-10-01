@@ -94,7 +94,7 @@
                             <p>Innovación y tecnología de vanguardia</p>
                         </div>
                         <div class="lab-description">
-                            <p>Nuestro laboratorio de electrónica se dedica al diseño, desarrollo y pruebas de componentes y sistemas electrónicos para diversas aplicaciones industriales. Contamos con equipos de última generación.</p>
+                            <p>Nuestro laboratorio de electrónica se dedica al diseño, desarrollo y pruebas de sistemas electrónicos para aplicaciones industriales y agroindustriales. Gracias a equipos de última generación, desarrollamos soluciones que optimizan procesos en fábricas y también en el campo, como sistemas de monitoreo, automatización y uso eficiente de recursos.</p>
 
                             <div class="mission-vision">
                                 <h5><i class="fas fa-bullseye me-2"></i>Misión</h5>

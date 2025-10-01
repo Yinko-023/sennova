@@ -3,7 +3,7 @@ require_once __DIR__ . '/../models/PubliModel.php';
 
 class AdminController
 {
-public function inicio()
+  public function inicio()
 {
     if (!isset($_SESSION['usuario'])) {
         header('Location: acceso-xz9x1d4.php?controller=login&action=index');
@@ -30,6 +30,19 @@ public function inicio()
     $resumen    = $solicitudModel->obtenerResumenMensual($areaFiltro);
     $usuarioTop = $solicitudModel->obtenerUsuarioMasActivo($areaFiltro);
 
+    // 🔸 Normaliza claves para la vista (mapea aceptadas/pendientes/rechazadas)
+    $resumen = is_array($resumen) ? $resumen : [];
+    $resumen['atendidas_num']  = (int)($resumen['aceptadas']  ?? 0);
+    $resumen['rechazadas_num'] = (int)($resumen['rechazadas'] ?? 0);
+    $resumen['pendientes_num'] = (int)($resumen['pendientes'] ?? 0);
+
+    // Porcentajes para las barras
+    $totalTmp = max(1, (int)($resumen['total'] ?? 0));
+    $resumen['atendidas_pct']  = (int)round($resumen['atendidas_num']  * 100 / $totalTmp);
+    $resumen['rechazadas_pct'] = (int)round($resumen['rechazadas_num'] * 100 / $totalTmp);
+    // (Si necesitas porcentaje de pendientes en otro lado)
+    $resumen['pendientes_pct'] = (int)round($resumen['pendientes_num'] * 100 / $totalTmp);
+
     // === Actividad reciente (solo desde requests) ===
     $pdo = conectaDb();              // obtiene PDO
     $limiteActividad = 8;
@@ -47,7 +60,9 @@ public function inicio()
     $sql .= " ORDER BY ts DESC LIMIT :lim";
 
     $st = $pdo->prepare($sql);
-    foreach ($params as $k => $v) { $st->bindValue($k, $v); }
+    foreach ($params as $k => $v) {
+        $st->bindValue($k, $v);
+    }
     $st->bindValue(':lim', $limiteActividad, PDO::PARAM_INT);
     $st->execute();
 

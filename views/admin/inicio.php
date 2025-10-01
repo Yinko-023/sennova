@@ -2,27 +2,22 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 date_default_timezone_set('America/Bogota');
 
-/* ====== GUARD CLAUSE / NORMALIZACIÓN ====== */
 
-// 1) Rol y área de sesión
 $rol        = (int)($_SESSION['rol']  ?? 0);
 $areaSesion = $_SESSION['area']       ?? null;
 
-// 2) Asegura que $resumen sea array
 $resumen = is_array($resumen ?? null) ? $resumen : [];
 
-// 3) Define $areaFiltro si no viene seteado
 if (!isset($areaFiltro)) {
   if ($rol === 1) {
-    $areaFiltro = null;                // Super admin: sin filtro
+    $areaFiltro = null;
   } elseif ($rol === 2) {
-    $areaFiltro = 'electronica';       // Rol 2: electrónica
+    $areaFiltro = 'electronica';
   } else {
-    $areaFiltro = $areaSesion ?: null; // Lo que tenga en sesión (o null)
+    $areaFiltro = $areaSesion ?: null;
   }
 }
 
-// 4) Normaliza claves/valores por defecto
 $defaultsResumen = [
   'total'            => 0,
   'cafe'             => 0,
@@ -34,16 +29,14 @@ $defaultsResumen = [
   'rechazadas_pct'   => 0,
   'growth_pct'       => 0,
 ];
-$resumen = $defaultsResumen + $resumen; // completa faltantes
+$resumen = array_merge($defaultsResumen, $resumen);
 
-// 5) Derivados para la vista
 $areaKey    = $areaFiltro ? strtolower($areaFiltro) : null;
 $areaNombre = $areaFiltro ? ucfirst($areaFiltro)    : 'General';
 $areaClase  = ($areaKey === 'cafe')
   ? 'area-cafe'
   : (($areaKey === 'electronica') ? 'area-electronica' : 'area-general');
 
-// Números y porcentajes
 $atendidasNum   = (int)$resumen['atendidas_num'];
 $pendientesNum  = (int)$resumen['pendientes_num'];
 $rechazadasNum  = (int)$resumen['rechazadas_num'];
@@ -55,12 +48,10 @@ $atendidasPct  = (int)($resumen['atendidas_pct']  ?: round($atendidasNum  * 100 
 $rechazadasPct = (int)($resumen['rechazadas_pct'] ?: round($rechazadasNum * 100 / $den));
 $growthPct     = (float)$resumen['growth_pct'];
 
-// Total mostrado según área
 $displayTotal = $totalResumen;
-if     ($areaKey === 'cafe')        $displayTotal = (int)$resumen['cafe'];
+if ($areaKey === 'cafe')        $displayTotal = (int)$resumen['cafe'];
 elseif ($areaKey === 'electronica') $displayTotal = (int)$resumen['electronica'];
 
-// Reinyecta normalizado (por si el HTML usa estas claves)
 $resumen['atendidas_num']   = $atendidasNum;
 $resumen['pendientes_num']  = $pendientesNum;
 $resumen['rechazadas_num']  = $rechazadasNum;
@@ -68,7 +59,6 @@ $resumen['atendidas_pct']   = $atendidasPct;
 $resumen['rechazadas_pct']  = $rechazadasPct;
 $resumen['growth_pct']      = $growthPct;
 
-// 6) Asegura arrays para otras secciones
 $usuarios     = is_array($usuarios     ?? null) ? $usuarios     : [];
 $actividades  = is_array($actividades  ?? null) ? $actividades  : [];
 $totalUsuarios = (int)($totalUsuarios ?? 0);
@@ -109,7 +99,7 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
         <div class="card-body">
           <h6 class="metric-title">Publicaciones</h6>
           <h2 class="metric-value"><?= $totalPublicaciones ?? '0' ?></h2>
- 
+
           <i class="fas fa-newspaper metric-icon"></i>
         </div>
       </div>
@@ -323,8 +313,9 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
             </div>
 
             <!-- Progreso Atendidas / Rechazadas -->
-            <div class="progress progress-thin mb-2" role="progressbar" aria-label="Atendidas/rechazadas">
+            <div class="progress progress-thin mb-2" role="progressbar" aria-label="Atendidas/Pendientes/Rechazadas">
               <div class="progress-bar bg-success" style="width: <?= $resumen['atendidas_pct'] ?? 0 ?>%"></div>
+              <div class="progress-bar bg-warning" style="width: <?= $resumen['pendientes_pct'] ?? 0 ?>%"></div>
               <div class="progress-bar bg-danger" style="width: <?= $resumen['rechazadas_pct'] ?? 0 ?>%"></div>
             </div>
 
@@ -332,6 +323,10 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
               <small class="text-muted">
                 <i class="fas fa-circle text-success me-1"></i>
                 Atendidas: <?= $resumen['atendidas_num'] ?? 0 ?>
+              </small>
+              <small class="text-muted">
+                <i class="fas fa-circle text-warning me-1"></i>
+                Pendientes: <?= $resumen['pendientes_num'] ?? 0 ?>
               </small>
               <small class="text-muted">
                 <i class="fas fa-circle text-danger me-1"></i>
@@ -361,9 +356,6 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
               <span class="badge rounded-pill badge-area"><?= $areaNombre ?></span>
               <span><i class="fas fa-chart-line"></i> Resumen del Mes</span>
             </h5>
-            <span class="badge growth-badge">
-              <?= (($resumen['growth_pct'] ?? 0) >= 0 ? '+' : '') . ($resumen['growth_pct'] ?? 0) ?>%
-            </span>
           </div>
 
           <div class="p-3">
@@ -398,14 +390,19 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
             </div>
 
             <!-- Progreso Atendidas / Rechazadas -->
-            <div class="progress progress-thin mb-2" role="progressbar" aria-label="Atendidas/rechazadas">
+            <!-- Progreso Atendidas / Pendientes / Rechazadas -->
+            <div class="progress progress-thin mb-2" role="progressbar" aria-label="Atendidas/Pendientes/Rechazadas">
               <div class="progress-bar bg-success" style="width: <?= $resumen['atendidas_pct'] ?? 0 ?>%"></div>
+              <div class="progress-bar bg-warning" style="width: <?= $resumen['pendientes_pct'] ?? 0 ?>%"></div>
               <div class="progress-bar bg-danger" style="width: <?= $resumen['rechazadas_pct'] ?? 0 ?>%"></div>
             </div>
+
             <div class="d-flex justify-content-between">
               <small class="text-muted"><i class="fas fa-circle text-success me-1"></i> <?= $resumen['atendidas_pct'] ?? 0 ?>%</small>
-              <small class="text-muted"><i class="fas fa-circle text-danger me-1"></i> <?= $resumen['rechazadas_pct'] ?? 0 ?>%</small>
+              <small class="text-muted"><i class="fas fa-circle text-warning me-1"></i> <?= $resumen['pendientes_pct'] ?? 0 ?>%</small>
+              <small class="text-muted"><i class="fas fa-circle text-danger  me-1"></i> <?= $resumen['rechazadas_pct'] ?? 0 ?>%</small>
             </div>
+
           </div>
         </div>
       <?php endif; ?>
@@ -496,7 +493,7 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
       <div class="modal-header text-white" id="modal-actividad-header">
         <h5 class="modal-title d-flex align-items-center gap-2" id="modal-actividad-title">
           <i class="fas fa-history"></i>
-          Todas las actividad reciente 
+          Todas las actividad reciente
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar" id="modal-actividad-close"></button>
       </div>
@@ -535,66 +532,71 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
 
 
 <style>
-/* Contenedor principal del modal */
-#modal-actividad{
-  border-radius: 14px;
-  overflow: hidden;
-}
+  /* Contenedor principal del modal */
+  #modal-actividad {
+    border-radius: 14px;
+    overflow: hidden;
+  }
 
-/* Encabezado con gradient */
-#modal-actividad-header{
-  background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
-  border-bottom: none;
-  padding-top: 14px;
-  padding-bottom: 14px;
-}
+  /* Encabezado con gradient */
+  #modal-actividad-header {
+    background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+    border-bottom: none;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
 
-/* Body scrollable */
-#modal-actividad-scroll{
-  max-height: 60vh;   /* ajusta si quieres más/menos alto */
-  overflow-y: auto;
-}
+  /* Body scrollable */
+  #modal-actividad-scroll {
+    max-height: 60vh;
+    /* ajusta si quieres más/menos alto */
+    overflow-y: auto;
+  }
 
-/* Footer con gradient y botones contrastados */
-#modal-actividad-footer{
-  background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
-  border-top: none;
-}
+  /* Footer con gradient y botones contrastados */
+  #modal-actividad-footer {
+    background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+    border-top: none;
+  }
 
-/* Botón primario del historial con gradient propio (si prefieres) */
-#btn-actividad-historial{
-  background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
-  color: #fff;
-  border: none;
-}
-#btn-actividad-historial:hover{
-  filter: brightness(1.08);
-  color: #fff;
-}
+  /* Botón primario del historial con gradient propio (si prefieres) */
+  #btn-actividad-historial {
+    background: linear-gradient(90deg, #2c3e50 0%, #1a1a2e 100%);
+    color: #fff;
+    border: none;
+  }
 
-/* Botón cerrar con borde claro para contraste */
-#btn-actividad-cerrar{
-  border-color: rgba(255,255,255,.55);
-  color: #fff;
-}
-#btn-actividad-cerrar:hover{
-  background: rgba(255,255,255,.12);
-  color: #fff;
-}
+  #btn-actividad-historial:hover {
+    filter: brightness(1.08);
+    color: #fff;
+  }
 
-/* Item hover sutil dentro de la lista */
-#modal-actividad-item:hover{
-  background-color: #f8fafc;
-  transition: background-color .15s ease;
-}
+  /* Botón cerrar con borde claro para contraste */
+  #btn-actividad-cerrar {
+    border-color: rgba(255, 255, 255, .55);
+    color: #fff;
+  }
 
-/* (Opcional) Afinar tipografías de título/texto */
-#modal-actividad-title{ font-weight: 700; }
-#modal-actividad-item-title{ font-weight: 600; }
+  #btn-actividad-cerrar:hover {
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+  }
 
+  /* Item hover sutil dentro de la lista */
+  #modal-actividad-item:hover {
+    background-color: #f8fafc;
+    transition: background-color .15s ease;
+  }
+
+  /* (Opcional) Afinar tipografías de título/texto */
+  #modal-actividad-title {
+    font-weight: 700;
+  }
+
+  #modal-actividad-item-title {
+    font-weight: 600;
+  }
 </style>
-
-
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
