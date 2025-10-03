@@ -1,13 +1,19 @@
 <?php
 $rol        = $_SESSION['rol']  ?? null;
 $areaSesion = $_SESSION['area'] ?? null;
+
 $esVisualizadorElectronica = ($rol === 2 && $areaSesion === 'visualizador');
 $areaEfectiva = $esVisualizadorElectronica ? 'electronica' : $areaSesion;
-$esAdmin = empty($areaEfectiva);
+$esAdmin   = empty($areaEfectiva);
+
 $estado   = $_GET['estado']   ?? 'todas';
 $busqueda = $_GET['busqueda'] ?? '';
-$area = $esAdmin ? ($_GET['area'] ?? '') : $areaEfectiva;
+$orden    = $_GET['orden']    ?? 'desc';
+$orden    = ($orden === 'asc') ? 'asc' : 'desc';
+
+$area     = $esAdmin ? ($_GET['area'] ?? '') : $areaEfectiva;
 $areaParam = $esAdmin && $area !== '' ? '&area=' . urlencode($area) : '';
+
 $controller = new SolicitudController();
 
 if ($esAdmin) {
@@ -19,7 +25,17 @@ if ($esAdmin) {
 } else {
     $solicitudes = $controller->obtenerSolicitudesPorArea($estado, $area, $busqueda);
 }
+
+usort($solicitudes, function ($a, $b) use ($orden) {
+    $fa = $a['fecha_solicitud'] ?? ($a['created_at'] ?? ($a['fecha'] ?? ''));
+    $fb = $b['fecha_solicitud'] ?? ($b['created_at'] ?? ($b['fecha'] ?? ''));
+    $ta = $fa ? strtotime($fa) : 0;
+    $tb = $fb ? strtotime($fb) : 0;
+    return $orden === 'asc' ? ($ta <=> $tb) : ($tb <=> $ta);
+});
+
 ?>
+
 
 <div class="container mt-5">
     <div class="text-center my-4" data-aos="fade-up">
@@ -165,6 +181,50 @@ if ($esAdmin) {
         </div>
     </div>
 
+    <!-- === ORDENAR POR FECHA === -->
+    <form method="GET" action="inAdmin.php" class="row g-2 align-items-end mb-4">
+        <input type="hidden" name="vista" value="atencion">
+        <input type="hidden" name="estado" value="<?= htmlspecialchars($estado) ?>">
+        <?php if ($esAdmin): ?>
+            <input type="hidden" name="area" value="<?= htmlspecialchars($area) ?>">
+        <?php endif; ?>
+        <input type="hidden" name="busqueda" value="<?= htmlspecialchars($busqueda) ?>">
+
+        <div class="col-12">
+            <label class="form-label fw-semibold">
+                <i class="far fa-calendar-alt me-1"></i> Ordenar por fecha
+            </label>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label class="form-label small text-muted mb-1">Orden</label>
+            <select name="orden" class="form-control" id="selectOrden">
+                <option value="desc" <?= ($orden === 'desc') ? 'selected' : '' ?>>Más nuevos primero</option>
+                <option value="asc" <?= ($orden === 'asc')  ? 'selected' : '' ?>>Más viejos primero</option>
+            </select>
+        </div>
+
+        <div class="col-12 col-md-6 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill">
+                <i class="fas fa-sort-amount-down-alt me-1"></i> Aplicar
+            </button>
+
+            <?php
+            $base = "inAdmin.php?vista=atencion&estado=" . urlencode($estado);
+            if ($esAdmin && $area !== '') $base .= "&area=" . urlencode($area);
+            if ($busqueda !== '')        $base .= "&busqueda=" . urlencode($busqueda);
+            ?>
+            <a href="<?= $base ?>" class="btn btn-outline-secondary">Predeterminado</a>
+        </div>
+    </form>
+
+    <script>
+        document.getElementById('selectOrden')?.addEventListener('change', function() {
+            this.form.submit();
+        });
+    </script>
+
+
     <?php if (isset($_GET['eliminado'])): ?>
         <div class="alert alert-success text-center">Solicitud eliminada correctamente.</div>
     <?php endif; ?>
@@ -188,16 +248,67 @@ if ($esAdmin) {
                                     </button>
                                 </form>
 
-                                <form method="post" action="routes/DeleteServi.php"
-                                    onsubmit="return confirm('¿Estás seguro de eliminar esta solicitud?')" class="d-inline">
-                                    <input type="hidden" name="id_re" value="<?= $soli['id_re'] ?>">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar solicitud">
+                                <form method="post"
+                                    action="routes/DeleteServi.php"
+                                    class="d-inline js-delete-servi"
+                                    data-servicio="<?= htmlspecialchars($soli['servicio'], ENT_QUOTES) ?>">
+                                    <input type="hidden" name="id_re" value="<?= (int)$soli['id_re'] ?>">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar servicio" data-role="btn-delete-servi">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
+
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', () => {
+                                        document.querySelectorAll('form.js-delete-servi [data-role="btn-delete-servi"]').forEach((btn) => {
+                                            btn.addEventListener('click', () => {
+                                                const form = btn.closest('form.js-delete-servi');
+                                                const nombre = form?.dataset?.servicio || 'este servicio';
+
+                                                if (window.Swal) {
+                                                    Swal.fire({
+                                                        title: '¿Eliminar servicio?',
+                                                        html: `¿Quieres eliminar <b>${nombre}</b>?`,
+                                                        icon: 'warning',
+                                                        showCancelButton: true,
+                                                        confirmButtonText: 'Sí, eliminar',
+                                                        cancelButtonText: 'Cancelar',
+                                                        confirmButtonColor: '#d33',
+                                                        reverseButtons: true
+                                                    }).then((res) => {
+                                                        if (res.isConfirmed) form.submit();
+                                                    });
+                                                } else {
+                                                    // Fallback si SweetAlert2 no está disponible
+                                                    if (confirm(`¿Quieres eliminar ${nombre}?`)) form.submit();
+                                                }
+                                            });
+                                        });
+                                    });
+                                </script>
                             </div>
 
-                            <h5 class="card-title fw-bold text-primary-emphasis mt-4"><?= htmlspecialchars($soli['nombre']) ?></h5>
+                            <h5 class="card-title fw-bold text-primary-emphasis mt-4">
+                                <?= htmlspecialchars($soli['nombre']) ?>
+                            </h5>
+
+                            <?php
+                            // --- Fecha de la solicitud (con día de la semana en español) ---
+                            $fechaRaw = $soli['fecha_solicitud'] ?? '';
+                            $fechaTxt = '';
+                            if (!empty($fechaRaw)) {
+                                $ts = strtotime($fechaRaw);
+                                if ($ts !== false) {
+                                    $dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+                                    $diaNombre = $dias[(int)date('w', $ts)];
+                                    $fechaTxt = ucfirst($diaNombre) . ' ' . date('d/m/Y H:i', $ts); // ej: Lunes 23/09/2025 09:05
+                                }
+                            }
+                            ?>
+                            <?php if ($fechaTxt): ?>
+                                <p class="mb-1"><strong>Fecha de solicitud:</strong> <?= htmlspecialchars($fechaTxt) ?></p>
+                            <?php endif; ?>
+
                             <p class="mb-1"><strong>Cédula:</strong> <?= htmlspecialchars($soli['cc_cliente']) ?></p>
                             <p class="mb-1"><strong>Servicio:</strong> <?= htmlspecialchars($soli['servicio']) ?></p>
                             <p class="mb-1"><strong>Empresa:</strong> <?= htmlspecialchars($soli['empresa']) ?></p>
@@ -235,6 +346,7 @@ if ($esAdmin) {
                         </div>
                     </div>
                 </div>
+
 
                 <div class="modal fade" id="respuestaModal<?= $soli['id_re'] ?>" tabindex="-1"
                     aria-labelledby="modalLabel<?= $soli['id_re'] ?>" aria-hidden="true">
@@ -380,7 +492,7 @@ if ($esAdmin) {
             }
 
             checkbox.addEventListener('change', toggleComentario);
-            toggleComentario(); 
+            toggleComentario();
         });
     });
 
@@ -417,10 +529,10 @@ if ($esAdmin) {
 
                 // ===== Estado inicial: switch ACTIVADO (comentar) =====
                 toggle.checked = true;
-                hiddenFlag.value = '0'; 
+                hiddenFlag.value = '0';
                 comentario.disabled = false;
-                comentarioWrap.style.display = ''; 
-                setMediosDisabled(modal, false); 
+                comentarioWrap.style.display = '';
+                setMediosDisabled(modal, false);
                 aviso.style.display = 'none';
 
                 // si ningún medio está seleccionado aún, selecciona correo por defecto

@@ -292,9 +292,6 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
 
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h3 class="stats-value"><?= $resumen['total'] ?? 0 ?></h3>
-              <span class="status-badge info">
-                <?= (($resumen['growth_pct'] ?? 0) >= 0 ? '+' : '') . ($resumen['growth_pct'] ?? 0) ?>%
-              </span>
             </div>
 
             <div class="row">
@@ -312,7 +309,6 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
               </div>
             </div>
 
-            <!-- Progreso Atendidas / Rechazadas -->
             <div class="progress progress-thin mb-2" role="progressbar" aria-label="Atendidas/Pendientes/Rechazadas">
               <div class="progress-bar bg-success" style="width: <?= $resumen['atendidas_pct'] ?? 0 ?>%"></div>
               <div class="progress-bar bg-warning" style="width: <?= $resumen['pendientes_pct'] ?? 0 ?>%"></div>
@@ -389,8 +385,6 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
               </div>
             </div>
 
-            <!-- Progreso Atendidas / Rechazadas -->
-            <!-- Progreso Atendidas / Pendientes / Rechazadas -->
             <div class="progress progress-thin mb-2" role="progressbar" aria-label="Atendidas/Pendientes/Rechazadas">
               <div class="progress-bar bg-success" style="width: <?= $resumen['atendidas_pct'] ?? 0 ?>%"></div>
               <div class="progress-bar bg-warning" style="width: <?= $resumen['pendientes_pct'] ?? 0 ?>%"></div>

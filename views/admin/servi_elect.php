@@ -227,6 +227,7 @@ $servicios = $modelo->obtenerServicios();
                 </div>
             </div>
         </div>
+
     <?php elseif (isset($_GET['mensaje']) && $_GET['mensaje'] === 'error'): ?>
         <div class="modal fade" id="modalElectronicaError" tabindex="-1" aria-hidden="true" data-bs-backdrop="true">
             <div class="modal-dialog modal-dialog-centered modal-sm-custom">
@@ -250,9 +251,77 @@ $servicios = $modelo->obtenerServicios();
                 </div>
             </div>
         </div>
-    <?php endif; ?>
 
+    <?php elseif (isset($_GET['mensaje']) && $_GET['mensaje'] === 'duplicado'): ?>
+        <div class="modal fade" id="modalElectronicaDuplicado" tabindex="-1" aria-hidden="true" data-bs-backdrop="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm-custom">
+                <div class="modal-content border-0 overflow-hidden e-modal-radius" id="modal-duplicado-container">
+                    <div class="modal-body text-center p-0 e-animate-bounce" id="modal-duplicado-body">
+                        <div class="e-error-mark" id="duplicado-mark">
+                            <div class="e-error-icon">
+                                <span class="e-icon-line e-line-left"></span>
+                                <span class="e-icon-line e-line-right"></span>
+                                <div class="e-icon-circle-error"></div>
+                            </div>
+                        </div>
+                        <div class="px-4 pb-4 pt-2" id="duplicado-mensaje">
+                            <h5 class="text-dark fw-bold mb-2">Servicio duplicado</h5>
+                            <p class="text-muted mb-0">Ya existe un servicio con ese título. Cambia el nombre para continuar.</p>
+                        </div>
+                        <div class="e-progress" style="height: 4px;" id="duplicado-progress">
+                            <div class="e-progress-bar-error e-progress-animated" role="progressbar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 <?php endif; ?>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const url  = new URL(window.location.href);
+  const area = url.searchParams.get('area');
+  const msg  = url.searchParams.get('mensaje');
+
+  if (area === 'electronica' && msg) {
+    const map = {
+      eliminado: 'modalElectronicaExito',
+      error:     'modalElectronicaError',
+      duplicado: 'modalElectronicaDuplicado'
+    };
+
+    const modalId = map[msg];
+    if (modalId) {
+      const modalEl = document.getElementById(modalId);
+      if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        setTimeout(() => {
+          const body = modalEl.querySelector('.modal-body');
+          if (body) {
+            body.classList.remove('e-animate-bounce');
+            body.classList.add('e-animate-fade');
+          }
+          setTimeout(() => {
+            modal.hide();
+            if (body) {
+              body.classList.remove('e-animate-fade');
+              body.classList.add('e-animate-bounce');
+            }
+          }, 400);
+        }, 1500);
+
+        // limpiar ?mensaje del URL
+        url.searchParams.delete('mensaje');
+        window.history.replaceState({}, document.title, url.toString());
+      }
+    }
+  }
+});
+</script>
+
 
 <style>
     /* Estilos personalizados para la sección de electrónica */

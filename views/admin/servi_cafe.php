@@ -231,6 +231,7 @@ $servi = $modelo->obtenerServi();
                 </div>
             </div>
         </div>
+
     <?php elseif (isset($_GET['mensaje']) && $_GET['mensaje'] === 'error'): ?>
         <div class="modal fade" id="modalCafeError" tabindex="-1" aria-hidden="true" data-bs-backdrop="true">
             <div class="modal-dialog modal-dialog-centered modal-sm-custom">
@@ -254,8 +255,183 @@ $servi = $modelo->obtenerServi();
                 </div>
             </div>
         </div>
+
+    <?php elseif (isset($_GET['mensaje']) && $_GET['mensaje'] === 'duplicado'): ?>
+        <div class="modal fade" id="modalCafeDuplicado" tabindex="-1" aria-hidden="true" data-bs-backdrop="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm-custom">
+                <div class="modal-content border-0 overflow-hidden e-modal-radius" id="modal-duplicado-container-cafe">
+                    <div class="modal-body text-center p-0 e-animate-bounce" id="modal-duplicado-body-cafe">
+                        <div class="e-error-mark" id="duplicado-mark-cafe">
+                            <div class="e-error-icon">
+                                <span class="e-icon-line e-line-left"></span>
+                                <span class="e-icon-line e-line-right"></span>
+                                <div class="e-icon-circle-error"></div>
+                            </div>
+                        </div>
+                        <div class="px-4 pb-4 pt-2" id="duplicado-mensaje-cafe">
+                            <h5 class="text-dark fw-bold mb-2">Servicio duplicado</h5>
+                            <p class="text-muted mb-0">Ya existe un servicio con ese título. Cambia el nombre para continuar.</p>
+                        </div>
+                        <div class="e-progress" style="height: 4px;" id="duplicado-progress-cafe">
+                            <div class="e-progress-bar-error e-progress-animated" role="progressbar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     <?php endif; ?>
 <?php endif; ?>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const url  = new URL(window.location.href);
+  const area = url.searchParams.get('area');
+  const msg  = url.searchParams.get('mensaje');
+
+  if (area === 'cafe' && msg) {
+    const map = {
+      eliminado: 'modalCafeExito',
+      error:     'modalCafeError',
+      duplicado: 'modalCafeDuplicado'
+    };
+
+    const modalId = map[msg];
+    if (modalId) {
+      const modalEl = document.getElementById(modalId);
+      if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        setTimeout(() => {
+          const body = modalEl.querySelector('.modal-body');
+          if (body) {
+            body.classList.remove('e-animate-bounce');
+            body.classList.add('e-animate-fade');
+          }
+          setTimeout(() => {
+            modal.hide();
+            if (body) {
+              body.classList.remove('e-animate-fade');
+              body.classList.add('e-animate-bounce');
+            }
+          }, 400);
+        }, 1500);
+
+        // Limpia ?mensaje del URL
+        url.searchParams.delete('mensaje');
+        window.history.replaceState({}, document.title, url.toString());
+      }
+    }
+  }
+});
+</script>
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const modalId = <?php echo isset($_GET['mensaje']) && $_GET['mensaje'] === 'eliminado' ? "'modalCafeExito'" : "'modalCafeError'"; ?>;
+        const modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+
+        setTimeout(() => {
+            const modalElement = document.getElementById(modalId);
+            const modalContent = modalElement.querySelector('.modal-body');
+            modalContent.classList.remove('e-animate-bounce');
+            modalContent.classList.add('e-animate-fade');
+
+            setTimeout(() => {
+                modal.hide();
+                modalContent.classList.remove('e-animate-fade');
+                modalContent.classList.add('e-animate-bounce');
+            }, 400);
+        }, 1500);
+
+        // Limpiar parámetros de URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mensaje');
+        window.history.replaceState({}, document.title, url.toString());
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const precioInput = document.getElementById('precioInput2');
+        const precioReal = document.getElementById('precioReal');
+
+        // Formatear al escribir
+        precioInput.addEventListener('input', function() {
+            // Obtener solo dígitos
+            let cleanValue = this.value.replace(/\D/g, '');
+
+            // Guardar valor limpio en campo oculto
+            precioReal.value = cleanValue;
+
+            if (cleanValue) {
+                // Convertir a formato monetario con separador de miles
+                this.value = parseInt(cleanValue).toLocaleString('es-CO');
+            } else {
+                this.value = '';
+            }
+        });
+
+        // Manejar el envío del formulario
+        document.querySelector('form').addEventListener('submit', function() {
+            // Asegurar que se envía el valor limpio
+            if (!precioReal.value && precioInput.value) {
+                precioReal.value = precioInput.value.replace(/\D/g, '');
+            }
+        });
+
+        // Para el modal de edición
+        const editPrecioInput = document.getElementById('edit-precio-ca');
+
+        if (editPrecioInput) {
+            editPrecioInput.addEventListener('input', function() {
+                let valor = this.value.replace(/\D/g, '');
+                if (valor) {
+                    this.value = parseInt(valor).toLocaleString('es-CO');
+                } else {
+                    this.value = '';
+                }
+            });
+
+            document.getElementById('form-editar-cafe').addEventListener('submit', function() {
+                const valor = editPrecioInput.value.replace(/\D/g, '');
+                editPrecioInput.value = valor; // Enviamos solo el valor entero
+            });
+
+            window.editarServicioCafe = function(servis) {
+                document.getElementById('edit-id-ca').value = servis.id_ca;
+                document.getElementById('edit-titulo-ca').value = servis.titulo_ca;
+                document.getElementById('edit-des-corta-ca').value = servis.des_corta;
+                document.getElementById('edit-des-larga-ca').value = servis.des_larga;
+                document.getElementById('edit-icono-ca').value = servis.icono_ca;
+
+                if (servis.precio_ca) {
+                    document.getElementById('edit-precio-ca').value = parseInt(servis.precio_ca).toLocaleString('es-CO');
+                } else {
+                    document.getElementById('edit-precio-ca').value = '';
+                }
+
+                const modal = new bootstrap.Modal(document.getElementById('modalEditarServicioCafe'));
+                modal.show();
+            };
+        }
+    });
+
+    const precioInput = document.getElementById('precioInput2');
+
+    precioInput.addEventListener('input', function() {
+        // Elimina cualquier carácter que no sea dígito
+        this.value = this.value.replace(/\D/g, '');
+    });
+
+    precioInput.addEventListener('keydown', function(e) {
+        // Evita pegar letras o símbolos
+        if (e.key === 'e' || e.key === '+' || e.key === '-' || e.key === '.' || e.key === ',') {
+            e.preventDefault();
+        }
+    });
+</script>
 
 <style>
     /* Estilos personalizados para la sección de café y cacao */
@@ -467,108 +643,3 @@ $servi = $modelo->obtenerServi();
         background: linear-gradient(90deg, #3a506b 0%, #24243e 100%);
     }
 </style>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const modalId = <?php echo isset($_GET['mensaje']) && $_GET['mensaje'] === 'eliminado' ? "'modalCafeExito'" : "'modalCafeError'"; ?>;
-        const modal = new bootstrap.Modal(document.getElementById(modalId));
-        modal.show();
-
-        setTimeout(() => {
-            const modalElement = document.getElementById(modalId);
-            const modalContent = modalElement.querySelector('.modal-body');
-            modalContent.classList.remove('e-animate-bounce');
-            modalContent.classList.add('e-animate-fade');
-
-            setTimeout(() => {
-                modal.hide();
-                modalContent.classList.remove('e-animate-fade');
-                modalContent.classList.add('e-animate-bounce');
-            }, 400);
-        }, 1500);
-
-        // Limpiar parámetros de URL
-        const url = new URL(window.location.href);
-        url.searchParams.delete('mensaje');
-        window.history.replaceState({}, document.title, url.toString());
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const precioInput = document.getElementById('precioInput2');
-        const precioReal = document.getElementById('precioReal');
-
-        // Formatear al escribir
-        precioInput.addEventListener('input', function() {
-            // Obtener solo dígitos
-            let cleanValue = this.value.replace(/\D/g, '');
-
-            // Guardar valor limpio en campo oculto
-            precioReal.value = cleanValue;
-
-            if (cleanValue) {
-                // Convertir a formato monetario con separador de miles
-                this.value = parseInt(cleanValue).toLocaleString('es-CO');
-            } else {
-                this.value = '';
-            }
-        });
-
-        // Manejar el envío del formulario
-        document.querySelector('form').addEventListener('submit', function() {
-            // Asegurar que se envía el valor limpio
-            if (!precioReal.value && precioInput.value) {
-                precioReal.value = precioInput.value.replace(/\D/g, '');
-            }
-        });
-
-        // Para el modal de edición
-        const editPrecioInput = document.getElementById('edit-precio-ca');
-
-        if (editPrecioInput) {
-            editPrecioInput.addEventListener('input', function() {
-                let valor = this.value.replace(/\D/g, '');
-                if (valor) {
-                    this.value = parseInt(valor).toLocaleString('es-CO');
-                } else {
-                    this.value = '';
-                }
-            });
-
-            document.getElementById('form-editar-cafe').addEventListener('submit', function() {
-                const valor = editPrecioInput.value.replace(/\D/g, '');
-                editPrecioInput.value = valor; // Enviamos solo el valor entero
-            });
-
-            window.editarServicioCafe = function(servis) {
-                document.getElementById('edit-id-ca').value = servis.id_ca;
-                document.getElementById('edit-titulo-ca').value = servis.titulo_ca;
-                document.getElementById('edit-des-corta-ca').value = servis.des_corta;
-                document.getElementById('edit-des-larga-ca').value = servis.des_larga;
-                document.getElementById('edit-icono-ca').value = servis.icono_ca;
-
-                if (servis.precio_ca) {
-                    document.getElementById('edit-precio-ca').value = parseInt(servis.precio_ca).toLocaleString('es-CO');
-                } else {
-                    document.getElementById('edit-precio-ca').value = '';
-                }
-
-                const modal = new bootstrap.Modal(document.getElementById('modalEditarServicioCafe'));
-                modal.show();
-            };
-        }
-    });
-
-    const precioInput = document.getElementById('precioInput2');
-
-    precioInput.addEventListener('input', function() {
-        // Elimina cualquier carácter que no sea dígito
-        this.value = this.value.replace(/\D/g, '');
-    });
-
-    precioInput.addEventListener('keydown', function(e) {
-        // Evita pegar letras o símbolos
-        if (e.key === 'e' || e.key === '+' || e.key === '-' || e.key === '.' || e.key === ',') {
-            e.preventDefault();
-        }
-    });
-</script>

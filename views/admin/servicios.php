@@ -3,8 +3,11 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 $rol  = (int)($_SESSION['rol'] ?? 0);
 $area = strtolower(trim((string)($_SESSION['area'] ?? '')));
-$isAdmin   = ($rol === 1) || strcasecmp($_SESSION['rol_nombre'] ?? '', 'admin') === 0;
-$showBoth  = $isAdmin || $area === '' || $area === 'general' || $area === 'visualizador';
+
+// Solo el rol 1 puede ver ambas áreas
+$showBoth = ($rol === 1);
+
+// flags por área (para roles distintos a 1 y 2)
 $esElect = ($area === 'electronica' || $area === 'electrónica');
 $esCafe  = ($area === 'cafe' || $area === 'café');
 ?>
@@ -40,6 +43,11 @@ $esCafe  = ($area === 'cafe' || $area === 'café');
 
     </div>
   </div>
+
+<?php elseif ($rol === 2): ?>
+
+  <!-- Rol 2: solo Electrónica -->
+  <?php include 'servi_elect.php'; ?>
 
 <?php elseif ($esElect): ?>
 

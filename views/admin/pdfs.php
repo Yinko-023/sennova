@@ -17,7 +17,7 @@ if ($id !== '') {
 
   if ($digits !== '') {
     // Busca por patrón del nombre de archivo y también por n_cliente
-    $where[] = "(filename LIKE :id_exact OR filename LIKE :id_mid OR n_cliente LIKE :id_cli)";
+    $where[] = "(filename_2 LIKE :id_exact OR filename_2 LIKE :id_mid OR n_cliente LIKE :id_cli)";
     $params[':id_exact'] = '%-' . $digits . '.pdf';
     $params[':id_mid']   = '%-' . $digits . '-%.pdf';
     $params[':id_cli']   = '%' . $digits . '%';
@@ -38,10 +38,12 @@ if ($c !== '') {
 }
 $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-$sql = "SELECT id_pdf, filename, original_name, relative_path, size_bytes, created_at, area, form_type, n_cliente
+$sql = "SELECT id_pdf, filename_2, original_name, relative_path, size_bytes,
+               created_at, area, form_type, n_cliente, finalizado
         FROM generated_pdfs
         $whereSql
         ORDER BY n_cliente ASC, created_at DESC, id_pdf DESC";
+
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
@@ -70,7 +72,57 @@ foreach ($rows as $row) {
   }
   $byCliente[$cliente][] = $row;
 }
+
+// Orden lógico de los formularios (ajústalo a tu flujo real)
+$formOrder = [
+  'form1_solicitud',
+  'form2_evaluacion',
+  'form3_cotizacion',
+  'form4_orden_trabajo',
+  'form5_verificacion_pcb',
+  'form6_verificacion_3d',
+  'form7_continuidad_pcb',
+  'form8_informe_servicio',
+  'form9_satisfaccion',
+];
+
+$formLabels = [
+  'form1_solicitud'        => 'Form 1 - Solicitud',
+  'form2_evaluacion'       => 'Form 2 - Evaluación técnica',
+  'form3_cotizacion'       => 'Form 3 - Cotización',
+  'form4_orden_trabajo'    => 'Form 4 - Orden de trabajo',
+  'form5_verificacion_pcb' => 'Form 5 - Verificación PCB',
+  'form6_verificacion_3d'  => 'Form 6 - Verificación 3D',
+  'form7_continuidad_pcb'  => 'Form 7 - Continuidad PCB',
+  'form8_informe_servicio' => 'Form 8 - Informe de servicio',
+  'form9_satisfaccion'     => 'Form 9 - Satisfacción',
+];
+
+// Devuelve el último form logrado por un cliente (según orden lógico y/o fecha)
+function getLastFormForClient(array $rows, array $order): ?string
+{
+  $maxIdx = -1;
+  $last = null;
+  foreach ($rows as $r) {
+    $ft = $r['form_type'] ?? '';
+    $idx = array_search($ft, $order, true);
+    if ($idx !== false && $idx > $maxIdx) {
+      $maxIdx = $idx;
+      $last = $ft;
+    }
+  }
+  return $last;
+}
+
+function getNextForm(?string $last, array $order): ?string
+{
+  if ($last === null) return $order[0] ?? null;
+  $i = array_search($last, $order, true);
+  if ($i === false) return $order[0] ?? null;
+  return $order[$i + 1] ?? null; // null si ya está en el último
+}
 ?>
+
 
 <div class="gradient-header mt-5">
   <div class="container">
@@ -138,24 +190,14 @@ foreach ($rows as $row) {
         <label class="form-label">📋 Filtrar por tipo</label>
         <select name="form_type" class="form-select">
           <option value="">Todos los formularios</option>
-          <?php
-          $formTypes = [
-            'form1_solicitud'       => 'Form 1 - Solicitud',
-            'form2_evaluacion'      => 'Form 2 - Evaluación técnica',
-            'form3_cotizacion'      => 'Form 3 - Cotización',
-            'form4_orden_trabajo'   => 'Form 4 - Orden de trabajo',
-            'form5_verificacion_pcb' => 'Form 5 - Verificación PCB',
-            'form6_verificacion_3d' => 'Form 6 - Verificación 3D',
-            'form7_continuidad_pcb' => 'Form 7 - Continuidad PCB',
-            'form8_informe_servicio' => 'Form 8 - Informe de servicio',
-            'form9_satisfaccion'    => 'Form 9 - Satisfacción',
-          ];
-          foreach ($formTypes as $key => $label):
-          ?>
-            <option value="<?= $key ?>" <?= $f === $key ? 'selected' : '' ?>><?= $label ?></option>
+          <?php foreach ($formLabels as $key => $label): ?>
+            <option value="<?= $key ?>" <?= $f === $key ? 'selected' : '' ?>>
+              <?= $label ?>
+            </option>
           <?php endforeach; ?>
         </select>
       </div>
+
 
       <!-- Acciones -->
       <div class="col-12 col-md-6 col-lg-3 d-grid">
@@ -219,6 +261,36 @@ foreach ($rows as $row) {
 
   <!-- Vista agrupada por cliente -->
   <?php foreach ($byCliente as $clienteNombre => $clientePdfs): ?>
+    <?php
+    $areaForClient = $clientePdfs[0]['area'] ?? '';
+    $lastForm = getLastFormForClient($clientePdfs, $formOrder);
+    $nextForm = getNextForm($lastForm, $formOrder);
+    // ¿Este cliente está finalizado?
+    $isFinalizado = false;
+    foreach ($clientePdfs as $r) {
+      if ((int)($r['finalizado'] ?? 0) === 1) {
+        $isFinalizado = true;
+        break;
+      }
+    }
+
+    $areaForClient = $clientePdfs[0]['area'] ?? '';
+    $lastForm = getLastFormForClient($clientePdfs, $formOrder);
+    // Si está finalizado, no proponemos siguiente form
+    $nextForm = $isFinalizado ? null : getNextForm($lastForm, $formOrder);
+
+    $continueUrl = "/sennova/inAdmin.php?vista=maps"
+      . "&n_cliente=" . urlencode($clienteNombre)
+      . "&area=" . urlencode($areaForClient)
+      . ($nextForm ? "&next=" . urlencode($nextForm) : "")
+      . "&resume=1";
+
+    $continueUrl = "/sennova/inAdmin.php?vista=maps"
+      . "&n_cliente=" . urlencode($clienteNombre)
+      . "&area=" . urlencode($areaForClient)
+      . ($nextForm ? "&next=" . urlencode($nextForm) : "")
+      . "&resume=1";
+    ?>
     <div class="client-section mb-4">
       <div class="client-header">
         <div class="client-info">
@@ -226,22 +298,45 @@ foreach ($rows as $row) {
             <i class="fa-solid fa-user-circle me-2"></i>
             <?= htmlspecialchars($clienteNombre) ?>
           </h4>
-          <span class="client-count"><?= count($clientePdfs) ?> documento(s)</span>
+          <span class="client-count">
+            <?= count($clientePdfs) ?> documento(s)
+            <?php if ($lastForm): ?>
+              · Último: <strong><?= htmlspecialchars($formLabels[$lastForm] ?? $lastForm) ?></strong>
+            <?php endif; ?>
+          </span>
         </div>
-        <div class="client-actions">
+        <div class="client-actions d-flex gap-2">
+          <?php if (!$isFinalizado && $nextForm): ?>
+            <a href="<?= $continueUrl ?>" class="btn btn-sm btn-success">
+              <i class="fa-solid fa-play me-1"></i> Continuar servicio
+            </a>
+          <?php endif; ?>
+
+          <form method="post" action="/sennova/routes/FinalizeClient.php" class="d-inline">
+            <input type="hidden" name="n_cliente" value="<?= htmlspecialchars($clienteNombre) ?>">
+            <input type="hidden" name="state" value="<?= $isFinalizado ? '0' : '1' ?>">
+            <button type="submit"
+              class="btn btn-sm <?= $isFinalizado ? 'btn-warning' : 'btn-danger' ?>"
+              onclick="return confirm('¿Seguro de <?= $isFinalizado ? 'reabrir' : 'finalizar' ?> este servicio?');">
+              <i class="fa-solid <?= $isFinalizado ? 'fa-rotate-left' : 'fa-flag-checkered' ?>"></i>
+              <?= $isFinalizado ? 'Reabrir' : 'Finalizar' ?>
+            </button>
+          </form>
+
           <button
-            class="btn btn-sm btn-outline-primary toggle-client"
+            class="btn btn-sm btn-outline-primary toggle-client collapsed"
             data-bs-toggle="collapse"
             data-bs-target="#client-<?= md5($clienteNombre) ?>"
-            aria-expanded="true"
+            aria-expanded="false"
             aria-controls="client-<?= md5($clienteNombre) ?>">
-            <i class="fa-solid fa-chevron-up"></i> Contraer
+            <i class="fa-solid fa-chevron-down"></i> Expandir
           </button>
-
         </div>
+
+
       </div>
 
-      <div class="client-content collapse show" id="client-<?= md5($clienteNombre) ?>">
+      <div class="client-content collapse" id="client-<?= md5($clienteNombre) ?>">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0">
             <thead>
@@ -285,10 +380,10 @@ foreach ($rows as $row) {
                         <i class="fa-solid fa-file-pdf"></i>
                       </div>
                       <div class="file-details">
-                        <div class="file-name" title="<?= htmlspecialchars($row['filename']) ?>">
-                          <?= htmlspecialchars($row['filename']) ?>
+                        <div class="file-name" title="<?= htmlspecialchars($row['filename_2']) ?>">
+                          <?= htmlspecialchars($row['filename_2']) ?>
                         </div>
-                        <?php if ($row['original_name'] && $row['original_name'] !== $row['filename']): ?>
+                        <?php if ($row['original_name'] && $row['original_name'] !== $row['filename_2']): ?>
                           <div class="file-original">
                             Original: <?= htmlspecialchars($row['original_name']) ?>
                           </div>
@@ -306,6 +401,7 @@ foreach ($rows as $row) {
                     </div>
                   </td>
                   <td>
+
                     <div class="action-buttons">
                       <a class="action-btn btn-view" href="<?= htmlspecialchars($row['relative_path']) ?>" target="_blank" title="Ver PDF">
                         <i class="fa-solid fa-eye"></i>
@@ -313,6 +409,18 @@ foreach ($rows as $row) {
                       <a class="action-btn btn-download" href="<?= htmlspecialchars($row['relative_path']) ?>" download title="Descargar">
                         <i class="fa-solid fa-download"></i>
                       </a>
+
+                      <!-- Reemplazar (misma ruta/nombre) -->
+                      <form class="d-inline replace-form" method="post" action="/sennova/routes/ReplaceGeneratedPdf.php" enctype="multipart/form-data">
+                        <input type="hidden" name="id" value="<?= (int)$row['id_pdf'] ?>">
+                        <input type="hidden" name="n_cliente" value="<?= htmlspecialchars($row['n_cliente'] ?? '') ?>">
+                        <input type="file" name="pdf_file" accept="application/pdf" class="d-none">
+                        <button type="button" class="action-btn btn-delete btn-replace" title="Reemplazar PDF">
+                          <i class="fa-solid fa-file-import"></i>
+                        </button>
+                      </form>
+
+                      <!-- Eliminar -->
                       <form method="post" action="/sennova/routes/DeleteGeneratedPdf.php" onsubmit="return confirm('¿Estás seguro de eliminar este PDF?');" class="d-inline">
                         <input type="hidden" name="id" value="<?= (int)$row['id_pdf'] ?>">
                         <button type="submit" class="action-btn btn-delete" title="Eliminar">
@@ -321,6 +429,7 @@ foreach ($rows as $row) {
                       </form>
                     </div>
                   </td>
+
                 </tr>
               <?php endforeach; ?>
             </tbody>
@@ -331,6 +440,53 @@ foreach ($rows as $row) {
   <?php endforeach; ?>
 
 <?php endif; ?>
+<script>
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-finalizar');
+    if (!btn) return;
+
+    const n = btn.getAttribute('data-client');
+    if (!n) return;
+
+    if (!confirm(`¿Finalizar el servicio del cliente "${n}"?`)) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Finalizando...';
+
+    try {
+      const res = await fetch('/sennova/routes/FinalizeClient.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          n_cliente: n
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo finalizar');
+
+      // Oculta "Continuar servicio" SOLO para este cliente
+      const actions = btn.closest('.client-actions');
+      if (actions) {
+        const cont = actions.querySelector('.btn-continuar');
+        if (cont) cont.remove();
+
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-secondary';
+        badge.textContent = 'Finalizado';
+        actions.insertBefore(badge, actions.firstChild);
+      }
+      btn.remove();
+
+    } catch (err) {
+      alert('Error: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-flag-checkered me-1"></i> Finalizar';
+    }
+  });
+</script>
+
 
 <style>
   :root {
@@ -896,20 +1052,82 @@ foreach ($rows as $row) {
   }
 </style>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.toggle-client').forEach(btn => {
-    const sel = btn.getAttribute('data-bs-target');
-    const pane = document.querySelector(sel);
-    if (!pane) return;
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-replace');
+    if (!btn) return;
+    const form = btn.closest('.replace-form');
+    const input = form.querySelector('input[type="file"]');
+    input.click();
+    input.onchange = () => {
+      if (input.files.length) form.submit();
+    };
+  });
 
-    pane.addEventListener('show.bs.collapse', () => {
-      btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Contraer';
-      btn.setAttribute('aria-expanded', 'true');
-    });
-    pane.addEventListener('hide.bs.collapse', () => {
-      btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Expandir';
-      btn.setAttribute('aria-expanded', 'false');
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.toggle-client').forEach(btn => {
+      const sel = btn.getAttribute('data-bs-target');
+      const pane = document.querySelector(sel);
+      if (!pane) return;
+
+      pane.addEventListener('show.bs.collapse', () => {
+        btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Contraer';
+        btn.setAttribute('aria-expanded', 'true');
+      });
+      pane.addEventListener('hide.bs.collapse', () => {
+        btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Expandir';
+        btn.setAttribute('aria-expanded', 'false');
+      });
     });
   });
-});
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const qs = new URLSearchParams(location.search);
+    const nCli = qs.get('n_cliente') || '';
+    const next = qs.get('next') || ''; // ej: form3_cotizacion
+    const relax = qs.get('resume') === '1'; // si viene 1, desbloquea previos
+
+    // 1) Fijar n_cliente principal y los hidden de todos los forms
+    if (nCli) {
+      const main = document.getElementById('n_cliente');
+      if (main) {
+        main.value = nCli;
+        main.readOnly = true;
+      }
+      for (let i = 2; i <= 9; i++) {
+        const h = document.getElementById('n_cliente_form' + i);
+        if (h) h.value = nCli;
+      }
+    }
+
+    // 2) Abrir pestaña indicada por ?next=...
+    const map = {
+      form1_solicitud: 'form1-tab',
+      form2_evaluacion: 'form2-tab',
+      form3_cotizacion: 'form3-tab',
+      form4_orden_trabajo: 'form4-tab',
+      form5_verificacion_pcb: 'form5-tab',
+      form6_verificacion_3d: 'form6-tab',
+      form7_continuidad_pcb: 'form7-tab',
+      form8_informe_servicio: 'form8-tab',
+      form9_satisfaccion: 'form9-tab'
+    };
+
+    if (next) {
+      // Si vienes desde “Continuar servicio”, marca previos como completos
+      if (relax) {
+        const order = Object.keys(map);
+        const idx = order.indexOf(next);
+        if (idx > -1) {
+          for (let k = 0; k < idx; k++) {
+            sessionStorage.setItem('form' + (k + 1) + '_done', '1');
+          }
+        }
+      }
+      const tabId = map[next];
+      if (tabId && typeof window.showTab === 'function') {
+        setTimeout(() => window.showTab(tabId), 150);
+      }
+    }
+  });
 </script>

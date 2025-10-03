@@ -99,202 +99,373 @@ class Publicacion
 class PublicacionModel
 {
     private $conn;
+    private ?string $lastError = null;
 
     public function __construct()
     {
         $this->conn = conectaDb();
     }
 
-    public function guardarPublicacion($titulo, $contenido, $categoria, $destacada, $nombreImagen, $fecha, $is_active, $lab_area)
+    public function getLastError(): ?string
     {
+        return $this->lastError;
+    }
+
+    public function guardarPublicacion(
+        string  $titulo,
+        string  $contenido,
+        string  $categoria,
+        int     $destacada,
+        ?string $nombreImagen,
+        string  $fecha,
+        int     $is_active,
+        string  $lab_area
+    ): bool {
         try {
-            // Si marcas una destacada, desmarca las demás
+            $this->lastError = null;
+
             if ($destacada) {
                 $this->conn->query("UPDATE publications SET destacada = 0 WHERE destacada = 1");
             }
 
-            // Si quieres guardar thumbnail_path en NULL por ahora:
-            $thumbnail = null;
+            $sql = "INSERT INTO publications
+                       (title, content, image_path, thumbnail_path, type_pu, lab_area, published_at, is_active, destacada)
+                    VALUES
+                       (:t, :c, :img, :thumb, :type, :area, :pub, :act, :dest)";
 
-            $sql = "INSERT INTO publications (title, content, image_path, thumbnail_path, type_pu, lab_area, published_at, is_active, destacada)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $st = $this->conn->prepare($sql);
+            $st->bindValue(':t',     $titulo);
+            $st->bindValue(':c',     $contenido);
+            $st->bindValue(':img',   $nombreImagen);
+            $st->bindValue(':thumb', null, \PDO::PARAM_NULL);   // thumbnail_path null
+            $st->bindValue(':type',  $categoria);
+            $st->bindValue(':area',  $lab_area);
+            $st->bindValue(':pub',   $fecha);
+            $st->bindValue(':act',   (int)$is_active, \PDO::PARAM_INT);
+            $st->bindValue(':dest',  (int)$destacada, \PDO::PARAM_INT);
 
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(1, $titulo);
-            $stmt->bindParam(2, $contenido);
-            $stmt->bindParam(3, $nombreImagen);
-            $stmt->bindParam(4, $thumbnail);     // NULL por ahora
-            $stmt->bindParam(5, $categoria);
-            $stmt->bindParam(6, $lab_area);
-            $stmt->bindParam(7, $fecha);         // 'YYYY-mm-dd HH:ii:ss'
-            $stmt->bindValue(8, (int)$is_active, PDO::PARAM_INT);
-            $stmt->bindValue(9, (int)$destacada, PDO::PARAM_INT);
-
-            return $stmt->execute();
+            return $st->execute();
         } catch (PDOException $e) {
+            if ((int)($e->errorInfo[1] ?? 0) === 1062) {
+                $this->lastError = 'duplicate';
+                return false;
+            }
+            $this->lastError = 'db';
             error_log("Error al insertar publicación: " . $e->getMessage());
             return false;
         }
     }
 
-
-    public function obtenerPublicacionesCafe()
+    public function existeTituloEnArea(string $titulo, string $area, ?int $excluirId = null): bool
     {
-        $sql = "SELECT * FROM publications WHERE lab_area = 'cafe' AND is_active = 1 ORDER BY published_at DESC";
+        $sql = "SELECT 1
+              FROM publications
+             WHERE LOWER(TRIM(lab_area)) = LOWER(TRIM(:area))
+               AND LOWER(TRIM(title))    = LOWER(TRIM(:t))";
+        $params = [
+            ':area' => $area,
+            ':t'    => $titulo,
+        ];
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($excluirId)) {
+            $sql .= " AND id <> :id";
+            $params[':id'] = $excluirId;
+        }
+
+        $sql .= " LIMIT 1";
+        $st = $this->conn->prepare($sql);
+        $st->execute($params);
+        return (bool)$st->fetchColumn();
     }
 
-    public function ObtenerElectronica()
-    {
-        $sql = "SELECT * FROM publications WHERE lab_area = 'electronica' AND is_active = 1 ORDER BY published_at DESC";
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    public function existeTituloActivo(string $titulo, string $area, ?int $excluirId = null): bool
+    {
+        // Compara EXACTO (sin mayúsculas y sin espacios al borde). No usa LIKE.
+        $sql = "SELECT 1
+              FROM publications
+             WHERE LOWER(TRIM(lab_area)) = LOWER(TRIM(:area))
+               AND LOWER(TRIM(title))    = LOWER(TRIM(:t))
+               AND is_active = 1";
+        $params = [
+            ':area' => $area,
+            ':t'    => $titulo,
+        ];
+
+        if (!empty($excluirId)) {
+            $sql .= " AND id <> :id";
+            $params[':id'] = $excluirId;
+        }
+
+        $sql .= " LIMIT 1";
+
+        $st = $this->conn->prepare($sql);
+        $st->execute($params);
+        return (bool)$st->fetchColumn();
     }
 
 
-    public function eliminarPublicacion($id)
+
+    public function obtenerPublicacionesCafe(): array
+    {
+        $sql = "SELECT * FROM publications
+                WHERE lab_area = 'cafe' AND is_active = 1
+                ORDER BY published_at DESC";
+        return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function ObtenerElectronica(): array
+    {
+        $sql = "SELECT * FROM publications
+                WHERE lab_area = 'electronica' AND is_active = 1
+                ORDER BY published_at DESC";
+        return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** Eliminar publicación por ID */
+    public function eliminarPublicacion(int $id): bool
     {
         try {
-            $sql = "DELETE FROM publications WHERE id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(1, $id, PDO::PARAM_INT);
-            return $stmt->execute();
+            $st = $this->conn->prepare("SELECT image_path, thumbnail_path FROM publications WHERE id = ?");
+            $st->execute([$id]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return false;
+
+            // Borra exactamente donde está según lo guardado
+            $this->unlinkFromStored($row['image_path']     ?? null);
+            $this->unlinkFromStored($row['thumbnail_path'] ?? null);
+
+            $del = $this->conn->prepare("DELETE FROM publications WHERE id = ?");
+            return $del->execute([$id]);
         } catch (PDOException $e) {
+            error_log("Error al eliminar publicación: " . $e->getMessage());
             return false;
         }
     }
-    public function quitarDestacadas()
+
+    // --- Helpers reutilizables ---
+    private function projectRoot(): string
     {
-        $sql = "UPDATE publications SET destacada = 0 WHERE destacada = 1";
-        return $this->conn->query($sql);
+        return realpath(dirname(__DIR__)) ?: dirname(__DIR__);
+    }
+    private function sanitizeRel(?string $p): ?string
+    {
+        if ($p === null) return null;
+        $p = str_replace("\0", "", (string)$p);
+        $p = ltrim($p, "/\\");
+        $p = preg_replace('#^sennova[\/\\\\]#i', '', $p);
+        $parts = array_filter(
+            explode('/', str_replace('\\', '/', $p)),
+            fn($seg) => $seg !== '' && $seg !== '.' && $seg !== '..'
+        );
+        return implode(DIRECTORY_SEPARATOR, $parts);
+    }
+    private function joinPath(string $base, string $rel): string
+    {
+        return rtrim($base, "/\\") . DIRECTORY_SEPARATOR . ltrim($rel, "/\\");
+    }
+    private function unlinkFromStored(?string $stored): void
+    {
+        if (!$stored) return;
+        if (preg_match('#^https?://#i', $stored)) return;
+
+        $root = $this->projectRoot();
+        $rel  = $this->sanitizeRel($stored);
+        if (!$rel) return;
+
+        $full = $this->joinPath($root, $rel);
+        if (is_file($full)) {
+            @unlink($full);
+            return;
+        }
+
+        // Fallback si solo guardaste el nombre
+        if (strpos($rel, DIRECTORY_SEPARATOR) === false) {
+            foreach (['img', 'uploads', 'uploads/archives'] as $base) {
+                $alt = $this->joinPath($root, $this->joinPath($base, $rel));
+                if (is_file($alt)) {
+                    @unlink($alt);
+                    return;
+                }
+            }
+        }
     }
 
-    public function destacarPublicacion($id)
+
+    public function quitarDestacadas(): bool
     {
-        $sql = "UPDATE publications SET destacada = 1 WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(1, $id, PDO::PARAM_INT);
-        return $stmt->execute();
-    }
-    public function obtenerPublicacionPorId($id)
-    {
-        $stmt = $this->conn->prepare("SELECT title, content FROM publications WHERE id = ?");
-        $stmt->bindParam(1, $id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return (bool)$this->conn->query("UPDATE publications SET destacada = 0 WHERE destacada = 1");
     }
 
-    public function editarPublicacion($id, $titulo, $contenido, $nuevaImagen = null, $eliminarImagen = false)
+    public function destacarPublicacion(int $id): bool
     {
-        // Primero, obtenemos la imagen actual si hay
+        $stmt = $this->conn->prepare("UPDATE publications SET destacada = 1 WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
+    public function obtenerPublicacionPorId(int $id): ?array
+    {
+        $stmt = $this->conn->prepare("SELECT id, title, content, image_path, lab_area, is_active FROM publications WHERE id = ?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+    public function getAreaById(int $id): ?string
+    {
+        $st = $this->conn->prepare("SELECT lab_area FROM publications WHERE id = ?");
+        $st->execute([$id]);
+        $area = $st->fetchColumn();
+        return ($area !== false) ? $area : null;
+    }
+
+
+    public function editarPublicacion(
+        int $id,
+        string $titulo,
+        string $contenido,
+        ?array $nuevaImagen = null,
+        bool $eliminarImagen = false
+    ): bool {
+
         $stmt = $this->conn->prepare("SELECT image_path FROM publications WHERE id = ?");
         $stmt->execute([$id]);
-        $publicacion = $stmt->fetch(PDO::FETCH_ASSOC);
-        $imagenActual = $publicacion['image_path'];
+        $actual = $stmt->fetch(PDO::FETCH_ASSOC);
+        $imagenActual = $actual['image_path'] ?? null;
 
-        // Eliminar imagen si se pidió eliminarla
-        if ($eliminarImagen && $imagenActual && file_exists(__DIR__ . '/../img/' . $imagenActual)) {
-            unlink(__DIR__ . '/../img/' . $imagenActual);
+        $imgDir = realpath(__DIR__ . '/../img/') ?: (__DIR__ . '/../img/');
+        if (!is_dir($imgDir)) {
+            @mkdir($imgDir, 0777, true);
+        }
+
+        // Eliminar imagen actual
+        if ($eliminarImagen && $imagenActual) {
+            $path = rtrim($imgDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $imagenActual;
+            if (is_file($path)) {
+                @unlink($path);
+            }
             $imagenActual = null;
         }
 
-        // Si se sube nueva imagen, reemplazarla
-        if ($nuevaImagen && $nuevaImagen['error'] === UPLOAD_ERR_OK) {
-            $ext = pathinfo($nuevaImagen['name'], PATHINFO_EXTENSION);
-            $nuevoNombre = uniqid('img_') . '.' . $ext;
-            move_uploaded_file($nuevaImagen['tmp_name'], __DIR__ . '/../img/' . $nuevoNombre);
+        // Subir nueva imagen 
+        if ($nuevaImagen && ($nuevaImagen['error'] === UPLOAD_ERR_OK)) {
+            $ext = strtolower(pathinfo($nuevaImagen['name'], PATHINFO_EXTENSION));
+            $nuevoNombre = time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $destino = rtrim($imgDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $nuevoNombre;
 
-            // Si había imagen anterior, eliminarla
-            if ($imagenActual && file_exists(__DIR__ . '/../img/' . $imagenActual)) {
-                unlink(__DIR__ . '/../img/' . $imagenActual);
+            if (move_uploaded_file($nuevaImagen['tmp_name'], $destino)) {
+                // borrar anterior si existía
+                if (!empty($imagenActual)) {
+                    $old = rtrim($imgDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $imagenActual;
+                    if (is_file($old)) {
+                        @unlink($old);
+                    }
+                }
+                $imagenActual = $nuevoNombre;
             }
-
-            $imagenActual = $nuevoNombre;
         }
 
-        // Actualizar en base de datos
-        $stmt = $this->conn->prepare("UPDATE publications SET title = ?, content = ?, image_path = ? WHERE id = ?");
-        return $stmt->execute([$titulo, $contenido, $imagenActual, $id]);
+        // Actualizar DB
+        $sql = "UPDATE publications
+                   SET title = :t,
+                       content = :c,
+                       image_path = :img,
+                       updated_at = CURRENT_TIMESTAMP
+                 WHERE id = :id";
+        $st = $this->conn->prepare($sql);
+        return $st->execute([
+            ':t' => $titulo,
+            ':c' => $contenido,
+            ':img' => $imagenActual,
+            ':id' => $id
+        ]);
     }
 
-
-
-    public function obtenerArchivo()
+    public function obtenerArchivo(): array
     {
         $sql = "SELECT 
-            a.id_archives,
-            a.Tittle_ar, 
-            a.description_ar, 
-            a.type_ar, 
-            a.date_publi_ar, 
-            a.ruta_ar, 
-            a.name_ar, 
-            u.full_name AS usuario
-        FROM archives a
-        LEFT JOIN users u ON a.id_user = u.id";
+                    a.id_archives,
+                    a.Tittle_ar, 
+                    a.description_ar, 
+                    a.type_ar, 
+                    a.date_publi_ar, 
+                    a.ruta_ar, 
+                    a.name_ar, 
+                    u.full_name AS usuario
+                FROM archives a
+                LEFT JOIN users u ON a.id_user = u.id";
+        return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
 
+    public function guardar(
+        string $titulo,
+        string $descripcion,
+        string $tipo,
+        string $fecha,
+        string $ruta,
+        string $nombreOriginal,
+        int $user_id
+    ): bool {
+        $sql = "INSERT INTO archives
+                   (Tittle_ar, description_ar, type_ar, date_publi_ar, ruta_ar, name_ar, id_user) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->execute([$titulo, $descripcion, $tipo, $fecha, $ruta, $nombreOriginal, $user_id]);
+    }
+
+    public function obtenerArchivoPorId(int $id): ?array
+    {
+        $stmt = $this->conn->prepare("SELECT * FROM archives WHERE id_archives = ?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    public function eliminarArchivo(int $id): bool
+    {
+        try {
+            $st = $this->conn->prepare("SELECT ruta_ar, name_ar FROM archives WHERE id_archives = ?");
+            $st->execute([$id]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return false;
+
+            $this->unlinkFromStored($row['ruta_ar'] ?? null);
+
+            if (empty($row['ruta_ar']) && !empty($row['name_ar'])) {
+                foreach (
+                    [
+                        $row['name_ar'],
+                        'uploads/' . $row['name_ar'],
+                        'uploads/archives/' . $row['name_ar'],
+                        'img/' . $row['name_ar'],
+                    ] as $cand
+                ) {
+                    $this->unlinkFromStored($cand);
+                }
+            }
+
+            $del = $this->conn->prepare("DELETE FROM archives WHERE id_archives = ?");
+            return $del->execute([$id]);
+        } catch (PDOException $e) {
+            error_log("Error al eliminar archivo: " . $e->getMessage());
+            return false;
+        }
     }
 
 
-    public function guardar($titulo, $descripcion, $tipo, $fecha, $ruta, $nombreOriginal, $user_id)
+    public function buscarArchivos(string $busqueda): array
     {
-        $sql = "INSERT INTO archives (Tittle_ar, description_ar, type_ar, date_publi_ar, ruta_ar, name_ar, id_user) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(1, $titulo);
-        $stmt->bindParam(2, $descripcion);
-        $stmt->bindParam(3, $tipo);
-        $stmt->bindParam(4, $fecha);
-        $stmt->bindParam(5, $ruta);
-        $stmt->bindParam(6, $nombreOriginal);
-        $stmt->bindParam(7, $user_id, PDO::PARAM_INT);
-        return $stmt->execute();
-    }
-
-    // Obtener archivo por ID
-    public function obtenerArchivoPorId($id)
-    {
-        $sql = "SELECT * FROM archives WHERE id_archives = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(1, $id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    // Eliminar archivo de la BD
-    public function eliminarArchivo($id)
-    {
-        $sql = "DELETE FROM archives WHERE id_archives = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(1, $id, PDO::PARAM_INT);
-        return $stmt->execute();
-    }
-    public function buscarArchivos($busqueda)
-    {
-        $busqueda = '%' . $busqueda . '%';
-
+        $like = '%' . $busqueda . '%';
         $sql = "SELECT a.*, u.full_name AS usuario
-          FROM archives a
-          INNER JOIN users u ON a.id_user = u.id
-          WHERE 
-            a.Tittle_ar LIKE ? OR
-            a.description_ar LIKE ? OR
-            a.type_ar LIKE ? OR
-            a.date_publi_ar LIKE ? OR
-            u.full_name LIKE ?
-          ORDER BY a.date_publi_ar DESC";
-
+                  FROM archives a
+                  INNER JOIN users u ON a.id_user = u.id
+                 WHERE a.Tittle_ar      LIKE ?
+                    OR a.description_ar LIKE ?
+                    OR a.type_ar        LIKE ?
+                    OR a.date_publi_ar  LIKE ?
+                    OR u.full_name      LIKE ?
+              ORDER BY a.date_publi_ar DESC";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$busqueda, $busqueda, $busqueda, $busqueda, $busqueda]);
+        $stmt->execute([$like, $like, $like, $like, $like]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
@@ -737,23 +908,23 @@ class SolicitudModel
         return $top;
     }
 
-private function topPorRango(string $start, string $end, ?string $area = null): ?array
-{
-    // Filtro base por rango
-    $where  = 'fecha_solicitud >= :start AND fecha_solicitud < :end';
-    $params = [':start' => $start, ':end' => $end];
+    private function topPorRango(string $start, string $end, ?string $area = null): ?array
+    {
+        // Filtro base por rango
+        $where  = 'fecha_solicitud >= :start AND fecha_solicitud < :end';
+        $params = [':start' => $start, ':end' => $end];
 
-    // Filtro opcional por área (normalizado)
-    if ($area !== null && $area !== '') {
-        $where .= ' AND LOWER(area) = :area';
-        $params[':area'] = strtolower($area);
-    }
+        // Filtro opcional por área (normalizado)
+        if ($area !== null && $area !== '') {
+            $where .= ' AND LOWER(area) = :area';
+            $params[':area'] = strtolower($area);
+        }
 
-    // NOTA:
-    // - TRIM para ignorar espacios errantes en nombre
-    // - COALESCE(NULLIF(...)) para usar email si nombre viene vacío
-    // - COUNT(*) como total y casteo al final a int
-    $sql = "
+        // NOTA:
+        // - TRIM para ignorar espacios errantes en nombre
+        // - COALESCE(NULLIF(...)) para usar email si nombre viene vacío
+        // - COUNT(*) como total y casteo al final a int
+        $sql = "
         SELECT
             COALESCE(NULLIF(TRIM(nombre), ''), email) AS nombre,
             email,
@@ -765,21 +936,21 @@ private function topPorRango(string $start, string $end, ?string $area = null): 
         LIMIT 1
     ";
 
-    $st = $this->conn->prepare($sql);
-    $st->execute($params);
-    $row = $st->fetch(PDO::FETCH_ASSOC);
+        $st = $this->conn->prepare($sql);
+        $st->execute($params);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
 
-    if (!$row) {
-        return null;
+        if (!$row) {
+            return null;
+        }
+
+        // Asegura tipos
+        $row['total'] = (int)$row['total'];
+        $row['nombre'] = (string)$row['nombre'];
+        $row['email']  = (string)$row['email'];
+
+        return $row;
     }
-
-    // Asegura tipos
-    $row['total'] = (int)$row['total'];
-    $row['nombre'] = (string)$row['nombre'];
-    $row['email']  = (string)$row['email'];
-
-    return $row;
-}
 
 
     public function limpiarNotificaciones()
@@ -1015,6 +1186,22 @@ class GestionModel
             $id_ges
         ]);
     }
+    public function existeNombre(string $nombre): bool
+    {
+        $nombre = trim(preg_replace('/\s+/', ' ', $nombre));
+        $stmt = $this->conn->prepare("SELECT 1 FROM gestion_botones WHERE name_but = ? LIMIT 1");
+        $stmt->execute([$nombre]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+
+    public function existeNombreSub(int $idProceso, string $nombre): bool
+    {
+        $stmt = $this->conn->prepare("SELECT 1 FROM gestion_subprocesos WHERE id_proceso = ? AND nombre_sub = ? LIMIT 1");
+        $stmt->execute([$idProceso, $nombre]);
+        return (bool)$stmt->fetchColumn();
+    }
+
 
     public function eliminarBoton($id_ges)
     {
@@ -1158,7 +1345,24 @@ class ServicioElectronicaModel
         $sql = "SELECT * FROM servi_elect";
         return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function existeTitulo(string $titulo, ?int $excluirId = null): bool
+    {
+        $sql = "SELECT COUNT(*) 
+          FROM servi_elect 
+          WHERE LOWER(TRIM(titulo)) = LOWER(TRIM(:t))";
+        if ($excluirId !== null) {
+            $sql .= " AND id_ele <> :id";
+        }
 
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':t', $titulo, PDO::PARAM_STR);
+        if ($excluirId !== null) {
+            $stmt->bindValue(':id', $excluirId, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+
+        return (bool)$stmt->fetchColumn();
+    }
 
     public function crearServicio($data)
     {
@@ -1232,6 +1436,24 @@ class ServicioCafeModel
         ]);
     }
 
+    public function existeTituloCafe(string $tituloNorm, ?int $excluirId = null): bool
+    {
+        $sql = "SELECT 1
+            FROM servi_cafe
+            WHERE LOWER(TRIM(titulo_ca)) = :t";
+        $params = [':t' => $tituloNorm];
+
+        if (!empty($excluirId)) {
+            $sql .= " AND id_ca <> :id";
+            $params[':id'] = $excluirId;
+        }
+
+        $sql .= " LIMIT 1";
+        $st = $this->conn->prepare($sql);
+        $st->execute($params);
+        return (bool)$st->fetchColumn();
+    }
+
     public function obtenerCafeId($id_ca)
     {
         $stmt = $this->conn->prepare("SELECT * FROM servi_cafe WHERE id_ca = ?");
@@ -1285,29 +1507,94 @@ class CarruselModel
     {
         $this->conn = conectaDb();
     }
+
+    private function projectRoot(): string
+    {
+        return realpath(dirname(__DIR__)) ?: dirname(__DIR__);
+    }
+
+    private function sanitizeRel(?string $p): ?string
+    {
+        if ($p === null) return null;
+        $p = str_replace("\0", "", (string)$p);
+        $p = ltrim($p, "/\\");
+        $p = preg_replace('#^sennova[\/\\\\]#i', '', $p);
+        $parts = array_filter(
+            explode('/', str_replace('\\', '/', $p)),
+            fn($seg) => $seg !== '' && $seg !== '.' && $seg !== '..'
+        );
+        return implode(DIRECTORY_SEPARATOR, $parts);
+    }
+
+    private function joinPath(string $base, string $rel): string
+    {
+        return rtrim($base, "/\\") . DIRECTORY_SEPARATOR . ltrim($rel, "/\\");
+    }
+
+    private function unlinkFromStored(?string $stored): void
+    {
+        if (!$stored) return;
+        if (preg_match('#^https?://#i', $stored)) return;
+
+        $root = $this->projectRoot();
+        $rel  = $this->sanitizeRel($stored);
+        if (!$rel) return;
+
+        $full = $this->joinPath($root, $rel);
+        if (is_file($full)) { @unlink($full); return; }
+
+        if (strpos($rel, DIRECTORY_SEPARATOR) === false) {
+            foreach (['img/carrusel', 'img', 'uploads/carrusel', 'uploads'] as $base) {
+                $alt = $this->joinPath($root, $this->joinPath($base, $rel));
+                if (is_file($alt)) { @unlink($alt); return; }
+            }
+        }
+    }
+
     public function obtenerUltimoId()
     {
         $sql = "SELECT MAX(id_car) AS max_id FROM carrusel";
         $stmt = $this->conn->query($sql);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row && $row['max_id'] ? (int) $row['max_id'] : 0;
+        $row  = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row && $row['max_id'] ? (int)$row['max_id'] : 0;
     }
 
+    // Unicidad (case-insensitive)
+    public function existeNombreCI(string $titulo): bool
+    {
+        $sql = "SELECT 1 FROM carrusel WHERE LOWER(TRIM(name_img_c)) = LOWER(TRIM(:t)) LIMIT 1";
+        $st = $this->conn->prepare($sql);
+        $st->execute([':t' => $titulo]);
+        return (bool)$st->fetchColumn();
+    }
+
+    // Unicidad excluyendo el propio id (para editar)
+    public function existeNombreCIExceptoId(string $titulo, int $id): bool
+    {
+        $sql = "SELECT 1
+                  FROM carrusel
+                 WHERE LOWER(TRIM(name_img_c)) = LOWER(TRIM(:t))
+                   AND id_car <> :id
+                 LIMIT 1";
+        $st = $this->conn->prepare($sql);
+        $st->execute([':t' => $titulo, ':id' => $id]);
+        return (bool)$st->fetchColumn();
+    }
+
+    // ⚠️ Cambiado a ASC para que lo nuevo salga al final
     public function obtenerImagenes()
     {
-        $sql = "SELECT * FROM carrusel ORDER BY id_car DESC";
+        $sql = "SELECT * FROM carrusel ORDER BY id_car ASC";
         $stmt = $this->conn->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function agregarImagen($titulo, $ruta)
+    public function agregarImagen(string $titulo, string $ruta)
     {
         $sql = "INSERT INTO carrusel (name_img_c, title_carr) VALUES (?, ?)";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$titulo, $ruta]);
     }
-
-
 
     public function obtenerImagenPorId($id)
     {
@@ -1316,10 +1603,38 @@ class CarruselModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function eliminarImagen($id)
+    // Actualiza título y opcionalmente ruta; si pasas null mantiene la ruta
+    public function actualizarImagen(int $id, string $titulo, ?string $rutaNueva): bool
     {
-        $stmt = $this->conn->prepare("DELETE FROM carrusel WHERE id_car = ?");
-        return $stmt->execute([$id]);
+        $sql = "UPDATE carrusel
+                   SET name_img_c = :t,
+                       title_carr = COALESCE(:r, title_carr)
+                 WHERE id_car = :id";
+        $st = $this->conn->prepare($sql);
+        return $st->execute([':t' => $titulo, ':r' => $rutaNueva, ':id' => $id]);
+    }
+
+    public function eliminarImagen(int $id): bool
+    {
+        try {
+            $st = $this->conn->prepare("SELECT name_img_c, title_carr FROM carrusel WHERE id_car = ?");
+            $st->execute([$id]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return false;
+
+            $candidatos = [];
+            if (!empty($row['name_img_c'])) $candidatos[] = $row['name_img_c'];
+            if (!empty($row['title_carr']) && preg_match('/\.(jpe?g|png|gif|webp|bmp|svg)$/i', $row['title_carr'])) {
+                $candidatos[] = $row['title_carr'];
+            }
+            foreach ($candidatos as $c) $this->unlinkFromStored($c);
+
+            $del = $this->conn->prepare("DELETE FROM carrusel WHERE id_car = ?");
+            return $del->execute([$id]);
+        } catch (PDOException $e) {
+            error_log("Error al eliminar carrusel: " . $e->getMessage());
+            return false;
+        }
     }
 }
 
@@ -1332,6 +1647,74 @@ class VideoModel
         $this->conn = conectaDb();
     }
 
+    private function projectRoot(): string
+    {
+        return realpath(dirname(__DIR__)) ?: dirname(__DIR__);
+    }
+
+    private function sanitizeRel(?string $p): ?string
+    {
+        if ($p === null) return null;
+        $p = str_replace("\0", "", (string)$p);
+        $p = ltrim($p, "/\\");
+        $p = preg_replace('#^sennova[\/\\\\]#i', '', $p);
+        $parts = array_filter(
+            explode('/', str_replace('\\', '/', $p)),
+            fn($seg) => $seg !== '' && $seg !== '.' && $seg !== '..'
+        );
+        return implode(DIRECTORY_SEPARATOR, $parts);
+    }
+
+    private function joinPath(string $base, string $rel): string
+    {
+        return rtrim($base, "/\\") . DIRECTORY_SEPARATOR . ltrim($rel, "/\\");
+    }
+
+    private function unlinkFromStored(?string $stored): void
+    {
+        if (!$stored) return;
+        if (preg_match('#^https?://#i', $stored)) return; // No borrar URLs externas
+
+        $root = $this->projectRoot();
+        $rel  = $this->sanitizeRel($stored);
+        if (!$rel) return;
+
+        $full = $this->joinPath($root, $rel);
+        if (is_file($full)) {
+            @unlink($full);
+            return;
+        }
+
+        // Fallback si en DB solo guardaron el nombre
+        if (strpos($rel, DIRECTORY_SEPARATOR) === false) {
+            foreach (['videos', 'uploads/videos', 'uploads', 'img/videos', 'public/videos'] as $base) {
+                $alt = $this->joinPath($root, $this->joinPath($base, $rel));
+                if (is_file($alt)) {
+                    @unlink($alt);
+                    return;
+                }
+            }
+        }
+    }
+    public function quitarSoloArchivoVideo(string $area): bool
+    {
+        try {
+            $st = $this->conn->prepare("SELECT ruta_video FROM videos_lab WHERE area_vid = ? LIMIT 1");
+            $st->execute([$area]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return false;
+
+            $this->unlinkFromStored($row['ruta_video'] ?? null);
+
+            $upd = $this->conn->prepare("UPDATE videos_lab SET ruta_video = NULL WHERE area_vid = ?");
+            return $upd->execute([$area]);
+        } catch (PDOException $e) {
+            error_log("Error al quitar solo archivo de video ($area): " . $e->getMessage());
+            return false;
+        }
+    }
+
+
     public function obtenerVideoPorArea($area)
     {
         $stmt = $this->conn->prepare("SELECT * FROM videos_lab WHERE area_vid = ? LIMIT 1");
@@ -1342,19 +1725,53 @@ class VideoModel
     public function actualizarVideo($area, $nombreArchivo, $titulo, $texto1, $texto2)
     {
         $videoExistente = $this->obtenerVideoPorArea($area);
+        $rutaNueva = trim((string)$nombreArchivo);
+
         if ($videoExistente) {
-            $stmt = $this->conn->prepare("UPDATE videos_lab SET ruta_video=?, title_vid=?, text_pri=?, text_sec=? WHERE area_vid=?");
-            return $stmt->execute([$nombreArchivo, $titulo, $texto1, $texto2, $area]);
+            $rutaAnterior = $videoExistente['ruta_video'] ?? null;
+            $usarNueva = ($rutaNueva !== '' && $rutaNueva !== $rutaAnterior);
+
+            if ($usarNueva && $rutaAnterior) {
+                $this->unlinkFromStored($rutaAnterior);
+            }
+
+            $rutaFinal = $usarNueva ? $rutaNueva : $rutaAnterior;
+
+            $stmt = $this->conn->prepare("
+                UPDATE videos_lab
+                   SET ruta_video = ?,
+                       title_vid  = ?,
+                       text_pri   = ?,
+                       text_sec   = ?
+                 WHERE area_vid   = ?
+            ");
+            return $stmt->execute([$rutaFinal, $titulo, $texto1, $texto2, $area]);
         } else {
-            $stmt = $this->conn->prepare("INSERT INTO videos_lab (ruta_video, title_vid, text_pri, text_sec, area_vid) VALUES (?, ?, ?, ?, ?)");
-            return $stmt->execute([$nombreArchivo, $titulo, $texto1, $texto2, $area]);
+            $stmt = $this->conn->prepare("
+                INSERT INTO videos_lab (ruta_video, title_vid, text_pri, text_sec, area_vid)
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            return $stmt->execute([$rutaNueva, $titulo, $texto1, $texto2, $area]);
         }
     }
 
     public function eliminarVideoPorArea($area)
     {
-        $stmt = $this->conn->prepare("DELETE FROM videos_lab WHERE area_vid = ?");
-        return $stmt->execute([$area]);
+        try {
+            $st = $this->conn->prepare("SELECT ruta_video FROM videos_lab WHERE area_vid = ? LIMIT 1");
+            $st->execute([$area]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return false;
+
+            $this->unlinkFromStored($row['ruta_video'] ?? null);
+
+            // 3) Borrar registro en BD
+            $stmt = $this->conn->prepare("DELETE FROM videos_lab WHERE area_vid = ?");
+            return $stmt->execute([$area]);
+        } catch (PDOException $e) {
+            error_log("Error al eliminar video por área: " . $e->getMessage());
+            return false;
+        }
     }
 }
 
@@ -1367,6 +1784,56 @@ class PortadaModel
         $this->conn = conectaDb();
     }
 
+    private function projectRoot(): string
+    {
+        return realpath(dirname(__DIR__)) ?: dirname(__DIR__);
+    }
+
+    private function sanitizeRel(?string $p): ?string
+    {
+        if ($p === null) return null;
+        $p = str_replace("\0", "", (string)$p);
+        $p = ltrim($p, "/\\");
+        $p = preg_replace('#^sennova[\/\\\\]#i', '', $p);
+        $parts = array_filter(
+            explode('/', str_replace('\\', '/', $p)),
+            fn($seg) => $seg !== '' && $seg !== '.' && $seg !== '..'
+        );
+        return implode(DIRECTORY_SEPARATOR, $parts);
+    }
+
+    private function joinPath(string $base, string $rel): string
+    {
+        return rtrim($base, "/\\") . DIRECTORY_SEPARATOR . ltrim($rel, "/\\");
+    }
+
+    private function unlinkFromStored(?string $stored): void
+    {
+        if (!$stored) return;
+        if (preg_match('#^https?://#i', $stored)) return;
+
+        $root = $this->projectRoot();
+        $rel  = $this->sanitizeRel($stored);
+        if (!$rel) return;
+
+        $full = $this->joinPath($root, $rel);
+        if (is_file($full)) {
+            @unlink($full);
+            return;
+        }
+
+        // Fallback si en DB solo guardaron el nombre de archivo
+        if (strpos($rel, DIRECTORY_SEPARATOR) === false) {
+            foreach (['img/portadas', 'img', 'uploads/portadas', 'uploads', 'public/portadas'] as $base) {
+                $alt = $this->joinPath($root, $this->joinPath($base, $rel));
+                if (is_file($alt)) {
+                    @unlink($alt);
+                    return;
+                }
+            }
+        }
+    }
+
     public function obtenerPortadaPorArea($area)
     {
         $stmt = $this->conn->prepare("SELECT * FROM portadas_lab WHERE area_port = ? LIMIT 1");
@@ -1374,24 +1841,57 @@ class PortadaModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+
     public function actualizarPortada($area, $ruta, $titulo, $descripcion)
     {
         $portada = $this->obtenerPortadaPorArea($area);
+        $rutaNueva = trim((string)$ruta);
 
         if ($portada) {
-            $stmt = $this->conn->prepare("UPDATE portadas_lab SET ruta_img_port=?, title_port=?, desc_port=? WHERE area_port=?");
-            return $stmt->execute([$ruta, $titulo, $descripcion, $area]);
+            $rutaAnterior = $portada['ruta_img_port'] ?? null;
+            $usarNueva = ($rutaNueva !== '' && $rutaNueva !== $rutaAnterior);
+
+            if ($usarNueva && $rutaAnterior) {
+                $this->unlinkFromStored($rutaAnterior);
+            }
+
+            $rutaFinal = $usarNueva ? $rutaNueva : $rutaAnterior;
+
+            $stmt = $this->conn->prepare("
+                UPDATE portadas_lab
+                   SET ruta_img_port = ?,
+                       title_port    = ?,
+                       desc_port     = ?
+                 WHERE area_port     = ?
+            ");
+            return $stmt->execute([$rutaFinal, $titulo, $descripcion, $area]);
         } else {
-            $stmt = $this->conn->prepare("INSERT INTO portadas_lab (ruta_img_port, title_port, desc_port, area_port) VALUES (?, ?, ?, ?)");
-            return $stmt->execute([$ruta, $titulo, $descripcion, $area]);
+            $stmt = $this->conn->prepare("
+                INSERT INTO portadas_lab (ruta_img_port, title_port, desc_port, area_port)
+                VALUES (?, ?, ?, ?)
+            ");
+            return $stmt->execute([$rutaNueva, $titulo, $descripcion, $area]);
         }
     }
 
     public function eliminarPortadaPorArea($area)
     {
-        $stmt = $this->conn->prepare("DELETE FROM portadas_lab WHERE area_port = ?");
-        return $stmt->execute([$area]);
+        try {
+            $st = $this->conn->prepare("SELECT ruta_img_port FROM portadas_lab WHERE area_port = ? LIMIT 1");
+            $st->execute([$area]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return false;
+
+            $this->unlinkFromStored($row['ruta_img_port'] ?? null);
+
+            $stmt = $this->conn->prepare("DELETE FROM portadas_lab WHERE area_port = ?");
+            return $stmt->execute([$area]);
+        } catch (PDOException $e) {
+            error_log("Error al eliminar portada: " . $e->getMessage());
+            return false;
+        }
     }
+
     public function obtenerTodasLasPortadas()
     {
         $stmt = $this->conn->prepare("SELECT * FROM portadas_lab ORDER BY area_port");

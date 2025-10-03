@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       Swal.fire({
         title: '¿Eliminar subproceso?',
-        html: `Se eliminará <b>sd</b>.<br><small>Puede contener archivos. Esta acción NO se puede deshacer.</small>`,
+        html: `Se eliminará <b>${nombre}</b>.<br><small>Puede contener archivos. Esta acción NO se puede deshacer.</small>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',

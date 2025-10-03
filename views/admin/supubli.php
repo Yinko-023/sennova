@@ -8,15 +8,15 @@ $esAdmin = empty($areaSesion);
 </head>
 
 <div class="container py-5">
-<!-- Toast genérico de la app -->
-<div class="position-fixed top-0 end-0 p-3" style="z-index:1080">
-  <div id="appToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="d-flex">
-      <div class="toast-body" id="appToastMsg">...</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+  <!-- Toast genérico de la app -->
+  <div class="position-fixed top-0 end-0 p-3" style="z-index:1080">
+    <div id="appToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="appToastMsg">...</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
     </div>
   </div>
-</div>
 
 
   <div class="card publication-card border-0 mb-4">
@@ -117,7 +117,226 @@ $esAdmin = empty($areaSesion);
       </form>
     </div>
   </div>
+
+  <?php
+  $rol        = (int)($_SESSION['rol'] ?? 0);
+  $areaSesion = $_SESSION['area'] ?? null;
+
+  if ($rol === 2) {
+    $areaSesion = 'electronica';
+  }
+
+  if ($rol !== 1 && $areaSesion) {
+    require_once __DIR__ . '/../../conexion/conexion.php';
+    $pdo = conectaDb();
+
+    $sql = "
+    SELECT id, title, content, image_path, thumbnail_path, lab_area,
+           COALESCE(published_at, created_at) AS fecha_pub
+    FROM publications
+    WHERE is_active = 1
+      AND lab_area = :area
+    ORDER BY fecha_pub DESC
+    LIMIT 12
+  ";
+    $st = $pdo->prepare($sql);
+    $st->execute([':area' => $areaSesion]);
+    $posts = $st->fetchAll(PDO::FETCH_ASSOC);
+
+    $dest = ($areaSesion === 'electronica')
+      ? 'inElectronica.php'
+      : (($areaSesion === 'cafe') ? 'inCalidad.php' : '#');
+  ?>
+
+    <div class="card border-0 mt-4">
+      <div class="card-header py-3" style="background:linear-gradient(90deg,#2c3e50 0%,#1a1a2e 100%);color:#fff;">
+        <h5 class="mb-0">
+          <i class="fas fa-bullhorn me-2"></i>
+          Publicaciones de tu área (<?= htmlspecialchars(ucfirst($areaSesion)) ?>)
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <?php if (empty($posts)): ?>
+          <div class="text-center text-muted py-4">
+            <i class="far fa-folder-open me-1"></i> No hay publicaciones en tu área todavía.
+          </div>
+        <?php else: ?>
+          <div class="row g-4">
+            <?php foreach ($posts as $p): ?>
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0">
+                  <?php if (!empty($p['image_path'])): ?>
+                    <img
+                      src="/sennova/img/<?= htmlspecialchars($p['image_path']) ?>"
+                      class="card-img-top"
+                      alt="<?= htmlspecialchars($p['title']) ?>"
+                      style="object-fit:cover;height:180px;">
+                  <?php endif; ?>
+
+                  <div class="card-body d-flex flex-column">
+                    <h6 class="fw-semibold mb-2"><?= htmlspecialchars($p['title']) ?></h6>
+                    <p class="text-muted small mb-3" style="min-height:3.5em;">
+                      <?= htmlspecialchars(mb_strimwidth($p['content'] ?? '', 0, 140, '…', 'UTF-8')) ?>
+                    </p>
+
+                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                      <span class="text-muted small">
+                        <i class="far fa-clock me-1"></i>
+                        <?= htmlspecialchars(date('d/m/Y H:i', strtotime($p['fecha_pub']))) ?>
+                      </span>
+
+                      <div class="btn-group">
+                        <!-- Editar -->
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary btn-edit-post"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalEditarPubli"
+                          data-id="<?= (int)$p['id'] ?>"
+                          data-title="<?= htmlspecialchars($p['title'], ENT_QUOTES) ?>"
+                          data-content="<?= htmlspecialchars($p['content'], ENT_QUOTES) ?>"
+                          data-image="<?= htmlspecialchars($p['image_path'] ?? '', ENT_QUOTES) ?>"
+                          data-area="<?= htmlspecialchars($p['lab_area'], ENT_QUOTES) ?>">
+                          <i class="fas fa-pen"></i>
+                        </button>
+
+                        <!-- Eliminar -->
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger btn-delete-post"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalEliminarPubli"
+                          data-id="<?= (int)$p['id'] ?>"
+                          data-title="<?= htmlspecialchars($p['title'], ENT_QUOTES) ?>">
+                          <i class="fas fa-trash-alt"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+  <?php } // fin sección 
+  ?>
+
+
+
 </div>
+<!-- Modal EDITAR publicación -->
+<div class="modal fade" id="modalEditarPubli" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header" style="background:#1f2937;color:#fff;">
+        <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Editar Publicación</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <form id="formEditarPubli" action="/sennova/routes/EditPubli.php" method="POST" enctype="multipart/form-data">
+        <div class="modal-body">
+          <input type="hidden" name="id" id="edit-id">
+          <input type="hidden" name="lab_area" id="edit-area">
+
+          <div class="mb-3">
+            <label class="form-label">Título</label>
+            <input type="text" class="form-control" name="title" id="edit-title" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Contenido</label>
+            <textarea class="form-control" name="content" id="edit-content" rows="5" required></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Imagen (opcional)</label>
+            <input type="file" class="form-control" name="image" accept="image/*">
+          </div>
+
+          <div class="text-center">
+            <div class="fw-semibold mb-2">Imagen actual</div>
+            <img id="edit-image-preview" src="" alt="Imagen actual" class="rounded" style="width:160px;height:160px;object-fit:cover;box-shadow:0 2px 10px rgba(0,0,0,.15);">
+            <div class="form-check form-switch mt-3 d-inline-flex align-items-center gap-2">
+              <input class="form-check-input" type="checkbox" id="edit-delimg" name="delete_image" value="1">
+              <label class="form-check-label" for="edit-delimg">Eliminar imagen actual</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">✕ Cancelar</button>
+          <button type="submit" class="btn btn-dark"><i class="fas fa-save me-1"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ELIMINAR publicación -->
+<div class="modal fade" id="modalEliminarPubli" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header" style="background:#7f1d1d;color:#fff;">
+        <h6 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Eliminar Publicación</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formEliminarPubli" action="/sennova/routes/eliminarPublicacion.php" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="id" id="del-id">
+          <p class="mb-0">¿Seguro que deseas eliminar <strong id="del-title"></strong>? Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Eliminar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // ----- EDITAR -----
+    const editModal = document.getElementById('modalEditarPubli');
+    editModal.addEventListener('show.bs.modal', ev => {
+      const btn = ev.relatedTarget;
+      const id = btn.getAttribute('data-id');
+      const title = btn.getAttribute('data-title') || '';
+      const cont = btn.getAttribute('data-content') || '';
+      const img = btn.getAttribute('data-image') || '';
+      const area = btn.getAttribute('data-area') || '';
+
+      document.getElementById('edit-id').value = id;
+      document.getElementById('edit-title').value = title;
+      document.getElementById('edit-content').value = cont;
+      document.getElementById('edit-area').value = area;
+
+      const prev = document.getElementById('edit-image-preview');
+      if (img) {
+        prev.src = '/sennova/img/' + img;
+        prev.style.opacity = 1;
+      } else {
+        prev.src = '';
+        prev.style.opacity = 0.2;
+      }
+      document.getElementById('edit-delimg').checked = false;
+    });
+
+    // ----- ELIMINAR -----
+    const delModal = document.getElementById('modalEliminarPubli');
+    delModal.addEventListener('show.bs.modal', ev => {
+      const btn = ev.relatedTarget;
+      const id = btn.getAttribute('data-id');
+      const title = btn.getAttribute('data-title') || '';
+      document.getElementById('del-id').value = id;
+      document.getElementById('del-title').textContent = title;
+    });
+  });
+</script>
 
 <script>
   window.addEventListener('DOMContentLoaded', () => {
@@ -191,45 +410,70 @@ $esAdmin = empty($areaSesion);
   });
 </script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const params  = new URLSearchParams(location.search);
-  const mensaje = params.get('mensaje'); // p.ej. "subido" | "guardado"
-  const error   = params.get('error');   // texto de error opcional
+  document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(location.search);
+    const mensaje = params.get('mensaje'); // p.ej. "subido" | "guardado"
+    const error = params.get('error'); // texto de error opcional
 
-  // Mapeo de mensajes estándar
-  const map = {
-    subido:   { cls: 'text-bg-success', text: 'Archivo subido correctamente.' },
-    guardado: { cls: 'text-bg-success', text: 'Publicación subida correctamente.' },
-    error_bd: { cls: 'text-bg-danger',  text: 'Error al guardar en la base de datos.' },
-    error_mover:   { cls: 'text-bg-warning', text: 'No se pudo mover el archivo al servidor.' },
-    error_archivo: { cls: 'text-bg-warning', text: 'No se seleccionó un archivo válido.' },
-    error_auth:    { cls: 'text-bg-danger',  text: 'Acceso denegado: usuario no autenticado.' }
-  };
+    // Mapeo de mensajes estándar
+    const map = {
+      subido: {
+        cls: 'text-bg-success',
+        text: 'Archivo subido correctamente.'
+      },
+      guardado: {
+        cls: 'text-bg-success',
+        text: 'Publicación subida correctamente.'
+      },
+      error_bd: {
+        cls: 'text-bg-danger',
+        text: 'Error al guardar en la base de datos.'
+      },
+      error_mover: {
+        cls: 'text-bg-warning',
+        text: 'No se pudo mover el archivo al servidor.'
+      },
+      error_archivo: {
+        cls: 'text-bg-warning',
+        text: 'No se seleccionó un archivo válido.'
+      },
+      error_auth: {
+        cls: 'text-bg-danger',
+        text: 'Acceso denegado: usuario no autenticado.'
+      }
+    };
 
-  // Prioriza "error" con texto libre si viene desde PHP
-  let cfg = null;
-  if (error) {
-    cfg = { cls: 'text-bg-danger', text: decodeURIComponent(error) };
-  } else if (mensaje && map[mensaje]) {
-    cfg = map[mensaje];
-  }
+    // Prioriza "error" con texto libre si viene desde PHP
+    let cfg = null;
+    if (error) {
+      cfg = {
+        cls: 'text-bg-danger',
+        text: decodeURIComponent(error)
+      };
+    } else if (mensaje && map[mensaje]) {
+      cfg = map[mensaje];
+    }
 
-  if (!cfg) return;
+    if (!cfg) return;
 
-  const toastEl = document.getElementById('appToast');
-  const bodyEl  = document.getElementById('appToastMsg');
+    const toastEl = document.getElementById('appToast');
+    const bodyEl = document.getElementById('appToastMsg');
 
-  toastEl.className = `toast align-items-center ${cfg.cls} border-0`;
-  bodyEl.textContent = cfg.text;
+    toastEl.className = `toast align-items-center ${cfg.cls} border-0`;
+    bodyEl.textContent = cfg.text;
 
-  new bootstrap.Toast(toastEl, { delay: 3500, autohide: true }).show();
+    new bootstrap.Toast(toastEl, {
+      delay: 3500,
+      autohide: true
+    }).show();
 
-  // Limpia el querystring para que no se repita al refrescar
-  params.delete('mensaje'); params.delete('error');
-  const qs = params.toString();
-  const newUrl = qs ? `${location.pathname}?${qs}${location.hash}` : `${location.pathname}${location.hash}`;
-  history.replaceState({}, '', newUrl);
-});
+    // Limpia el querystring para que no se repita al refrescar
+    params.delete('mensaje');
+    params.delete('error');
+    const qs = params.toString();
+    const newUrl = qs ? `${location.pathname}?${qs}${location.hash}` : `${location.pathname}${location.hash}`;
+    history.replaceState({}, '', newUrl);
+  });
 </script>
 
 <style>
@@ -440,3 +684,100 @@ document.addEventListener('DOMContentLoaded', () => {
     font-weight: 600;
   }
 </style>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(location.search);
+    const toastEl = document.getElementById('appToast');
+    const bodyEl = document.getElementById('appToastMsg');
+
+    function showToast(cls, text) {
+      if (!toastEl || !bodyEl) return;
+      toastEl.className = `toast align-items-center ${cls} border-0`;
+      bodyEl.textContent = text;
+      new bootstrap.Toast(toastEl, {
+        delay: 3500,
+        autohide: true
+      }).show();
+    }
+
+    // ==== EDITAR (usa ?editado=...) ====
+    const editado = params.get('editado'); // ok | titulo_duplicado | error | incompleto | no_encontrada
+    const area = params.get('area') || '';
+
+    if (editado) {
+      let cfg;
+      switch (editado) {
+        case 'ok':
+          cfg = {
+            cls: 'text-bg-success',
+            text: 'Publicación actualizada correctamente.'
+          };
+          break;
+        case 'titulo_duplicado':
+          cfg = {
+            cls: 'text-bg-danger',
+            text: `Ya existe una publicación con ese título en ${area || 'esta área'}.`
+          };
+          break;
+        case 'incompleto':
+          cfg = {
+            cls: 'text-bg-warning',
+            text: 'Completa título y contenido.'
+          };
+          break;
+        case 'no_encontrada':
+          cfg = {
+            cls: 'text-bg-danger',
+            text: 'No se encontró la publicación.'
+          };
+          break;
+        default:
+          cfg = {
+            cls: 'text-bg-danger',
+            text: 'No se pudo actualizar la publicación.'
+          };
+      }
+      showToast(cfg.cls, cfg.text);
+      params.delete('editado');
+      params.delete('area');
+    }
+
+    // ==== MENSAJES GENERALES (usa ?mensaje=...) ====
+    const mensaje = params.get('mensaje'); // p.ej.: eliminado | error_eliminar | guardado | subido ...
+    if (mensaje) {
+      const map = {
+        eliminado: {
+          cls: 'text-bg-success',
+          text: 'Publicación eliminada correctamente.'
+        },
+        error_eliminar: {
+          cls: 'text-bg-danger',
+          text: 'No se pudo eliminar la publicación.'
+        },
+        guardado: {
+          cls: 'text-bg-success',
+          text: 'Publicación subida correctamente.'
+        },
+        subido: {
+          cls: 'text-bg-success',
+          text: 'Archivo subido correctamente.'
+        },
+        error: {
+          cls: 'text-bg-danger',
+          text: 'Ocurrió un error en la operación.'
+        }
+      };
+      const cfg = map[mensaje] || {
+        cls: 'text-bg-info',
+        text: mensaje.replace(/_/g, ' ')
+      };
+      showToast(cfg.cls, cfg.text);
+      params.delete('mensaje');
+    }
+
+    // Limpia el querystring para que no se repita al refrescar
+    const qs = params.toString();
+    const newUrl = qs ? `${location.pathname}?${qs}${location.hash}` : `${location.pathname}${location.hash}`;
+    history.replaceState({}, '', newUrl);
+  });
+</script>

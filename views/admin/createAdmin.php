@@ -1,99 +1,102 @@
-<div class="theme-toggle" id="themeToggle">
-  <i class="fas fa-moon"></i>
-</div>
-<div class="row justify-content-center mt-4">
-  <div class="col-md-10 col-lg-8 col-xl-6">
-    <!-- Tarjeta de registro -->
-    <div class="auth-card">
-      <div class="auth-header">
-        <h2 class="auth-title">
-          <i class="fas fa-user-shield me-2"></i>Registro de Usuario
-        </h2>
-      </div>
+<main class=" d-flex align-items-center pt-5 mt-2">
+  <div class="row w-100 justify-content-center text-center">
+    <div class="col-md-10 col-lg-8 col-xl-6">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h2 class="auth-title">
+            <i class="fas fa-user-shield me-2"></i>Registro de Usuario
+          </h2>
+        </div>
 
-      <div class="card-body p-4 p-md-5">
-        <form action="/sennova/routes/registerAdmin.php" method="POST" class="needs-validation" novalidate>
+        <div class="card-body p-4 p-md-5">
+          <form action="/sennova/routes/registerAdmin.php" method="POST" class="needs-validation" novalidate>
 
-          <!-- Nombre de usuario -->
-          <div class="mb-4">
-            <label for="username" class="form-label">
-              <i class="fas fa-user text-dark me-1"></i>Nombre de usuario
-            </label>
-            <input type="text" class="form-control" id="username" name="username" required
-              placeholder="Ej: usuario123" />
-            <div class="invalid-feedback">Por favor ingrese un nombre de usuario válido.</div>
-          </div>
-
-          <!-- Nombre completo -->
-          <div class="mb-4">
-            <label for="full_name" class="form-label">
-              <i class="fas fa-id-card text-dark me-1"></i>Nombre completo
-            </label>
-            <input type="text" class="form-control" id="full_name" name="full_name" required
-              placeholder="Nombre y apellidos" />
-            <div class="invalid-feedback">Por favor ingrese su nombre completo.</div>
-          </div>
-
-          <!-- Correo -->
-          <div class="mb-4">
-            <label for="email_acc" class="form-label">
-              <i class="fas fa-envelope text-dark me-1"></i>Correo electrónico
-            </label>
-            <input type="email" class="form-control" id="email_acc" name="email_acc" required
-              placeholder="ejemplo@dominio.com" />
-            <div class="invalid-feedback">Ingrese un correo válido.</div>
-          </div>
-
-          <!-- Contraseña -->
-          <div class="mb-4">
-            <label for="password_acc" class="form-label">
-              <i class="fas fa-lock text-dark me-1"></i>Contraseña
-            </label>
-            <div class="input-group">
-              <input type="password" class="form-control" id="password_acc" name="password_acc" required />
-              <span class="input-group-text bg-white rounded-end" onclick="vista_form()" style="cursor: pointer;">
-                <i class="bi bi-eye" id="ver"></i>
-                <i class="bi bi-eye-slash" id="ocultar" style="display: none;"></i>
-              </span>
+            <!-- Nombre de usuario -->
+            <div class="mb-4">
+              <label for="username" class="form-label">
+                <i class="fas fa-user text-dark me-1"></i>Nombre de usuario
+              </label>
+              <input type="text" class="form-control" id="username" name="username" required
+                placeholder="Ej: usuario123" />
+              <div class="invalid-feedback">Por favor ingrese un nombre de usuario válido.</div>
             </div>
-          </div>
 
-          <!-- Rol -->
-          <div class="mb-4">
-            <label for="rol" class="form-label">
-              <i class="fas fa-user-tag text-dark me-1"></i>Rol
-            </label>
-            <select class="form-select" id="rol" name="rol" required>
-              <?php foreach ($roles as $rol): ?>
-                <option value="<?= $rol['id'] ?>"><?= ucfirst($rol['name_rol']) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
+            <!-- Nombre completo -->
+            <div class="mb-4">
+              <label for="full_name" class="form-label">
+                <i class="fas fa-id-card text-dark me-1"></i>Nombre completo
+              </label>
+              <input type="text" class="form-control" id="full_name" name="full_name" required
+                placeholder="Nombre y apellidos" />
+              <div class="invalid-feedback">Por favor ingrese su nombre completo.</div>
+            </div>
 
-          <!-- Área -->
-          <div class="mb-4" id="grupo-area">
-            <label for="area" class="form-label">
-              <i class="fas fa-building text-dark me-1"></i>Área asignada
-            </label>
-            <select class="form-select" id="area" name="area">
-              <option value="">Seleccione un área</option>
-              <option value="cafe">Café</option>
-              <option value="electronica">Electrónica</option>
-            </select>
-          </div>
+            <!-- Correo -->
+            <div class="mb-4">
+              <label for="email_acc" class="form-label">
+                <i class="fas fa-envelope text-dark me-1"></i>Correo electrónico
+              </label>
+              <input type="email" class="form-control" id="email_acc" name="email_acc" required
+                placeholder="ejemplo@dominio.com" />
+              <div class="invalid-feedback">Ingrese un correo válido.</div>
+            </div>
 
-          <!-- Botón de enviar -->
-          <div class="d-grid mt-5">
-            <button type="submit" class="btn btn-auth py-3 text-light">
-              <i class="fas fa-user-plus me-2"></i>Registrar Usuario
-            </button>
-          </div>
-        </form>
+            <!-- Contraseña -->
+            <div class="mb-4">
+              <label for="password_acc" class="form-label">
+                <i class="fas fa-lock text-dark me-1"></i>Contraseña
+              </label>
+              <div class="input-group">
+                <input type="password" class="form-control" id="password_acc" name="password_acc" required />
+                <span class="input-group-text bg-white rounded-end" onclick="vista_form()" style="cursor: pointer;">
+                  <i class="bi bi-eye" id="ver"></i>
+                  <i class="bi bi-eye-slash" id="ocultar" style="display: none;"></i>
+                </span>
+              </div>
+            </div>
+
+            <!-- Rol -->
+            <div class="mb-4">
+              <label for="rol" class="form-label">
+                <i class="fas fa-user-tag text-dark me-1"></i>Rol
+              </label>
+              <select class="form-select" id="rol" name="rol" required>
+                <?php foreach ($roles as $rol): ?>
+                  <option value="<?= $rol['id'] ?>"><?= ucfirst($rol['name_rol']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+            <!-- Área -->
+            <div class="mb-4" id="grupo-area">
+              <label for="area" class="form-label">
+                <i class="fas fa-building text-dark me-1"></i>Área asignada
+              </label>
+              <select class="form-select" id="area" name="area">
+                <option value="">Seleccione un área</option>
+                <option value="cafe">Café</option>
+                <option value="electronica">Electrónica</option>
+              </select>
+            </div>
+
+            <!-- Botón de enviar -->
+            <div class="d-grid mt-5">
+              <button type="submit" class="btn btn-auth py-3 text-light">
+                <i class="fas fa-user-plus me-2"></i>Registrar Usuario
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
 
+    </div>
   </div>
-</div>
+</main>
+
+
+
+
+
 <script>
   function vista_form() {
     const p = document.getElementById('password_acc'),

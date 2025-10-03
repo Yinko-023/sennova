@@ -18,21 +18,66 @@ class PublicacionController
 
   public function procesarFormulario()
   {
-    // Datos del form
-    $titulo    = $_POST['title']      ?? '';
-    $contenido = $_POST['content']    ?? '';
-    $categoria = $_POST['type']       ?? '';
-    $lab_area  = $_POST['lab_area']   ?? null;
+    if (session_status() === PHP_SESSION_NONE) session_start();
 
-    // normaliza datetime-local a 'Y-m-d H:i:s'
-    $fechaRaw  = $_POST['published_at'] ?? '';
+    // ===== Datos del form =====
+    $titulo    = trim($_POST['title']    ?? '');
+    $contenido = trim($_POST['content']  ?? '');
+    $categoria = $_POST['type']          ?? '';
+    $lab_area  = $_POST['lab_area']      ?? null;
+
+    $fechaRaw  = $_POST['published_at']  ?? '';
     $fecha     = $fechaRaw ? str_replace('T', ' ', $fechaRaw) . ':00' : date('Y-m-d H:i:00');
 
     $destacada = isset($_POST['destacada']) ? 1 : 0;
-    $is_active = isset($_POST['is_active']) ? 1 : 0;
 
-    // Subida de imagen
-    $nombreImagen = null; // <- lo que guardaremos en DB
+    // ===== Rol/Área e is_active =====
+    $rol        = (int)($_SESSION['rol']  ?? 0);
+    $areaSesion = $_SESSION['area']       ?? null;
+
+    // No-admin: siempre publica en su propia área; admin puede elegir
+    if ($rol !== 1) {
+      if (!$areaSesion) {
+        header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode("Tu sesión no tiene área asignada."));
+        exit;
+      }
+      $lab_area = $areaSesion; // forzamos el área del usuario
+    } else {
+      $lab_area = $lab_area ? strtolower(trim($lab_area)) : null;
+      if (!in_array($lab_area, ['cafe', 'electronica', 'general'], true)) {
+        header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode("Área no válida."));
+        exit;
+      }
+    }
+
+    // is_active: admin decide con el switch; no-admin siempre activo
+    $is_active = ($rol === 1) ? (isset($_POST['is_active']) ? 1 : 0) : 1;
+
+    // ===== Validaciones mínimas =====
+    if (!$titulo || !$contenido || !$lab_area) {
+      header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode("Completa los campos requeridos."));
+      exit;
+    }
+
+    // ===== Modelo =====
+    require_once __DIR__ . '/../models/PubliModel.php';
+    $modelo = new PublicacionModel();
+
+    // ===== Anti-duplicado SOLO si se va a activar =====
+    if ($lab_area === 'general') {
+      if ($modelo->existeTituloEnArea($titulo, 'cafe') || $modelo->existeTituloEnArea($titulo, 'electronica')) {
+        header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode("Ya existe una publicación con ese título en Café o Electrónica."));
+        exit;
+      }
+    } else {
+      if ($modelo->existeTituloEnArea($titulo, $lab_area)) {
+        header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode("Ya existe una publicación con ese título en {$lab_area}."));
+        exit;
+      }
+    }
+
+    // ===== Subida de imagen =====
+    $nombreImagen = null;
     if (!empty($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
       $dirFS = realpath(__DIR__ . '/../img/');
       if ($dirFS === false) {
@@ -47,20 +92,18 @@ class PublicacionController
       $destinoFS    = rtrim($dirFS, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $nombreImagen;
 
       if (!move_uploaded_file($_FILES['image']['tmp_name'], $destinoFS)) {
-        $msg = 'Error al subir la imagen.';
-        header('Location: /sennova/inAdmin.php?vista=supubli&error=' . urlencode($msg));
+        header('Location: /sennova/inAdmin.php?vista=supubli&error=' . urlencode('Error al subir la imagen.'));
         exit;
       }
     }
 
-    // Guardar en DB
-    $modelo = new PublicacionModel();
+    // ===== Guardar =====
     $ok = $modelo->guardarPublicacion(
       $titulo,
       $contenido,
       $categoria,
       $destacada,
-      $nombreImagen, // <- solo el nombre de archivo
+      $nombreImagen,
       $fecha,
       $is_active,
       $lab_area
@@ -69,8 +112,7 @@ class PublicacionController
     if ($ok) {
       header("Location: /sennova/inAdmin.php?vista=supubli&mensaje=guardado");
     } else {
-      $msg = 'Error al guardar la publicación.';
-      header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode('Error al guardar la publicación.'));
+      header("Location: /sennova/inAdmin.php?vista=supubli&error=" . urlencode('Error al guardar la publicación (posible duplicado por restricción única).'));
     }
     exit;
   }
@@ -82,11 +124,10 @@ class PublicacionController
     require 'views/calidad.php';
   }
 
-    public function verNosotros()
+  public function verNosotros()
   {
     require 'views/Nosotros.php';
   }
-
 
   public function verElectronica()
   {
@@ -236,6 +277,12 @@ class GestionController
       exit;
     }
 
+    // NUEVO: valida nombre único
+    if ($this->model->existeNombre($nombre)) {
+      header("Location: ../inAdmin.php?vista=gestion&err=El nombre ya existe");
+      exit;
+    }
+
     $slug = strtolower(preg_replace('/[^a-z0-9_-]+/i', '_', $ruta));
     if (!str_ends_with($slug, '.php')) $slug .= '.php';
 
@@ -253,7 +300,6 @@ class GestionController
     header("Location: ../inAdmin.php?vista=gestion&res=Proceso creado con éxito");
     exit;
   }
-
 
 
   public function eliminar()
@@ -822,11 +868,11 @@ PHP;
   public function crearsub()
   {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_sub'])) {
-      $nombre       = trim($_POST['nombre_sub'] ?? '');
+      $nombre      = trim($_POST['nombre_sub'] ?? '');
+      $nombre      = preg_replace('/\s+/', ' ', $nombre);
       $rutaEntrada  = trim($_POST['ruta_sub'] ?? '');
       $idProceso    = intval($_POST['id_proceso'] ?? 0);
       $archivoPadre = trim($_POST['archivo_padre'] ?? null);
-
       $back = $_SERVER['HTTP_REFERER'] ?? '../inAdmin.php?vista=gestion';
 
       if (!$nombre || !$rutaEntrada || $idProceso <= 0) {
@@ -834,7 +880,13 @@ PHP;
         exit;
       }
 
-      // slug simple (sin .php) y normalizado
+      $nombre = preg_replace('/\s+/u', ' ', $nombre);
+
+      if ($this->model->existeNombreSub($idProceso, $nombre)) {
+        header('Location: ' . $back . '&errSub=' . urlencode('El nombre del subproceso ya existe en este proceso.'));
+        exit;
+      }
+
       $slug = preg_replace('/[^a-zA-Z0-9_-]/', '', basename($rutaEntrada));
       $slug = strtolower($slug);
       if ($slug === '') {
@@ -844,11 +896,11 @@ PHP;
 
       $archivoGenerado = __DIR__ . '/../views/procesos/sub/' . $slug . '.php';
 
-      // 1) Chequeo de duplicados (BD + archivo)
       if ($this->model->existeRutaSub($idProceso, $slug)) {
         header('Location: ' . $back . '&errSub=' . urlencode('La ruta del subproceso ya existe en este proceso.'));
         exit;
       }
+
       if (file_exists($archivoGenerado)) {
         header('Location: ' . $back . '&errSub=' . urlencode('Ya existe un archivo con esa ruta.'));
         exit;
@@ -1947,10 +1999,16 @@ class ServicioElectronicaController
   }
 
   // Guardar nuevo servicio
-  // Guardar nuevo servicio
   public function guardarServicio()
   {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+      // --- VALIDAR DUPLICADO POR TÍTULO (case-insensitive / trim) ---
+      $titulo = trim($_POST['titulo'] ?? '');
+      if ($this->modelo->existeTitulo($titulo)) {
+        header('Location: ../inAdmin.php?vista=servicio&area=electronica&mensaje=duplicado');
+        exit;
+      }
+
       // Limpiar precio
       $precioRaw = $_POST['precio'];
       $precioLimpio = str_replace(['.', ','], ['', '.'], $precioRaw);
@@ -1967,15 +2025,15 @@ class ServicioElectronicaController
       }
 
       $datos = [
-        'titulo' => $_POST['titulo'],
+        'titulo'            => $titulo,
         'descripcion_corta' => $_POST['descripcion_corta'],
         'descripcion_larga' => $_POST['descripcion_larga'],
-        'precio' => floatval($precioLimpio),
-        'icono_ele' => $icono
+        'precio'            => floatval($precioLimpio),
+        'icono_ele'         => $icono
       ];
 
       $this->modelo->crearServicio($datos);
-      header('Location: ../inAdmin.php?vista=servicio&area=electronica');
+      header('Location: ../inAdmin.php?vista=servicio&area=electronica&mensaje=creado');
       exit;
     }
   }
@@ -1984,11 +2042,18 @@ class ServicioElectronicaController
   public function editarServicio()
   {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_ele'])) {
-      $id_ele = $_POST['id_ele'];
+      $id_ele = (int)$_POST['id_ele'];
+      $titulo = trim($_POST['titulo'] ?? '');
+
+      // --- VALIDAR DUPLICADO EXCLUYENDO EL MISMO ID ---
+      if ($this->modelo->existeTitulo($titulo, $id_ele)) {
+        header('Location: ../inAdmin.php?vista=servicio&area=electronica&mensaje=duplicado');
+        exit;
+      }
 
       // Obtener servicio actual para mantener icono si no se sube uno nuevo
       $servicioActual = $this->modelo->obtenerServicios($id_ele);
-      $icono = $servicioActual['icono_ele'];
+      $icono = $servicioActual['icono_ele'] ?? null;
 
       // Limpiar precio
       $precioRaw = $_POST['precio'];
@@ -2005,26 +2070,25 @@ class ServicioElectronicaController
       }
 
       $datos = [
-        'titulo' => $_POST['titulo'],
+        'titulo'            => $titulo,
         'descripcion_corta' => $_POST['descripcion_corta'],
         'descripcion_larga' => $_POST['descripcion_larga'],
-        'precio' => floatval($precioLimpio),
-        'icono_ele' => $icono
+        'precio'            => floatval($precioLimpio),
+        'icono_ele'         => $icono
       ];
 
       $this->modelo->actualizarServicio($id_ele, $datos);
-      header('Location: ../inAdmin.php?vista=servicio&area=electronica');
+      header('Location: ../inAdmin.php?vista=servicio&area=electronica&mensaje=editado');
       exit;
     }
   }
-
 
   // Eliminar un servicio
   public function eliminarServicio()
   {
     if (isset($_GET['id_ele'])) {
       $this->modelo->eliminarServicio($_GET['id_ele']);
-      header('Location: ../inAdmin.php?vista=servicio&area=electronica');
+      header('Location: ../inAdmin.php?vista=servicio&area=electronica&mensaje=eliminado');
       exit;
     }
   }
@@ -2041,6 +2105,16 @@ class ServicioCafeController
 
   public function guardarServi()
   {
+    // Normaliza el título para comparar (minúsculas + trim + colapsa espacios)
+    $tituloRaw  = $_POST['titulo_ca'] ?? '';
+    $tituloNorm = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $tituloRaw)), 'UTF-8');
+
+    // ¿Ya existe otro igual?
+    if ($this->modelo->existeTituloCafe($tituloNorm, null)) {
+      header('Location: ../inAdmin.php?vista=servicio&area=cafe&mensaje=duplicado');
+      exit;
+    }
+
     $datos = $this->procesarDatosFormulario();
     $this->modelo->crearServi($datos);
     header('Location: ../inAdmin.php?vista=servicio&area=cafe&mensaje=creado');
@@ -2049,12 +2123,24 @@ class ServicioCafeController
 
   public function editarServi()
   {
-    $id_ca = $_POST['id_ca'];
+    $id_ca = (int)($_POST['id_ca'] ?? 0);
+
+    // Normaliza para comparar
+    $tituloRaw  = $_POST['titulo_ca'] ?? '';
+    $tituloNorm = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $tituloRaw)), 'UTF-8');
+
+    // ¿Existe otro con el mismo título (excluyendo este id)?
+    if ($this->modelo->existeTituloCafe($tituloNorm, $id_ca)) {
+      header('Location: ../inAdmin.php?vista=servicio&area=cafe&mensaje=duplicado');
+      exit;
+    }
+
     $datos = $this->procesarDatosFormulario();
     $this->modelo->actualizarServi($id_ca, $datos);
     header('Location: ../inAdmin.php?vista=servicio&area=cafe&mensaje=editado');
     exit;
   }
+
 
   public function eliminarServi()
   {
@@ -2105,120 +2191,329 @@ class ServicioCafeController
 
 class CarruselController
 {
+  /* ============================
+   *  Helpers
+   * ============================ */
+  private function redirect(string $estado, string $mensaje, array $extra = []): void
+  {
+    // Construye la query estándar para SweetAlert (estado/mensaje) + flags de compatibilidad
+    $params = array_merge(['vista' => 'usuario', 'estado' => $estado, 'mensaje' => $mensaje], $extra);
+    $qs = http_build_query($params);
+    header("Location: ../inAdmin.php?{$qs}");
+    exit;
+  }
+
+  private function sanitizeBaseName(string $name): string
+  {
+    // Quita caracteres raros del nombre base del archivo
+    $name = preg_replace('/[^\pL\pN\-\_\.]+/u', '_', $name);
+    return trim($name, '_');
+  }
+
+  private function isAllowedExt(string $ext): bool
+  {
+    static $permitidas = ['jpg','jpeg','png','webp','gif'];
+    return in_array(strtolower($ext), $permitidas, true);
+  }
+
+  private function ensureUploadDir(string $carpeta): void
+  {
+    if (!is_dir($carpeta)) {
+      @mkdir($carpeta, 0777, true);
+    }
+  }
+
+  private function safeUnlink(string $relPath): void
+  {
+    // Sólo borra si apunta dentro de /img (protección básica)
+    $relPath = ltrim($relPath, '/');
+    if (strpos($relPath, 'img/') === 0) {
+      $abs = realpath(__DIR__ . "/../" . dirname($relPath));
+      if ($abs && is_file(__DIR__ . "/../" . $relPath)) {
+        @unlink(__DIR__ . "/../" . $relPath);
+      }
+    }
+  }
+
+  /* ============================
+   *  Vistas
+   * ============================ */
   public function index()
   {
-    $model = new CarruselModel();
+    $model  = new CarruselModel();
     $slides = $model->obtenerImagenes();
     require '../views/admin/usuario.php';
   }
 
+  /* ============================
+   *  Crear
+   * ============================ */
   public function agregarCarrusel()
   {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['imagen'], $_POST['titulo'])) {
-      $archivo = $_FILES['imagen'];
-      $titulo = trim($_POST['titulo']);
-
-      if ($archivo['error'] === 0 && !empty($titulo)) {
-        $nombreOriginal = pathinfo($archivo['name'], PATHINFO_FILENAME); // sin extensión
-        $extension = pathinfo($archivo['name'], PATHINFO_EXTENSION);
-
-        // Obtener el ID más alto actual para generar un nuevo nombre numerado
-        $model = new CarruselModel();
-        $ultimoId = $model->obtenerUltimoId();
-
-        $contador = str_pad($ultimoId + 1, 3, '0', STR_PAD_LEFT); // 001, 002, ...
-        $nuevoNombre = $contador . $nombreOriginal . '.' . $extension;
-
-        $carpeta = '../img/';
-        $rutaServidor = $carpeta . $nuevoNombre;
-        $rutaParaBD = 'img/' . $nuevoNombre;
-
-        if (!file_exists($carpeta)) {
-          mkdir($carpeta, 0777, true);
-        }
-
-        if (move_uploaded_file($archivo['tmp_name'], $rutaServidor)) {
-          // Solo se guarda el título escrito y la ruta en la BD
-          $model->agregarImagen($titulo, $rutaParaBD);
-        } else {
-          echo "❌ No se pudo mover el archivo.";
-        }
-      } else {
-        echo "❌ Error en el archivo o título vacío.";
-      }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['imagen'], $_POST['titulo'])) {
+      $this->redirect('error', 'Solicitud inválida.');
     }
 
-    header("Location: ../inAdmin.php?vista=usuario&editado=ok");
-    exit;
+    $archivo = $_FILES['imagen'];
+    $titulo  = trim((string)$_POST['titulo']);
+
+    if ($titulo === '' || ($archivo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+      $this->redirect('error', 'Completa el título y selecciona una imagen.', ['carrusel_err' => 'datos']);
+    }
+
+    $model = new CarruselModel();
+
+    // Título duplicado (case-insensitive)
+    if ($model->existeNombreCI($titulo)) {
+      $this->redirect('error', "Ya existe una imagen con el título «{$titulo}».", [
+        'carrusel_dup' => 1,
+        'name' => $titulo
+      ]);
+    }
+
+    // Validación de extensión
+    $ext = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
+    if (!$this->isAllowedExt($ext)) {
+      $this->redirect('error', 'Tipo de archivo no permitido. Usa JPG, PNG, WEBP o GIF.', ['carrusel_err' => 'tipo']);
+    }
+
+    // Componer nombre de archivo
+    $nombreOriginal = $this->sanitizeBaseName(pathinfo($archivo['name'], PATHINFO_FILENAME));
+    $ultimoId  = (int)$model->obtenerUltimoId();
+    $contador  = str_pad((string)($ultimoId + 1), 3, '0', STR_PAD_LEFT);
+    $nuevoNombre = "{$contador}{$nombreOriginal}.{$ext}";
+
+    $carpeta      = '../img/';
+    $rutaServidor = $carpeta . $nuevoNombre;
+    $rutaParaBD   = 'img/' . $nuevoNombre;
+
+    // Asegurar carpeta y mover
+    $this->ensureUploadDir($carpeta);
+    if (!@move_uploaded_file($archivo['tmp_name'], $rutaServidor)) {
+      $this->redirect('error', 'No se pudo subir el archivo.', ['carrusel_err' => 'subida']);
+    }
+
+    // Guardar en BD
+    $model->agregarImagen($titulo, $rutaParaBD);
+
+    // OK
+    $this->redirect('success', 'Imagen agregada al carrusel.', ['carrusel_ok' => 1]);
   }
 
-
-
-  public function eliminarCarrusel()
+  /* ============================
+   *  Editar (título y/o imagen)
+   * ============================ */
+  public function editarCarrusel()
   {
-    if (isset($_POST['id'])) {
-      $model = new CarruselModel();
-      $imagen = $model->obtenerImagenPorId($_POST['id']);
-
-      if ($imagen) {
-        $ruta = '../' . $imagen['title_carr']; // Ajusta la ruta al archivo (con ../ si estás dentro de /routes)
-
-        // Elimina solo el archivo físico si existe
-        if (file_exists($ruta)) {
-          unlink($ruta);
-        }
-
-        // 🔸 Opcional: Elimina el registro de la base de datos (si no quieres mantener la referencia)
-        $model->eliminarImagen($_POST['id']);
-      }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      $this->redirect('error', 'Solicitud inválida.');
     }
 
-    header('Location: ../inAdmin.php?vista=usuario&editado=ok');
-    exit;
+    $id     = (int)($_POST['id'] ?? 0);
+    $titulo = trim((string)($_POST['titulo'] ?? ''));
+    $file   = $_FILES['imagen'] ?? null;
+
+    if ($id <= 0 || $titulo === '') {
+      $this->redirect('error', 'Datos incompletos para editar.', ['carrusel_err' => 'datos']);
+    }
+
+    $model = new CarruselModel();
+
+    // Verificar duplicado de título, excluyendo este ID
+    if ($model->existeNombreCIExceptoId($titulo, $id)) {
+      $this->redirect('error', "Ya existe una imagen con el título «{$titulo}».", [
+        'carrusel_dup' => 1,
+        'name' => $titulo
+      ]);
+    }
+
+    // Obtener actual
+    $actual = $model->obtenerImagenPorId($id);
+    if (!$actual) {
+      $this->redirect('error', 'La imagen que intentas editar no existe.', ['carrusel_err' => 'noexiste']);
+    }
+
+    $rutaNueva = null;
+
+    // ¿Reemplazo de imagen?
+    if ($file && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+      $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+      if (!$this->isAllowedExt($ext)) {
+        $this->redirect('error', 'Tipo de archivo no permitido. Usa JPG, PNG, WEBP o GIF.', ['carrusel_err' => 'tipo']);
+      }
+
+      $nombreOriginal = $this->sanitizeBaseName(pathinfo($file['name'], PATHINFO_FILENAME));
+      $nuevoNombre = 'edit_' . $id . '_' . time() . '_' . $nombreOriginal . '.' . $ext;
+
+      $carpeta      = '../img/';
+      $rutaServidor = $carpeta . $nuevoNombre;
+      $rutaParaBD   = 'img/' . $nuevoNombre;
+
+      $this->ensureUploadDir($carpeta);
+      if (!@move_uploaded_file($file['tmp_name'], $rutaServidor)) {
+        $this->redirect('error', 'No se pudo subir el archivo.', ['carrusel_err' => 'subida']);
+      }
+
+      // Borrar archivo anterior (si existía)
+      $anteriorRel = trim((string)($actual['title_carr'] ?? ''));
+      if ($anteriorRel !== '') {
+        $this->safeUnlink($anteriorRel);
+      }
+
+      $rutaNueva = $rutaParaBD;
+    }
+
+    // Actualizar
+    $model->actualizarImagen($id, $titulo, $rutaNueva);
+
+    $this->redirect('success', 'Imagen del carrusel actualizada correctamente.', ['carrusel_edit_ok' => 1]);
+  }
+
+  /* ============================
+   *  Eliminar
+   * ============================ */
+  public function eliminarCarrusel()
+  {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['id'])) {
+      $this->redirect('error', 'Solicitud inválida.');
+    }
+
+    $id = (int)$_POST['id'];
+    if ($id <= 0) {
+      $this->redirect('error', 'Identificador no válido.');
+    }
+
+    $model = new CarruselModel();
+
+    // Si quieres asegurar borrado de archivo aquí, podrías obtener el registro:
+    // $actual = $model->obtenerImagenPorId($id);
+    // if ($actual && !empty($actual['title_carr'])) { $this->safeUnlink($actual['title_carr']); }
+    // Suponiendo que eliminarImagen ya borra BD + archivo:
+    $model->eliminarImagen($id);
+
+    $this->redirect('success', 'Imagen eliminada del carrusel.', ['carrusel_del' => 1]);
   }
 }
 
 class VideoController
 {
+  /** Mueve un MP4 subido a /videos y devuelve la ruta relativa (p.ej. "videos/abc.mp4") o null */
+  private function moveToVideos(?array $file): ?string
+  {
+    if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) return null;
+    if (strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) !== 'mp4') return null;
 
+    $dirFS = realpath(__DIR__ . '/../videos') ?: (__DIR__ . '/../videos');
+    if (!is_dir($dirFS)) @mkdir($dirFS, 0777, true);
+
+    $nombre = 'vid_' . time() . '_' . bin2hex(random_bytes(4)) . '.mp4';
+    $destFS = rtrim($dirFS, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $nombre;
+
+    if (!move_uploaded_file($file['tmp_name'], $destFS)) return null;
+    return 'videos/' . $nombre;
+  }
+
+  /** Solo 1 video por área. Si ya hay video en esa área, bloquea la subida. */
   public function subirVideo()
   {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['video'])) {
-      $area = $_POST['area'] ?? '';
-      $titulo = $_POST['titulo'] ?? '';
-      $texto1 = $_POST['texto_principal'] ?? '';
-      $texto2 = $_POST['texto_secundario'] ?? '';
-
-      $video = $_FILES['video'];
-      $nombreOriginal = basename($video['name']);
-      $rutaServidor = '../videos/' . $nombreOriginal; // ubicación real
-      $rutaBaseDatos = 'videos/' . $nombreOriginal;    // ruta pública para el navegador
-
-      if ($video['type'] === 'video/mp4' && move_uploaded_file($video['tmp_name'], $rutaServidor)) {
-        $model = new VideoModel();
-        $model->actualizarVideo($area, $rutaBaseDatos, $titulo, $texto1, $texto2);
-      }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ../inAdmin.php?vista=usuario');
+      exit;
     }
 
-    header("Location: ../inAdmin.php?vista=usuario&editado=ok");
+    $area   = trim($_POST['area'] ?? '');
+    $titulo = trim($_POST['titulo'] ?? '');
+    $t1     = trim($_POST['texto_principal'] ?? '');
+    $t2     = trim($_POST['texto_secundario'] ?? '');
+
+    if ($area === '' || $titulo === '' || $t1 === '' || $t2 === '') {
+      header('Location: ../inAdmin.php?vista=usuario&editado=err');
+      exit;
+    }
+
+    $model = new VideoModel();
+    $exist = $model->obtenerVideoPorArea($area);
+    if ($exist && !empty($exist['ruta_video'])) {
+      // Ya hay un video cargado para esa área
+      header('Location: ../inAdmin.php?vista=usuario&video_duplicado=1&area=' . urlencode($area));
+      exit;
+    }
+
+    $rutaRel = $this->moveToVideos($_FILES['video'] ?? null);
+    if (!$rutaRel) {
+      header('Location: ../inAdmin.php?vista=usuario&editado=err');
+      exit;
+    }
+
+    $model->actualizarVideo($area, $rutaRel, $titulo, $t1, $t2);
+    header('Location: ../inAdmin.php?vista=usuario&editado=ok');
     exit;
   }
 
-  public function eliminar()
+  /** Edita título/textos y opcionalmente reemplaza el archivo de video */
+  public function editarVideo()
   {
-    if (isset($_POST['area'])) {
-      $area = $_POST['area'];
-      $model = new VideoModel();
-      $video = $model->obtenerVideoPorArea($area);
-
-      if ($video && file_exists($video['ruta_video'])) {
-        unlink($video['ruta_video']);
-      }
-
-      $model->eliminarVideoPorArea($area);
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ../inAdmin.php?vista=usuario');
+      exit;
     }
 
-    header("Location: ../inAdmin.php?vista=usuario&editado=ok");
+    $area   = trim($_POST['area'] ?? '');
+    $titulo = trim($_POST['titulo'] ?? '');
+    $t1     = trim($_POST['texto_principal'] ?? '');
+    $t2     = trim($_POST['texto_secundario'] ?? '');
+
+    if ($area === '' || $titulo === '' || $t1 === '' || $t2 === '') {
+      header('Location: ../inAdmin.php?vista=usuario&editado=err');
+      exit;
+    }
+
+    // Si suben un video nuevo, se reemplaza; si no, se conserva el existente.
+    $rutaNueva = $this->moveToVideos($_FILES['video'] ?? null); // puede ser null
+
+    $model = new VideoModel();
+    $model->actualizarVideo($area, $rutaNueva ?? '', $titulo, $t1, $t2); // el modelo conserva si '' (vacío)
+    header('Location: ../inAdmin.php?vista=usuario&editado=ok');
+    exit;
+  }
+
+  /** Quita SOLO el archivo físico y pone ruta_video = NULL (conserva textos) */
+  public function quitarSoloVideo()
+  {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ../inAdmin.php?vista=usuario');
+      exit;
+    }
+
+    $area = trim($_POST['area'] ?? '');
+    if ($area === '') {
+      header('Location: ../inAdmin.php?vista=usuario&editado=err');
+      exit;
+    }
+
+    $model = new VideoModel();
+    $model->quitarSoloArchivoVideo($area); // nuevo método en el modelo
+    header('Location: ../inAdmin.php?vista=usuario&editado=ok');
+    exit;
+  }
+
+  /** Elimina el registro completo + archivo físico */
+  public function eliminar()
+  {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ../inAdmin.php?vista=usuario');
+      exit;
+    }
+
+    $area = trim($_POST['area'] ?? '');
+    if ($area === '') {
+      header('Location: ../inAdmin.php?vista=usuario&editado=err');
+      exit;
+    }
+
+    $model = new VideoModel();
+    $model->eliminarVideoPorArea($area); // borra archivo + fila
+    header('Location: ../inAdmin.php?vista=usuario&editado=ok');
     exit;
   }
 }
@@ -2226,47 +2521,164 @@ class VideoController
 class PortadaController
 {
 
-  public function subirPortada()
+  private function imgBasePath(): string
   {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['imagen'])) {
-      $area = $_POST['area'] ?? '';
-      $titulo = $_POST['titulo'] ?? '';
-      $descripcion = $_POST['descripcion'] ?? '';
-      $imagen = $_FILES['imagen'];
+    $dir = realpath(__DIR__ . '/../img') ?: (__DIR__ . '/../img');
+    if (!is_dir($dir)) {
+      @mkdir($dir, 0777, true);
+    }
+    return rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+  }
 
-      $nombre = basename($imagen['name']);
-      $rutaDestino = 'img/' . $nombre;
-
-      if ($imagen['error'] === 0 && move_uploaded_file($imagen['tmp_name'], '../' . $rutaDestino)) {
-        $model = new PortadaModel();
-        $model->actualizarPortada($area, $rutaDestino, $titulo, $descripcion);
-      }
+  private function moveToImg(array $file, string $area): ?string
+  {
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+      return null;
     }
 
-    header("Location: ../inAdmin.php?vista=usuario&editado=ok");
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $permitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    if (!in_array($ext, $permitidas, true)) {
+      return null;
+    }
+
+    $nombre = 'portada_' . preg_replace('/[^a-z0-9_-]/i', '', $area) . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $destinoFS = $this->imgBasePath() . $nombre;
+
+    if (!move_uploaded_file($file['tmp_name'], $destinoFS)) {
+      return null;
+    }
+
+    return 'img/' . $nombre;
+  }
+
+  private function deleteRelativeIfExists(?string $relativePath): void
+  {
+    if (empty($relativePath)) return;
+
+    if (strpos($relativePath, 'img/') === 0) {
+      $fs = $this->imgBasePath() . substr($relativePath, 4);
+    } else {
+      $fs = $this->imgBasePath() . basename($relativePath);
+    }
+
+    if (is_file($fs)) {
+      @unlink($fs);
+    }
+  }
+public function editarPortada()
+{
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ../inAdmin.php?vista=usuario');
+    exit;
+  }
+
+  $area        = trim($_POST['area'] ?? '');
+  $titulo      = trim($_POST['titulo'] ?? '');
+  $descripcion = trim($_POST['descripcion'] ?? '');
+  $file        = $_FILES['imagen'] ?? null;
+  $delSoloImg  = !empty($_POST['eliminar_solo_imagen']);
+
+  if ($area === '' || $titulo === '' || $descripcion === '') {
+    header('Location: ../inAdmin.php?vista=usuario&editado=err');
+    exit;
+  }
+
+  $model  = new PortadaModel();
+  $actual = $model->obtenerPortadaPorArea($area); // puede ser null si no existía
+
+  // Por defecto, conserva la ruta actual (si la hubiera)
+  $nuevaRuta = $actual['ruta_img_port'] ?? null;
+
+  // 1) ¿Eliminar solo la imagen?
+  if ($delSoloImg) {
+    if (!empty($actual['ruta_img_port'])) {
+      $this->deleteRelativeIfExists($actual['ruta_img_port']);
+    }
+    $nuevaRuta = null; // en BD quedará NULL
+  }
+
+  // 2) ¿Subieron una imagen nueva?
+  if (!$delSoloImg && $file && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+    $rutaSubida = $this->moveToImg($file, $area);
+    if ($rutaSubida) {
+      // Elimina la anterior si existía
+      if (!empty($actual['ruta_img_port'])) {
+        $this->deleteRelativeIfExists($actual['ruta_img_port']);
+      }
+      $nuevaRuta = $rutaSubida;
+    }
+  }
+
+  // 3) Persistir (actualiza si existe, inserta si no)
+  $model->actualizarPortada($area, $nuevaRuta, $titulo, $descripcion);
+
+  header('Location: ../inAdmin.php?vista=usuario&editado=ok');
+  exit;
+}
+
+  public function subirPortada()
+  {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ../inAdmin.php?vista=usuario');
+      exit;
+    }
+
+    $area        = trim($_POST['area'] ?? '');
+    $titulo      = trim($_POST['titulo'] ?? '');
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $file        = $_FILES['imagen'] ?? null;
+
+    if ($area === '' || $titulo === '' || $descripcion === '') {
+      header('Location: ../inAdmin.php?vista=usuario&editado=err');
+      exit;
+    }
+
+    $model = new PortadaModel();
+
+    $existe = $model->obtenerPortadaPorArea($area);
+    if ($existe) {
+      header('Location: ../inAdmin.php?vista=usuario&portada_duplicada=1&area=' . urlencode($area));
+      exit;
+    }
+
+    $rutaRel = $this->moveToImg($file, $area);
+
+    $model->actualizarPortada($area, $rutaRel, $titulo, $descripcion);
+
+    header('Location: ../inAdmin.php?vista=usuario&editado=ok');
     exit;
   }
 
   public function eliminarPortada()
   {
-    if (isset($_POST['area'])) {
-      $area = $_POST['area'];
-      $model = new PortadaModel();
-      $portada = $model->obtenerPortadaPorArea($area);
-
-      if ($portada && file_exists('../' . $portada['ruta_img_port'])) {
-        unlink('../' . $portada['ruta_img_port']);
-      }
-
-      $model->eliminarPortadaPorArea($area);
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ../inAdmin.php?vista=usuario');
+      exit;
     }
 
-    header("Location: ../inAdmin.php?vista=usuario&editado=ok");
+    $area = trim($_POST['area'] ?? '');
+    if ($area === '') {
+      header('Location: ../inAdmin.php?vista=usuario&editado=err');
+      exit;
+    }
+
+    $model   = new PortadaModel();
+    $portada = $model->obtenerPortadaPorArea($area);
+
+    if ($portada && !empty($portada['ruta_img_port'])) {
+      $this->deleteRelativeIfExists($portada['ruta_img_port']);
+    }
+
+    $model->eliminarPortadaPorArea($area);
+
+    header('Location: ../inAdmin.php?vista=usuario&editado=ok');
     exit;
   }
+
   public function mostrarPortadasAdmin()
   {
-    $model = new PortadaModel();
+    $model    = new PortadaModel();
     $portadas = $model->obtenerTodasLasPortadas();
     require '../views/admin/usuario.php';
   }
@@ -2393,9 +2805,9 @@ class EvaluacionController
 
     $stmt = $pdo->prepare('INSERT INTO generated_pdfs
       (filename, original_name, relative_path, mime_type, size_bytes, area, form_type, created_by_user, sha256_hash, metadata_json, n_cliente)
-      VALUES (:filename, :original_name, :relative_path, :mime_type, :size_bytes, :area, :form_type, :created_by_user, :sha256_hash, :metadata_json, :n_cliente)');
+      VALUES (:filename_2, :original_name, :relative_path, :mime_type, :size_bytes, :area, :form_type, :created_by_user, :sha256_hash, :metadata_json, :n_cliente)');
     $stmt->execute([
-      ':filename' => $filename,
+      ':filename_2' => $filename,
       ':original_name' => $original,
       ':relative_path' => $relativePath,
       ':mime_type' => $mime,
@@ -2409,7 +2821,7 @@ class EvaluacionController
     ]);
 
     return [
-      'filename' => $filename,
+      'filename_2' => $filename,
       'full_path' => $fullPath,
       'relative_path' => $relativePath,
       'size' => $size,

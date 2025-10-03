@@ -204,34 +204,6 @@
               <textarea class="form-control soli-textarea" id="restricciones" name="restricciones"></textarea>
             </div>
 
-            <!-- ====== FIRMAS ====== -->
-            <div class="soli-h3">Usuarios</div>
-            <div class="soli-wrap">
-              <table class="soli-table">
-                <thead>
-                  <tr>
-                    <th style="width:50%">SOLICITANTE</th>
-                    <th>RESPONSABLE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                      <div class="soli-group">
-                        <label>Nombre:</label>
-                        <input type="text" name="solicitante_nombre" class="form-control">
-                      </div>
-                    </td>
-                    <td>
-                      <div class="soli-group">
-                        <label>Nombre:</label>
-                        <input type="text" name="responsable_nombre" class="form-control">
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
             <!-- ====== ACCIONES ====== -->
             <div style="display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap:15px; width:100%;">
               <!-- Imprimir (izquierda) -->
@@ -792,14 +764,6 @@
               </div>
             </div>
 
-            <!-- ===== ACEPTACIÓN ===== -->
-            <div class="fieldset">
-              <div class="legend">ACEPTO</div>
-              <div class="box">
-                <div class="fg"><label>Nombre:</label><input class="control" name="acepta_nombre"></div>
-              </div>
-            </div>
-
             <!-- ===== BOTONERA (centrado perfecto del PDF) ===== -->
             <div class="text-center">
               <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;">
@@ -1187,10 +1151,12 @@
               <button class="btn" type="submit" name="mode" value="print" formtarget="_blank" style="flex:0 0 auto; white-space:nowrap;">
                 Imprimir PDF
               </button>
+              <!-- Ir directo al Formulario 7 (salta el 6) -->
               <button type="button" class="btn" onclick="showTab('form6-tab')" style="flex:0 0 auto; white-space:nowrap;">
                 Siguiente →
               </button>
             </div>
+
           </form>
         </div>
       </section>
@@ -1370,19 +1336,6 @@
               </div>
             </div>
 
-            <!-- ============== Firmas ============== -->
-            <div class="v3d-block">
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <label class="v3d-label">Elaboró:</label>
-                  <input class="form-control" name="v3d_elaboro" id="v3d_elaboro">
-                </div>
-                <div class="col-12 col-md-6">
-                  <label class="v3d-label">Aprobó:</label>
-                  <input class="form-control" name="v3d_aprobo" id="v3d_aprobo">
-                </div>
-              </div>
-            </div>
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;">
               <button type="button" class="btn secondary" onclick="showTab('form5-tab')" style="flex:0 0 auto; white-space:nowrap;">
                 ← Anterior
@@ -1609,11 +1562,6 @@
               <div>
                 <label class="ct-label">Recomendaciones para ser aprobado</label>
                 <textarea class="form-control" name="ct_recomendaciones" rows="5" placeholder="Escriba las recomendaciones..."></textarea>
-              </div>
-
-              <div>
-                <label class="ct-label">Responsable de la gestión del laboratorio</label>
-                <input class="form-control" type="text" name="ct_responsable_gestion" placeholder="Nombre y apellido">
               </div>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;">
@@ -2075,742 +2023,6 @@
     </div>
   </div>
 <?php endif; ?>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Escuchar cambios en el input principal de n_cliente
-    const nClienteInput = document.getElementById('n_cliente');
-    nClienteInput.addEventListener('input', function() {
-      const nClienteValue = this.value;
-      // Actualizar todos los campos ocultos de los demás formularios
-      for (let i = 2; i <= 9; i++) {
-        const hiddenInput = document.getElementById('n_cliente_form' + i);
-        if (hiddenInput) {
-          hiddenInput.value = nClienteValue;
-        }
-      }
-    });
-
-    // Escuchar el clic en los botones de "Siguiente" de las pestañas
-    const tabButtons = document.querySelectorAll('.nav-link');
-    tabButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        const nClienteValue = nClienteInput.value;
-        const targetFormId = this.getAttribute('data-bs-target').substring(1); // Obtiene 'form2', 'form3', etc.
-        const hiddenInput = document.getElementById('n_cliente_' + targetFormId);
-        if (hiddenInput) {
-          hiddenInput.value = nClienteValue;
-        }
-      });
-    });
-  });
-
-  (function() {
-    const ENDPOINT = 'routes/reset_counters.php';
-
-    function bindResetModal(modal) {
-      if (!modal || modal.dataset.bound) return; // evita doble binding
-      modal.dataset.bound = '1';
-
-      const $ = s => modal.querySelector(s);
-      const $$ = s => Array.from(modal.querySelectorAll(s));
-
-      const chkAll = $('#modal-chk-all');
-      const setToInput = $('input[name="modal_set_to"]');
-      const resultBox = $('#modal-reset-result');
-      const selectedCount = $('#selected-count');
-      const btnSelected = $('#modal-btn-reset-selected');
-      const btnAll = $('#modal-btn-reset-all');
-      const checkboxes = () => $$('.modal-counter-chk');
-
-      function showResult(msg, type = 'info') {
-        if (!resultBox) return;
-        resultBox.className = 'result-container';
-        resultBox.style.display = 'block';
-        resultBox.textContent = msg;
-        if (type === 'error') resultBox.classList.add('result-error');
-        else if (type === 'warning') resultBox.classList.add('result-warning');
-        else resultBox.classList.add('result-success');
-      }
-
-      function setLoading(loading) {
-        [btnSelected, btnAll].forEach(b => b && (b.disabled = loading));
-        if (btnSelected) btnSelected.innerHTML = loading ?
-          '<i class="fas fa-spinner fa-spin me-1"></i> Procesando...' :
-          '<i class="fas fa-sync me-1"></i> Reiniciar seleccionados';
-        if (btnAll) btnAll.innerHTML = loading ?
-          '<i class="fas fa-spinner fa-spin me-1"></i> Procesando...' :
-          '<i class="fas fa-exclamation-triangle me-1"></i> Reiniciar TODOS';
-      }
-
-      function updateCount() {
-        const n = checkboxes().filter(cb => cb.checked).length;
-        if (selectedCount) selectedCount.textContent = `${n} seleccionado(s)`;
-        if (chkAll) chkAll.checked = n === checkboxes().length;
-      }
-
-      async function resetCounters({
-        selected = [],
-        all = false,
-        setTo = 0
-      }) {
-        const n = parseInt(setTo, 10);
-        if (!Number.isInteger(n) || n < 0) {
-          showResult('El valor inicial debe ser un entero ≥ 0.', 'warning');
-          return;
-        }
-        if (!all && selected.length === 0) {
-          showResult('Selecciona al menos un formulario o usa "Reiniciar TODOS".', 'warning');
-          return;
-        }
-        const msg = all ?
-          `¿Reiniciar TODOS al valor ${n}?` :
-          `¿Reiniciar ${selected.length} formulario(s) al valor ${n}?`;
-        if (!confirm(msg)) return;
-
-        setLoading(true);
-        showResult('Procesando solicitud...', 'info');
-
-        try {
-          const res = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin', // usa la sesión (rol)
-            body: JSON.stringify({
-              set_to: n,
-              selected,
-              all
-            })
-          });
-
-          if (!res.ok) {
-            const txt = await res.text();
-            throw new Error(`HTTP ${res.status}: ${txt}`);
-          }
-
-          const data = await res.json();
-          if (!data.ok) {
-            throw new Error(data.message || 'Fallo en el reinicio');
-          }
-
-          const okCount = (data.results || []).filter(r => r.ok).length;
-          showResult(all ?
-            `✓ Reiniciados TODOS (ok=${okCount}).` :
-            `✓ Reiniciados ${okCount} formulario(s).`, 'success');
-
-        } catch (e) {
-          showResult(`✗ Error: ${e.message}`, 'error');
-        } finally {
-          setLoading(false);
-        }
-      }
-
-      // Listeners
-      if (chkAll) chkAll.addEventListener('change', function() {
-        checkboxes().forEach(cb => cb.checked = this.checked);
-        updateCount();
-      });
-      checkboxes().forEach(cb => cb.addEventListener('change', updateCount));
-      if (btnSelected) btnSelected.addEventListener('click', () => {
-        const sel = checkboxes().filter(cb => cb.checked).map(cb => cb.value);
-        resetCounters({
-          selected: sel,
-          all: false,
-          setTo: setToInput ? setToInput.value : 0
-        });
-      });
-      if (btnAll) btnAll.addEventListener('click', () => {
-        resetCounters({
-          all: true,
-          setTo: setToInput ? setToInput.value : 0
-        });
-      });
-
-      updateCount();
-    }
-
-    // Enlaza si ya está en el DOM
-    const modalEl = document.getElementById('modalResetCorrelativos');
-    if (modalEl) bindResetModal(modalEl);
-
-    // Y también cuando se abre (por si se inyecta dinámicamente)
-    document.addEventListener('show.bs.modal', (e) => {
-      if (e.target && e.target.id === 'modalResetCorrelativos') bindResetModal(e.target);
-    });
-
-    // (Opcional) Asegura que los modales cuelguen de <body>
-    document.querySelectorAll('.modal').forEach(m => {
-      if (m.parentElement !== document.body) document.body.appendChild(m);
-    });
-
-    if (!window.bootstrap) console.error('Falta bootstrap.bundle.min.js');
-  })();
-
-  window.APP_ROLE = <?= (int)($_SESSION['rol'] ?? 0) ?>;
-
-  (() => {
-    if (window.__APP_INIT__) return;
-    window.__APP_INIT__ = true;
-
-    const $ = (s, r = document) => r.querySelector(s);
-    const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-    const esc = (s) => (s ?? '').toString().replace(/[&<>"']/g, m => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    } [m]));
-    const fmtCOP = (n) => (isFinite(n) ? new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      maximumFractionDigits: 0
-    }).format(n) : '$0');
-
-    // ====== Control de rol (admin puede pasar sin completar previos) ======
-    const IS_ADMIN = (window.APP_ROLE === 1) ||
-      (document.body?.dataset?.role === '1'); // fallback si usas <body data-role="1">
-
-    // Tabs con bloqueo secuencial
-    const TAB_IDS = ['form1-tab', 'form2-tab', 'form3-tab', 'form4-tab', 'form5-tab', 'form6-tab', 'form7-tab', 'form8-tab', 'form9-tab'];
-
-    function isStepAllowed(targetIdx) {
-      if (IS_ADMIN) return true; // Admin salta validación
-      for (let i = 0; i < targetIdx; i++) {
-        if (sessionStorage.getItem('form' + (i + 1) + '_done') !== '1') return false;
-      }
-      return true;
-    }
-
-    function refreshTabsLock() {
-      TAB_IDS.forEach((id, idx) => {
-        const btn = document.getElementById(id);
-        if (!btn) return;
-        const enabled = IS_ADMIN || idx === 0 || isStepAllowed(idx);
-        btn.disabled = !enabled;
-        btn.classList.toggle('disabled', !enabled);
-        btn.setAttribute('aria-disabled', (!enabled).toString());
-      });
-    }
-
-    function showTab(tabId) {
-      const el = document.getElementById(tabId);
-      if (!el) return;
-      const targetIdx = TAB_IDS.indexOf(tabId);
-      if (!IS_ADMIN && targetIdx >= 0 && !isStepAllowed(targetIdx)) {
-        alert('Debes completar los formularios anteriores antes de avanzar.');
-        return;
-      }
-      if (window.bootstrap?.Tab) {
-        new bootstrap.Tab(el).show();
-      } else {
-        const paneId = el.getAttribute('data-bs-target')?.slice(1);
-        const pane = paneId ? document.getElementById(paneId) : null;
-        if (!pane) return;
-        $$('.tab-pane').forEach(p => p.classList.remove('active', 'show'));
-        pane.classList.add('active', 'show');
-        $$('.nav-link').forEach(a => a.classList.remove('active'));
-        el.classList.add('active');
-      }
-    }
-    window.showTab = showTab;
-
-    // Interceptar clicks en tabs
-    TAB_IDS.forEach((id, idx) => {
-      const btn = document.getElementById(id);
-      if (!btn) return;
-      btn.addEventListener('click', (ev) => {
-        if (!IS_ADMIN && !isStepAllowed(idx)) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          alert('Debes completar los formularios anteriores antes de avanzar.');
-        }
-      }, true);
-    });
-
-    // Marcar done al enviar cada form
-    function bindCompletionOnSubmit() {
-      TAB_IDS.forEach((id, idx) => {
-        const paneId = document.getElementById(id)?.getAttribute('data-bs-target')?.slice(1);
-        if (!paneId) return;
-        const pane = document.getElementById(paneId);
-        if (!pane) return;
-        const form = pane.querySelector('form');
-        if (!form || form.dataset.boundDone === '1') return;
-        form.dataset.boundDone = '1';
-        form.addEventListener('submit', () => {
-          sessionStorage.setItem('form' + (idx + 1) + '_done', '1');
-          refreshTabsLock();
-        });
-      });
-    }
-
-    // Inicializa
-    refreshTabsLock();
-    bindCompletionOnSubmit();
-
-    // 1) ORDEN DE TRABAJO – MATERIALES    // =========================
-    const otMateriales = [];
-
-    function otRenderMateriales() {
-      const tb = document.getElementById('ot_mat_list');
-      if (!tb) return;
-      tb.innerHTML = '';
-      otMateriales.forEach((m, i) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-        <td style="text-align:center">${i+1}</td>
-        <td>${esc(m.nombre)}</td>
-        <td style="text-align:right">${esc(m.cantidad)}</td>
-        <td>${esc(m.unidad)}</td>
-        <td><button type="button" class="btn btn-sm btn-danger" onclick="otEliminarMaterial(${i})">Eliminar</button></td>
-      `;
-        tb.appendChild(tr);
-      });
-    }
-
-    function otAgregarMaterial() {
-      const nombre = $('#ot_mat_nombre')?.value?.trim();
-      const cantidad = $('#ot_mat_cantidad')?.value?.trim();
-      const unidad = $('#ot_mat_unidad')?.value?.trim();
-      if (!nombre || !cantidad || !unidad) {
-        alert('Complete nombre, cantidad y unidad.');
-        return;
-      }
-      otMateriales.push({
-        nombre,
-        cantidad,
-        unidad
-      });
-      if ($('#ot_mat_nombre')) $('#ot_mat_nombre').value = '';
-      if ($('#ot_mat_cantidad')) $('#ot_mat_cantidad').value = '';
-      if ($('#ot_mat_unidad')) $('#ot_mat_unidad').value = '';
-      otRenderMateriales();
-    }
-
-    function otEliminarMaterial(idx) {
-      otMateriales.splice(idx, 1);
-      otRenderMateriales();
-    }
-    window.otAgregarMaterial = otAgregarMaterial;
-    window.otEliminarMaterial = otEliminarMaterial;
-
-    // 2) ÍTEMS DE COTIZACIÓN – máx 4
-    function initItemsManagers() {
-      $$('#items-body').forEach((oldBody) => {
-        const container = oldBody.closest('form') || document;
-        if (container.dataset.itemsInit === '1') return;
-        container.dataset.itemsInit = '1';
-
-        let oldBtn = container.querySelector('#btnAddItem');
-        const total = container.querySelector('#total_general');
-        if (!oldBtn) return;
-
-        // limpiar listeners previos
-        const newBtn = oldBtn.cloneNode(true);
-        oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-        oldBtn = newBtn;
-
-        const newBody = oldBody.cloneNode(true);
-        oldBody.parentNode.replaceChild(newBody, oldBody);
-
-        const btn = newBtn;
-        const body = newBody;
-
-        const MAX = 4;
-        const fmt = (n) => new Intl.NumberFormat('es-CO', {
-          style: 'currency',
-          currency: 'COP',
-          maximumFractionDigits: 0
-        }).format(n || 0);
-
-        function updateBtn() {
-          const full = body.rows.length >= MAX;
-          btn.disabled = full;
-          btn.textContent = full ? 'Límite alcanzado (4)' : '+ Agregar ítem';
-        }
-
-        function renumerar() {
-          [...body.querySelectorAll('tr')].forEach((tr, i) => {
-            const num = tr.querySelector('[name="item_num[]"]');
-            if (num) num.value = i + 1;
-          });
-        }
-
-        function recalc() {
-          let t = 0;
-          [...body.querySelectorAll('tr')].forEach(tr => {
-            const cant = parseFloat(tr.querySelector('[name="item_cant[]"]')?.value) || 0;
-            const vu = parseFloat(tr.querySelector('[name="item_vu[]"]')?.value) || 0;
-            const vt = cant * vu;
-            const vtInput = tr.querySelector('[name="item_vt[]"]');
-            if (vtInput) vtInput.value = fmt(vt);
-            t += vt;
-          });
-          if (total) total.value = fmt(t);
-        }
-
-        function addRow(data = {}) {
-          if (body.rows.length >= MAX) {
-            updateBtn();
-            return;
-          }
-          const n = body.rows.length + 1;
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-          <td><input class="control" name="item_num[]"  value="${esc(data.num ?? n)}"></td>
-          <td><input class="control" name="item_desc[]" value="${esc(data.desc ?? '')}" placeholder="Descripción del servicio / producto"></td>
-          <td><input class="control" name="item_cant[]" type="number" min="1" step="1"    value="${esc(data.cant ?? 1)}"></td>
-          <td><input class="control" name="item_vu[]"   type="number" min="0" step="0.01" value="${esc(data.vu ?? 0)}"></td>
-          <td><input class="control" name="item_vt[]"   type="text"   value="${fmt((+data.cant||1) * (+data.vu||0))}" readonly></td>
-          <td style="text-align:center"><button class="btn secondary" type="button">✕</button></td>
-        `;
-          body.appendChild(tr);
-          renumerar();
-          recalc();
-          updateBtn();
-        }
-
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          addRow();
-        }, true);
-
-        body.addEventListener('input', (e) => {
-          if (e.target.matches('[name="item_cant[]"], [name="item_vu[]"]')) recalc();
-        }, true);
-
-        body.addEventListener('click', (e) => {
-          const b = e.target.closest('button');
-          if (!b) return;
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          b.closest('tr')?.remove();
-          renumerar();
-          recalc();
-          updateBtn();
-        }, true);
-
-        if (!body.querySelector('tr')) addRow();
-        else {
-          renumerar();
-          recalc();
-        }
-        updateBtn();
-      });
-    }
-
-    // 3) LISTAS: Materiales, Actividades, Partidas
-    let materiales = [];
-
-    function actualizarListaMateriales() {
-      const lista = $('#materiales-list');
-      if (!lista) return;
-      lista.innerHTML = '';
-      materiales.forEach((m, i) => {
-        const li = document.createElement('li');
-        li.className = 'list-group-item d-flex justify-content-between align-items-center';
-        li.innerHTML = `
-        ${esc(m.nombre)} - ${esc(m.cantidad)} ${esc(m.unidad)}
-        <button type="button" class="btn btn-sm btn-danger" onclick="eliminarMaterial(${i})">Eliminar</button>
-      `;
-        lista.appendChild(li);
-      });
-    }
-
-    function agregarMaterial() {
-      const nombre = $('#material_nombre')?.value?.trim();
-      const cantidad = $('#material_cantidad')?.value?.trim();
-      const unidad = $('#material_unidad')?.value?.trim();
-      if (nombre && cantidad && unidad) {
-        materiales.push({
-          concepto: nombre,
-          nombre,
-          cantidad,
-          unidad
-        });
-        actualizarListaMateriales();
-        if ($('#material_nombre')) $('#material_nombre').value = '';
-        if ($('#material_cantidad')) $('#material_cantidad').value = '';
-        if ($('#material_unidad')) $('#material_unidad').value = '';
-      } else {
-        alert('Por favor, complete todos los campos del material.');
-      }
-    }
-
-    function eliminarMaterial(index) {
-      materiales.splice(index, 1);
-      actualizarListaMateriales();
-    }
-    window.agregarMaterial = agregarMaterial;
-    window.eliminarMaterial = eliminarMaterial;
-
-    // Actividades
-    let actividades = [];
-    let nextActivityId = 1;
-
-    function obtenerNombreActividad(id) {
-      const a = actividades.find(x => String(x.id) === String(id));
-      return a ? a.nombre : 'Desconocido';
-    }
-
-    function actualizarDependencias() {
-      const sel = $('#actividad_dependencia');
-      if (!sel) return;
-      sel.innerHTML = '<option value="">Ninguna</option>';
-      actividades.forEach(a => {
-        const opt = document.createElement('option');
-        opt.value = a.id;
-        opt.textContent = a.nombre;
-        sel.appendChild(opt);
-      });
-    }
-
-    function actualizarListaActividades() {
-      const lista = $('#actividades-list');
-      if (!lista) return;
-      lista.innerHTML = '';
-      actividades.forEach((a, i) => {
-        const li = document.createElement('li');
-        li.className = 'list-group-item';
-        li.innerHTML = `
-        <strong>${esc(a.nombre)}</strong> - Duración: ${esc(a.duracion)} días
-        <br>Responsable: ${esc(a.responsable)}
-        ${a.dependencia ? `<br>Depende de: ${esc(obtenerNombreActividad(a.dependencia))}` : ''}
-        <button type="button" class="btn btn-sm btn-danger float-end" onclick="eliminarActividad(${i})">Eliminar</button>
-      `;
-        lista.appendChild(li);
-      });
-    }
-
-    function agregarActividad() {
-      const nombre = $('#actividad_nombre')?.value?.trim();
-      const duracion = $('#actividad_duracion')?.value?.trim();
-      const dependencia = $('#actividad_dependencia')?.value ?? '';
-      const responsable = $('#actividad_responsable')?.value?.trim();
-      if (nombre && duracion && responsable) {
-        actividades.push({
-          id: nextActivityId++,
-          nombre,
-          duracion,
-          dependencia,
-          responsable
-        });
-        actualizarListaActividades();
-        actualizarDependencias();
-        if ($('#actividad_nombre')) $('#actividad_nombre').value = '';
-        if ($('#actividad_duracion')) $('#actividad_duracion').value = '';
-        if ($('#actividad_responsable')) $('#actividad_responsable').value = '';
-      } else {
-        alert('Por favor, complete los campos obligatorios de la actividad.');
-      }
-    }
-
-    function eliminarActividad(index) {
-      const idEliminado = actividades[index]?.id;
-      actividades.splice(index, 1);
-      actividades.forEach(a => {
-        if (String(a.dependencia) === String(idEliminado)) a.dependencia = '';
-      });
-      actualizarListaActividades();
-      actualizarDependencias();
-    }
-    window.agregarActividad = agregarActividad;
-    window.eliminarActividad = eliminarActividad;
-
-    // Partidas presupuestarias
-    let partidas = [];
-
-    function actualizarListaPartidas() {
-      const tbody = $('#partidas-list');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      let total = 0;
-      partidas.forEach((p, i) => {
-        total += p.subtotal;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-        <td>${esc(p.concepto)}</td>
-        <td>${esc(p.cantidad)}</td>
-        <td>$${Number(p.costo).toFixed(2)}</td>
-        <td>$${Number(p.subtotal).toFixed(2)}</td>
-        <td><button type="button" class="btn btn-sm btn-danger" onclick="eliminarPartida(${i})">Eliminar</button></td>
-      `;
-        tbody.appendChild(tr);
-      });
-      const totalEl = $('#presupuesto-total');
-      if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
-    }
-
-    function agregarPartida() {
-      const concepto = $('#partida_concepto')?.value?.trim();
-      const cantidad = parseFloat($('#partida_cantidad')?.value ?? '');
-      const costo = parseFloat($('#partida_costo')?.value ?? '');
-      if (concepto && !isNaN(cantidad) && !isNaN(costo)) {
-        partidas.push({
-          concepto,
-          cantidad,
-          costo,
-          subtotal: cantidad * costo
-        });
-        actualizarListaPartidas();
-        if ($('#partida_concepto')) $('#partida_concepto').value = '';
-        if ($('#partida_cantidad')) $('#partida_cantidad').value = '1';
-        if ($('#partida_costo')) $('#partida_costo').value = '';
-      } else {
-        alert('Por favor, complete todos los campos de la partida presupuestaria.');
-      }
-    }
-
-    function eliminarPartida(index) {
-      partidas.splice(index, 1);
-      actualizarListaPartidas();
-    }
-    window.agregarPartida = agregarPartida;
-    window.eliminarPartida = eliminarPartida;
-
-    // 7) Estado visual Aprobado / Rechazado / Pendiente
-    (function() {
-      const status = document.getElementById('approval-status');
-      if (!status) return;
-      const inputs = document.querySelectorAll('input[name="aprobado"]');
-
-      function apply() {
-        const v = document.querySelector('input[name="aprobado"]:checked')?.value;
-        if (v === 'SI') {
-          status.textContent = 'Aprobado';
-          status.style.background = '#22c55e';
-        } else if (v === 'NO') {
-          status.textContent = 'Rechazado';
-          status.style.background = '#ef4444';
-        } else {
-          status.textContent = 'Pendiente';
-          status.style.background = '#94a3b8';
-        }
-      }
-      inputs.forEach(r => r.addEventListener('change', apply));
-      apply();
-    })();
-
-    // 8) Mostrar/ocultar el campo de “Otro” (solicitud vía)
-    (function() {
-      const chk = document.getElementById('sol_via_otro');
-      const txt = document.getElementById('sol_via_otro_text');
-      if (!chk || !txt) return;
-
-      function sync() {
-        const on = chk.checked;
-        txt.style.display = on ? 'inline-block' : 'none';
-        if (!on) txt.value = '';
-      }
-      const cleanChk = chk.cloneNode(true);
-      chk.parentNode.replaceChild(cleanChk, chk);
-      cleanChk.addEventListener('change', sync);
-      sync();
-    })();
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initItemsManagers);
-    } else {
-      initItemsManagers();
-    }
-  })();
-
-  (() => {
-    if (window.__tipoClienteOtroInit) return;
-    window.__tipoClienteOtroInit = true;
-
-    const wrap = document.getElementById('cli_otro_wrap');
-    const input = wrap?.querySelector('input[name="tipo_cliente_otro"]');
-    const rOtro = document.getElementById('cli_otro');
-    const radios = document.querySelectorAll('input[name="tipo_cliente"]');
-
-    if (!wrap || !input || !rOtro || radios.length === 0) return;
-
-    const sync = () => {
-      const show = rOtro.checked;
-      wrap.style.display = show ? 'block' : 'none';
-      if (show) {
-        input.focus();
-      } else {
-        input.value = '';
-      }
-    };
-
-    radios.forEach(r => r.addEventListener('change', sync, {
-      passive: true
-    }));
-    sync();
-  })();
-
-  (() => {
-    if (window.__solicitudViaOtroInit) return;
-    window.__solicitudViaOtroInit = true;
-
-    const chk = document.getElementById('sol_via_otro');
-    const txt = document.getElementById('sol_via_otro_text');
-    if (!chk || !txt) return;
-
-    const sync = () => {
-      const on = chk.checked;
-      txt.style.display = on ? 'inline-block' : 'none';
-      if (on) {
-        txt.style.maxWidth = txt.style.maxWidth || '240px';
-        txt.focus();
-      } else {
-        txt.value = '';
-      }
-    };
-
-    sync();
-
-    chk.addEventListener('change', sync, {
-      passive: true
-    });
-  })();
-
-
-  // Boton pdf circulo
-  (function() {
-    const fab = document.getElementById('pdf-fab');
-    if (!fab) return;
-
-    const triggerEl =
-      document.querySelector('.pdf-button') ||
-      document.querySelector('.header-container');
-
-    let threshold = 0;
-
-    function computeThreshold() {
-      if (!triggerEl) {
-        threshold = 100;
-        return;
-      }
-      const rect = triggerEl.getBoundingClientRect();
-      threshold = window.scrollY + rect.bottom;
-    }
-
-    function onScroll() {
-      const show = window.scrollY > threshold;
-      fab.classList.toggle('show', show);
-    }
-
-    computeThreshold();
-    onScroll();
-
-    window.addEventListener('scroll', onScroll, {
-      passive: true
-    });
-    window.addEventListener('resize', () => {
-      computeThreshold();
-      onScroll();
-    });
-  })();
-</script>
 
 <style>
   :root {
@@ -4632,3 +3844,916 @@
     }
   }
 </style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Escuchar cambios en el input principal de n_cliente
+    const nClienteInput = document.getElementById('n_cliente');
+    nClienteInput.addEventListener('input', function() {
+      const nClienteValue = this.value;
+      // Actualizar todos los campos ocultos de los demás formularios
+      for (let i = 2; i <= 9; i++) {
+        const hiddenInput = document.getElementById('n_cliente_form' + i);
+        if (hiddenInput) {
+          hiddenInput.value = nClienteValue;
+        }
+      }
+    });
+
+    // Escuchar el clic en los botones de "Siguiente" de las pestañas
+    const tabButtons = document.querySelectorAll('.nav-link');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const nClienteValue = nClienteInput.value;
+        const targetFormId = this.getAttribute('data-bs-target').substring(1); // Obtiene 'form2', 'form3', etc.
+        const hiddenInput = document.getElementById('n_cliente_' + targetFormId);
+        if (hiddenInput) {
+          hiddenInput.value = nClienteValue;
+        }
+      });
+    });
+  });
+
+  (function() {
+    const ENDPOINT = 'routes/reset_counters.php';
+
+    function bindResetModal(modal) {
+      if (!modal || modal.dataset.bound) return; // evita doble binding
+      modal.dataset.bound = '1';
+
+      const $ = s => modal.querySelector(s);
+      const $$ = s => Array.from(modal.querySelectorAll(s));
+
+      const chkAll = $('#modal-chk-all');
+      const setToInput = $('input[name="modal_set_to"]');
+      const resultBox = $('#modal-reset-result');
+      const selectedCount = $('#selected-count');
+      const btnSelected = $('#modal-btn-reset-selected');
+      const btnAll = $('#modal-btn-reset-all');
+      const checkboxes = () => $$('.modal-counter-chk');
+
+      function showResult(msg, type = 'info') {
+        if (!resultBox) return;
+        resultBox.className = 'result-container';
+        resultBox.style.display = 'block';
+        resultBox.textContent = msg;
+        if (type === 'error') resultBox.classList.add('result-error');
+        else if (type === 'warning') resultBox.classList.add('result-warning');
+        else resultBox.classList.add('result-success');
+      }
+
+      function setLoading(loading) {
+        [btnSelected, btnAll].forEach(b => b && (b.disabled = loading));
+        if (btnSelected) btnSelected.innerHTML = loading ?
+          '<i class="fas fa-spinner fa-spin me-1"></i> Procesando...' :
+          '<i class="fas fa-sync me-1"></i> Reiniciar seleccionados';
+        if (btnAll) btnAll.innerHTML = loading ?
+          '<i class="fas fa-spinner fa-spin me-1"></i> Procesando...' :
+          '<i class="fas fa-exclamation-triangle me-1"></i> Reiniciar TODOS';
+      }
+
+      function updateCount() {
+        const n = checkboxes().filter(cb => cb.checked).length;
+        if (selectedCount) selectedCount.textContent = `${n} seleccionado(s)`;
+        if (chkAll) chkAll.checked = n === checkboxes().length;
+      }
+
+      async function resetCounters({
+        selected = [],
+        all = false,
+        setTo = 0
+      }) {
+        const n = parseInt(setTo, 10);
+        if (!Number.isInteger(n) || n < 0) {
+          showResult('El valor inicial debe ser un entero ≥ 0.', 'warning');
+          return;
+        }
+        if (!all && selected.length === 0) {
+          showResult('Selecciona al menos un formulario o usa "Reiniciar TODOS".', 'warning');
+          return;
+        }
+        const msg = all ?
+          `¿Reiniciar TODOS al valor ${n}?` :
+          `¿Reiniciar ${selected.length} formulario(s) al valor ${n}?`;
+        if (!confirm(msg)) return;
+
+        setLoading(true);
+        showResult('Procesando solicitud...', 'info');
+
+        try {
+          const res = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin', // usa la sesión (rol)
+            body: JSON.stringify({
+              set_to: n,
+              selected,
+              all
+            })
+          });
+
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(`HTTP ${res.status}: ${txt}`);
+          }
+
+          const data = await res.json();
+          if (!data.ok) {
+            throw new Error(data.message || 'Fallo en el reinicio');
+          }
+
+          const okCount = (data.results || []).filter(r => r.ok).length;
+          showResult(all ?
+            `✓ Reiniciados TODOS (ok=${okCount}).` :
+            `✓ Reiniciados ${okCount} formulario(s).`, 'success');
+
+        } catch (e) {
+          showResult(`✗ Error: ${e.message}`, 'error');
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      // Listeners
+      if (chkAll) chkAll.addEventListener('change', function() {
+        checkboxes().forEach(cb => cb.checked = this.checked);
+        updateCount();
+      });
+      checkboxes().forEach(cb => cb.addEventListener('change', updateCount));
+      if (btnSelected) btnSelected.addEventListener('click', () => {
+        const sel = checkboxes().filter(cb => cb.checked).map(cb => cb.value);
+        resetCounters({
+          selected: sel,
+          all: false,
+          setTo: setToInput ? setToInput.value : 0
+        });
+      });
+      if (btnAll) btnAll.addEventListener('click', () => {
+        resetCounters({
+          all: true,
+          setTo: setToInput ? setToInput.value : 0
+        });
+      });
+
+      updateCount();
+    }
+
+    // Enlaza si ya está en el DOM
+    const modalEl = document.getElementById('modalResetCorrelativos');
+    if (modalEl) bindResetModal(modalEl);
+
+    // Y también cuando se abre (por si se inyecta dinámicamente)
+    document.addEventListener('show.bs.modal', (e) => {
+      if (e.target && e.target.id === 'modalResetCorrelativos') bindResetModal(e.target);
+    });
+
+    // (Opcional) Asegura que los modales cuelguen de <body>
+    document.querySelectorAll('.modal').forEach(m => {
+      if (m.parentElement !== document.body) document.body.appendChild(m);
+    });
+
+    if (!window.bootstrap) console.error('Falta bootstrap.bundle.min.js');
+  })();
+
+  window.APP_ROLE = <?= (int)($_SESSION['rol'] ?? 0) ?>;
+
+  (() => {
+    if (window.__APP_INIT__) return;
+    window.__APP_INIT__ = true;
+
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+    const esc = (s) => (s ?? '').toString().replace(/[&<>"']/g, m => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    } [m]));
+    const fmtCOP = (n) => (isFinite(n) ? new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0
+    }).format(n) : '$0');
+
+    // ====== Control de rol (admin puede pasar sin completar previos) ======
+    const IS_ADMIN = (window.APP_ROLE === 1) ||
+      (document.body?.dataset?.role === '1'); // fallback si usas <body data-role="1">
+
+    // Tabs con bloqueo secuencial
+    const TAB_IDS = ['form1-tab', 'form2-tab', 'form3-tab', 'form4-tab', 'form5-tab', 'form6-tab', 'form7-tab', 'form8-tab', 'form9-tab'];
+
+    function isStepAllowed(targetIdx) {
+      if (IS_ADMIN) return true;
+
+      // Para ir a 6 (idx 5) o 7 (idx 6) primero hay que haber “visitado” el 5 (desbloqueo)
+      if ((targetIdx === 5 || targetIdx === 6) && !optUnlocked()) {
+        return false;
+      }
+
+      // Recorre los previos, pero IGNORA 5 y 6 (idx 4 y 5) porque son opcionales
+      for (let i = 0; i < targetIdx; i++) {
+        if (OPTIONAL_IDX.has(i)) continue; // no exijas 5/6
+        if (sessionStorage.getItem('form' + (i + 1) + '_done') !== '1') return false;
+      }
+      return true;
+    }
+
+
+    function refreshTabsLock() {
+      TAB_IDS.forEach((id, idx) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        const enabled = IS_ADMIN || idx === 0 || isStepAllowed(idx);
+        btn.disabled = !enabled;
+        btn.classList.toggle('disabled', !enabled);
+        btn.setAttribute('aria-disabled', (!enabled).toString());
+      });
+    }
+
+    function showTab(tabId) {
+      const el = document.getElementById(tabId);
+      if (!el) return;
+      const targetIdx = TAB_IDS.indexOf(tabId);
+      if (!IS_ADMIN && targetIdx >= 0 && !isStepAllowed(targetIdx)) {
+        alert('Debes completar los formularios anteriores antes de avanzar.');
+        return;
+      }
+      if (window.bootstrap?.Tab) {
+        new bootstrap.Tab(el).show();
+
+        // --- DESBLOQUEO 5→6→7 ---
+        if (tabId === 'form5-tab') {
+          sessionStorage.setItem('opt56_unlocked', '1');
+          refreshTabsLock();
+        }
+        // -------------------------
+
+      } else {
+        const paneId = el.getAttribute('data-bs-target')?.slice(1);
+        const pane = paneId ? document.getElementById(paneId) : null;
+        if (!pane) return;
+        $$('.tab-pane').forEach(p => p.classList.remove('active', 'show'));
+        pane.classList.add('active', 'show');
+        $$('.nav-link').forEach(a => a.classList.remove('active'));
+        el.classList.add('active');
+
+        // --- DESBLOQUEO 5→6→7 (fallback sin Bootstrap) ---
+        if (tabId === 'form5-tab') {
+          sessionStorage.setItem('opt56_unlocked', '1');
+          refreshTabsLock();
+        }
+        // --------------------------------------------------
+      }
+    }
+    window.showTab = showTab;
+    // Si se usa el click directo en la pestaña (Bootstrap), también desbloquea
+    document.addEventListener('shown.bs.tab', function(ev) {
+      if (ev.target && ev.target.id === 'form5-tab') {
+        sessionStorage.setItem('opt56_unlocked', '1');
+        refreshTabsLock();
+      }
+    });
+
+    // Interceptar clicks en tabs
+    TAB_IDS.forEach((id, idx) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener('click', (ev) => {
+        if (!IS_ADMIN && !isStepAllowed(idx)) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          alert('Debes completar los formularios anteriores antes de avanzar.');
+        }
+      }, true);
+    });
+
+    // Marcar done al enviar cada form
+    function bindCompletionOnSubmit() {
+      TAB_IDS.forEach((id, idx) => {
+        const paneId = document.getElementById(id)?.getAttribute('data-bs-target')?.slice(1);
+        if (!paneId) return;
+        const pane = document.getElementById(paneId);
+        if (!pane) return;
+        const form = pane.querySelector('form');
+        if (!form || form.dataset.boundDone === '1') return;
+        form.dataset.boundDone = '1';
+        form.addEventListener('submit', () => {
+          sessionStorage.setItem('form' + (idx + 1) + '_done', '1');
+          refreshTabsLock();
+        });
+      });
+    }
+
+    // Inicializa
+    refreshTabsLock();
+    bindCompletionOnSubmit();
+
+    // 1) ORDEN DE TRABAJO – MATERIALES    // =========================
+    const otMateriales = [];
+
+    function otRenderMateriales() {
+      const tb = document.getElementById('ot_mat_list');
+      if (!tb) return;
+      tb.innerHTML = '';
+      otMateriales.forEach((m, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+        <td style="text-align:center">${i+1}</td>
+        <td>${esc(m.nombre)}</td>
+        <td style="text-align:right">${esc(m.cantidad)}</td>
+        <td>${esc(m.unidad)}</td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="otEliminarMaterial(${i})">Eliminar</button></td>
+      `;
+        tb.appendChild(tr);
+      });
+    }
+
+    function otAgregarMaterial() {
+      const nombre = $('#ot_mat_nombre')?.value?.trim();
+      const cantidad = $('#ot_mat_cantidad')?.value?.trim();
+      const unidad = $('#ot_mat_unidad')?.value?.trim();
+      if (!nombre || !cantidad || !unidad) {
+        alert('Complete nombre, cantidad y unidad.');
+        return;
+      }
+      otMateriales.push({
+        nombre,
+        cantidad,
+        unidad
+      });
+      if ($('#ot_mat_nombre')) $('#ot_mat_nombre').value = '';
+      if ($('#ot_mat_cantidad')) $('#ot_mat_cantidad').value = '';
+      if ($('#ot_mat_unidad')) $('#ot_mat_unidad').value = '';
+      otRenderMateriales();
+    }
+
+    function otEliminarMaterial(idx) {
+      otMateriales.splice(idx, 1);
+      otRenderMateriales();
+    }
+    window.otAgregarMaterial = otAgregarMaterial;
+    window.otEliminarMaterial = otEliminarMaterial;
+
+    // 2) ÍTEMS DE COTIZACIÓN – máx 4
+    function initItemsManagers() {
+      $$('#items-body').forEach((oldBody) => {
+        const container = oldBody.closest('form') || document;
+        if (container.dataset.itemsInit === '1') return;
+        container.dataset.itemsInit = '1';
+
+        let oldBtn = container.querySelector('#btnAddItem');
+        const total = container.querySelector('#total_general');
+        if (!oldBtn) return;
+
+        // limpiar listeners previos
+        const newBtn = oldBtn.cloneNode(true);
+        oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+        oldBtn = newBtn;
+
+        const newBody = oldBody.cloneNode(true);
+        oldBody.parentNode.replaceChild(newBody, oldBody);
+
+        const btn = newBtn;
+        const body = newBody;
+
+        const MAX = 4;
+        const fmt = (n) => new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          maximumFractionDigits: 0
+        }).format(n || 0);
+
+        function updateBtn() {
+          const full = body.rows.length >= MAX;
+          btn.disabled = full;
+          btn.textContent = full ? 'Límite alcanzado (4)' : '+ Agregar ítem';
+        }
+
+        function renumerar() {
+          [...body.querySelectorAll('tr')].forEach((tr, i) => {
+            const num = tr.querySelector('[name="item_num[]"]');
+            if (num) num.value = i + 1;
+          });
+        }
+
+        function recalc() {
+          let t = 0;
+          [...body.querySelectorAll('tr')].forEach(tr => {
+            const cant = parseFloat(tr.querySelector('[name="item_cant[]"]')?.value) || 0;
+            const vu = parseFloat(tr.querySelector('[name="item_vu[]"]')?.value) || 0;
+            const vt = cant * vu;
+            const vtInput = tr.querySelector('[name="item_vt[]"]');
+            if (vtInput) vtInput.value = fmt(vt);
+            t += vt;
+          });
+          if (total) total.value = fmt(t);
+        }
+
+        function addRow(data = {}) {
+          if (body.rows.length >= MAX) {
+            updateBtn();
+            return;
+          }
+          const n = body.rows.length + 1;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+          <td><input class="control" name="item_num[]"  value="${esc(data.num ?? n)}"></td>
+          <td><input class="control" name="item_desc[]" value="${esc(data.desc ?? '')}" placeholder="Descripción del servicio / producto"></td>
+          <td><input class="control" name="item_cant[]" type="number" min="1" step="1"    value="${esc(data.cant ?? 1)}"></td>
+          <td><input class="control" name="item_vu[]"   type="number" min="0" step="0.01" value="${esc(data.vu ?? 0)}"></td>
+          <td><input class="control" name="item_vt[]"   type="text"   value="${fmt((+data.cant||1) * (+data.vu||0))}" readonly></td>
+          <td style="text-align:center"><button class="btn secondary" type="button">✕</button></td>
+        `;
+          body.appendChild(tr);
+          renumerar();
+          recalc();
+          updateBtn();
+        }
+
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          addRow();
+        }, true);
+
+        body.addEventListener('input', (e) => {
+          if (e.target.matches('[name="item_cant[]"], [name="item_vu[]"]')) recalc();
+        }, true);
+
+        body.addEventListener('click', (e) => {
+          const b = e.target.closest('button');
+          if (!b) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          b.closest('tr')?.remove();
+          renumerar();
+          recalc();
+          updateBtn();
+        }, true);
+
+        if (!body.querySelector('tr')) addRow();
+        else {
+          renumerar();
+          recalc();
+        }
+        updateBtn();
+      });
+    }
+
+    // 3) LISTAS: Materiales, Actividades, Partidas
+    let materiales = [];
+
+    function actualizarListaMateriales() {
+      const lista = $('#materiales-list');
+      if (!lista) return;
+      lista.innerHTML = '';
+      materiales.forEach((m, i) => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        li.innerHTML = `
+        ${esc(m.nombre)} - ${esc(m.cantidad)} ${esc(m.unidad)}
+        <button type="button" class="btn btn-sm btn-danger" onclick="eliminarMaterial(${i})">Eliminar</button>
+      `;
+        lista.appendChild(li);
+      });
+    }
+
+    function agregarMaterial() {
+      const nombre = $('#material_nombre')?.value?.trim();
+      const cantidad = $('#material_cantidad')?.value?.trim();
+      const unidad = $('#material_unidad')?.value?.trim();
+      if (nombre && cantidad && unidad) {
+        materiales.push({
+          concepto: nombre,
+          nombre,
+          cantidad,
+          unidad
+        });
+        actualizarListaMateriales();
+        if ($('#material_nombre')) $('#material_nombre').value = '';
+        if ($('#material_cantidad')) $('#material_cantidad').value = '';
+        if ($('#material_unidad')) $('#material_unidad').value = '';
+      } else {
+        alert('Por favor, complete todos los campos del material.');
+      }
+    }
+
+    function eliminarMaterial(index) {
+      materiales.splice(index, 1);
+      actualizarListaMateriales();
+    }
+    window.agregarMaterial = agregarMaterial;
+    window.eliminarMaterial = eliminarMaterial;
+
+    // Actividades
+    let actividades = [];
+    let nextActivityId = 1;
+
+    function obtenerNombreActividad(id) {
+      const a = actividades.find(x => String(x.id) === String(id));
+      return a ? a.nombre : 'Desconocido';
+    }
+
+    function actualizarDependencias() {
+      const sel = $('#actividad_dependencia');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">Ninguna</option>';
+      actividades.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.nombre;
+        sel.appendChild(opt);
+      });
+    }
+
+    function actualizarListaActividades() {
+      const lista = $('#actividades-list');
+      if (!lista) return;
+      lista.innerHTML = '';
+      actividades.forEach((a, i) => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        li.innerHTML = `
+        <strong>${esc(a.nombre)}</strong> - Duración: ${esc(a.duracion)} días
+        <br>Responsable: ${esc(a.responsable)}
+        ${a.dependencia ? `<br>Depende de: ${esc(obtenerNombreActividad(a.dependencia))}` : ''}
+        <button type="button" class="btn btn-sm btn-danger float-end" onclick="eliminarActividad(${i})">Eliminar</button>
+      `;
+        lista.appendChild(li);
+      });
+    }
+
+    function agregarActividad() {
+      const nombre = $('#actividad_nombre')?.value?.trim();
+      const duracion = $('#actividad_duracion')?.value?.trim();
+      const dependencia = $('#actividad_dependencia')?.value ?? '';
+      const responsable = $('#actividad_responsable')?.value?.trim();
+      if (nombre && duracion && responsable) {
+        actividades.push({
+          id: nextActivityId++,
+          nombre,
+          duracion,
+          dependencia,
+          responsable
+        });
+        actualizarListaActividades();
+        actualizarDependencias();
+        if ($('#actividad_nombre')) $('#actividad_nombre').value = '';
+        if ($('#actividad_duracion')) $('#actividad_duracion').value = '';
+        if ($('#actividad_responsable')) $('#actividad_responsable').value = '';
+      } else {
+        alert('Por favor, complete los campos obligatorios de la actividad.');
+      }
+    }
+
+    function eliminarActividad(index) {
+      const idEliminado = actividades[index]?.id;
+      actividades.splice(index, 1);
+      actividades.forEach(a => {
+        if (String(a.dependencia) === String(idEliminado)) a.dependencia = '';
+      });
+      actualizarListaActividades();
+      actualizarDependencias();
+    }
+    window.agregarActividad = agregarActividad;
+    window.eliminarActividad = eliminarActividad;
+
+    // Partidas presupuestarias
+    let partidas = [];
+
+    function actualizarListaPartidas() {
+      const tbody = $('#partidas-list');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      let total = 0;
+      partidas.forEach((p, i) => {
+        total += p.subtotal;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+        <td>${esc(p.concepto)}</td>
+        <td>${esc(p.cantidad)}</td>
+        <td>$${Number(p.costo).toFixed(2)}</td>
+        <td>$${Number(p.subtotal).toFixed(2)}</td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="eliminarPartida(${i})">Eliminar</button></td>
+      `;
+        tbody.appendChild(tr);
+      });
+      const totalEl = $('#presupuesto-total');
+      if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
+    }
+
+    function agregarPartida() {
+      const concepto = $('#partida_concepto')?.value?.trim();
+      const cantidad = parseFloat($('#partida_cantidad')?.value ?? '');
+      const costo = parseFloat($('#partida_costo')?.value ?? '');
+      if (concepto && !isNaN(cantidad) && !isNaN(costo)) {
+        partidas.push({
+          concepto,
+          cantidad,
+          costo,
+          subtotal: cantidad * costo
+        });
+        actualizarListaPartidas();
+        if ($('#partida_concepto')) $('#partida_concepto').value = '';
+        if ($('#partida_cantidad')) $('#partida_cantidad').value = '1';
+        if ($('#partida_costo')) $('#partida_costo').value = '';
+      } else {
+        alert('Por favor, complete todos los campos de la partida presupuestaria.');
+      }
+    }
+
+    function eliminarPartida(index) {
+      partidas.splice(index, 1);
+      actualizarListaPartidas();
+    }
+    window.agregarPartida = agregarPartida;
+    window.eliminarPartida = eliminarPartida;
+
+    // 7) Estado visual Aprobado / Rechazado / Pendiente
+    (function() {
+      const status = document.getElementById('approval-status');
+      if (!status) return;
+      const inputs = document.querySelectorAll('input[name="aprobado"]');
+
+      function apply() {
+        const v = document.querySelector('input[name="aprobado"]:checked')?.value;
+        if (v === 'SI') {
+          status.textContent = 'Aprobado';
+          status.style.background = '#22c55e';
+        } else if (v === 'NO') {
+          status.textContent = 'Rechazado';
+          status.style.background = '#ef4444';
+        } else {
+          status.textContent = 'Pendiente';
+          status.style.background = '#94a3b8';
+        }
+      }
+      inputs.forEach(r => r.addEventListener('change', apply));
+      apply();
+    })();
+
+    // 8) Mostrar/ocultar el campo de “Otro” (solicitud vía)
+    (function() {
+      const chk = document.getElementById('sol_via_otro');
+      const txt = document.getElementById('sol_via_otro_text');
+      if (!chk || !txt) return;
+
+      function sync() {
+        const on = chk.checked;
+        txt.style.display = on ? 'inline-block' : 'none';
+        if (!on) txt.value = '';
+      }
+      const cleanChk = chk.cloneNode(true);
+      chk.parentNode.replaceChild(cleanChk, chk);
+      cleanChk.addEventListener('change', sync);
+      sync();
+    })();
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initItemsManagers);
+    } else {
+      initItemsManagers();
+    }
+  })();
+
+  (() => {
+    if (window.__tipoClienteOtroInit) return;
+    window.__tipoClienteOtroInit = true;
+
+    const wrap = document.getElementById('cli_otro_wrap');
+    const input = wrap?.querySelector('input[name="tipo_cliente_otro"]');
+    const rOtro = document.getElementById('cli_otro');
+    const radios = document.querySelectorAll('input[name="tipo_cliente"]');
+
+    if (!wrap || !input || !rOtro || radios.length === 0) return;
+
+    const sync = () => {
+      const show = rOtro.checked;
+      wrap.style.display = show ? 'block' : 'none';
+      if (show) {
+        input.focus();
+      } else {
+        input.value = '';
+      }
+    };
+
+    radios.forEach(r => r.addEventListener('change', sync, {
+      passive: true
+    }));
+    sync();
+  })();
+
+  (() => {
+    if (window.__solicitudViaOtroInit) return;
+    window.__solicitudViaOtroInit = true;
+
+    const chk = document.getElementById('sol_via_otro');
+    const txt = document.getElementById('sol_via_otro_text');
+    if (!chk || !txt) return;
+
+    const sync = () => {
+      const on = chk.checked;
+      txt.style.display = on ? 'inline-block' : 'none';
+      if (on) {
+        txt.style.maxWidth = txt.style.maxWidth || '240px';
+        txt.focus();
+      } else {
+        txt.value = '';
+      }
+    };
+
+    sync();
+
+    chk.addEventListener('change', sync, {
+      passive: true
+    });
+  })();
+
+
+  // Boton pdf circulo
+  (function() {
+    const fab = document.getElementById('pdf-fab');
+    if (!fab) return;
+
+    const triggerEl =
+      document.querySelector('.pdf-button') ||
+      document.querySelector('.header-container');
+
+    let threshold = 0;
+
+    function computeThreshold() {
+      if (!triggerEl) {
+        threshold = 100;
+        return;
+      }
+      const rect = triggerEl.getBoundingClientRect();
+      threshold = window.scrollY + rect.bottom;
+    }
+
+    function onScroll() {
+      const show = window.scrollY > threshold;
+      fab.classList.toggle('show', show);
+    }
+
+    computeThreshold();
+    onScroll();
+
+    window.addEventListener('scroll', onScroll, {
+      passive: true
+    });
+    window.addEventListener('resize', () => {
+      computeThreshold();
+      onScroll();
+    });
+  })();
+</script>
+
+<script>
+  (function() {
+    const qs = new URLSearchParams(location.search);
+    const nCli = qs.get('n_cliente') || '';
+    const next = qs.get('next') || ''; // p.ej. form3_cotizacion
+    const resume = qs.get('resume') === '1';
+    const urlCode = (qs.get('code') || '').trim();
+
+    // Mapa lógico form -> id base del pane/tab
+    const map = {
+      'form1_solicitud': 'form1',
+      'form2_evaluacion': 'form2',
+      'form3_cotizacion': 'form3',
+      'form4_orden_trabajo': 'form4',
+      'form5_verificacion_pcb': 'form5',
+      'form6_verificacion_3d': 'form6',
+      'form7_continuidad_pcb': 'form7',
+      'form8_informe_servicio': 'form8',
+      'form9_satisfaccion': 'form9',
+    };
+    const order = Object.keys(map);
+    const svcKey = nCli ? ('svc_code:' + nCli) : null;
+
+    // IDs comunes de campos "número" por formulario (ajústalos si usas otros IDs)
+    const numIds = [
+      'numero_solicitud',
+      'numero_evaluacion',
+      'numero_cotizacion',
+      'numero_orden_trabajo',
+      'numero_verificacion_pcb',
+      'numero_verificacion_3d',
+      'numero_continuidad_pcb',
+      'numero_informe',
+      'numero_satisfaccion'
+    ];
+
+    function fillClient() {
+      if (!nCli) return;
+      const main = document.getElementById('n_cliente');
+      if (main) {
+        main.value = nCli;
+        main.readOnly = true;
+      }
+      for (let i = 2; i <= 9; i++) {
+        const h = document.getElementById('n_cliente_form' + i);
+        if (h) h.value = nCli;
+      }
+    }
+
+    // Busca un código en la UI si no vino en la URL
+    function sniffExistingCode() {
+      // 1) por IDs conocidos
+      for (const id of numIds) {
+        const el = document.getElementById(id);
+        if (el && String(el.value || '').trim() !== '') {
+          return String(el.value).trim();
+        }
+      }
+      // 2) cualquier input cuyo name/ id empiece por "numero_"
+      const any = document.querySelector('input[id^="numero_"], input[name^="numero_"]');
+      if (any && String(any.value || '').trim() !== '') {
+        return String(any.value).trim();
+      }
+      return '';
+    }
+
+    // Setea el mismo código en TODOS los formularios
+    function setCodeEverywhere(code) {
+      if (!code) return;
+      // Por IDs conocidos
+      for (const id of numIds) {
+        const el = document.getElementById(id);
+        if (el && !String(el.value || '').trim()) {
+          el.value = code;
+        }
+      }
+      // Por name/id genérico
+      document.querySelectorAll('input[id^="numero_"], input[name^="numero_"]').forEach(el => {
+        if (!String(el.value || '').trim()) el.value = code;
+      });
+
+      // Evita que el backend avance contador si ya traemos un código fijo
+      document.querySelectorAll('input[name="advance_code"]').forEach(h => {
+        h.value = '0';
+      });
+    }
+
+    function unlockUpTo(targetKey) {
+      const idx = order.indexOf(targetKey);
+      if (idx < 0) return;
+      for (let i = 0; i <= idx; i++) {
+        const paneBase = map[order[i]];
+        const tabBtn = document.getElementById(paneBase + '-tab');
+        if (tabBtn) {
+          tabBtn.disabled = false;
+          tabBtn.classList.remove('disabled');
+          tabBtn.setAttribute('aria-disabled', 'false');
+        }
+        sessionStorage.setItem('form' + (i + 1) + '_done', '1');
+      }
+    }
+
+    function openTab(paneBase) {
+      const tabBtn = document.getElementById(paneBase + '-tab');
+      const pane = document.getElementById(paneBase);
+      if (!tabBtn || !pane) return;
+
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show', 'active'));
+      document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+
+      if (window.bootstrap && window.bootstrap.Tab) {
+        new bootstrap.Tab(tabBtn).show();
+      } else {
+        pane.classList.add('show', 'active');
+        tabBtn.classList.add('active');
+      }
+    }
+
+    function run() {
+      fillClient();
+
+      // --- Resolver código de servicio ---
+      let code = (urlCode || '').trim();
+      if (!code) code = sniffExistingCode();
+      if (!code && svcKey) code = sessionStorage.getItem(svcKey) || '';
+      if (code) {
+        setCodeEverywhere(code);
+        if (svcKey) sessionStorage.setItem(svcKey, code);
+      }
+
+      // --- Navegación / resume ---
+      if (next && map[next]) {
+        if (resume) unlockUpTo(next);
+        openTab(map[next]);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(run, 0));
+    } else {
+      setTimeout(run, 0);
+    }
+  })();
+</script>
