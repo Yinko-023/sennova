@@ -518,7 +518,7 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
 
       <div class="modal-footer" id="modal-actividad-footer">
         <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal" id="btn-actividad-cerrar">Cerrar</button>
-        <a href="inAdmin.php?vista=actividad" class="btn" id="btn-actividad-historial">Ver historial completo</a>
+       
       </div>
     </div>
   </div>

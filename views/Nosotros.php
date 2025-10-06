@@ -466,7 +466,7 @@
 
         .hero-btn:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 35px rgba(230, 126, 34, 0.4);
+            box-shadow: 0 12px 35px rgba(7, 66, 10, 0.4);
         }
 
         .hero-btn:hover::before {
