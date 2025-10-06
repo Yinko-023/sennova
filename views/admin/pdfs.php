@@ -332,8 +332,6 @@ function getNextForm(?string $last, array $order): ?string
             <i class="fa-solid fa-chevron-down"></i> Expandir
           </button>
         </div>
-
-
       </div>
 
       <div class="client-content collapse" id="client-<?= md5($clienteNombre) ?>">

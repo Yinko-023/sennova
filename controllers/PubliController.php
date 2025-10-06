@@ -256,6 +256,7 @@ class UserController
 
     return mail($email, $asunto, $mensaje, $cabeceras);
   }
+  // Brayan Andrey Perdomo :) 
 }
 
 class GestionController
@@ -920,7 +921,7 @@ PHP;
         header('Location: ' . $back . '&errSub=' . urlencode('No se pudo guardar en la base de datos (posible ruta duplicada).'));
         exit;
       }
-
+      // Brayan Andrey Perdomo :) 
       // 3) Crear archivo físico; si falla, revertimos la BD
       if (!file_exists($archivoGenerado)) {
         $codigoGenerado = <<<PHP
@@ -2212,7 +2213,7 @@ class CarruselController
 
   private function isAllowedExt(string $ext): bool
   {
-    static $permitidas = ['jpg','jpeg','png','webp','gif'];
+    static $permitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
     return in_array(strtolower($ext), $permitidas, true);
   }
 
@@ -2566,56 +2567,56 @@ class PortadaController
       @unlink($fs);
     }
   }
-public function editarPortada()
-{
-  if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../inAdmin.php?vista=usuario');
-    exit;
-  }
-
-  $area        = trim($_POST['area'] ?? '');
-  $titulo      = trim($_POST['titulo'] ?? '');
-  $descripcion = trim($_POST['descripcion'] ?? '');
-  $file        = $_FILES['imagen'] ?? null;
-  $delSoloImg  = !empty($_POST['eliminar_solo_imagen']);
-
-  if ($area === '' || $titulo === '' || $descripcion === '') {
-    header('Location: ../inAdmin.php?vista=usuario&editado=err');
-    exit;
-  }
-
-  $model  = new PortadaModel();
-  $actual = $model->obtenerPortadaPorArea($area); // puede ser null si no existía
-
-  // Por defecto, conserva la ruta actual (si la hubiera)
-  $nuevaRuta = $actual['ruta_img_port'] ?? null;
-
-  // 1) ¿Eliminar solo la imagen?
-  if ($delSoloImg) {
-    if (!empty($actual['ruta_img_port'])) {
-      $this->deleteRelativeIfExists($actual['ruta_img_port']);
+  public function editarPortada()
+  {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ../inAdmin.php?vista=usuario');
+      exit;
     }
-    $nuevaRuta = null; // en BD quedará NULL
-  }
 
-  // 2) ¿Subieron una imagen nueva?
-  if (!$delSoloImg && $file && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-    $rutaSubida = $this->moveToImg($file, $area);
-    if ($rutaSubida) {
-      // Elimina la anterior si existía
+    $area        = trim($_POST['area'] ?? '');
+    $titulo      = trim($_POST['titulo'] ?? '');
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $file        = $_FILES['imagen'] ?? null;
+    $delSoloImg  = !empty($_POST['eliminar_solo_imagen']);
+
+    if ($area === '' || $titulo === '' || $descripcion === '') {
+      header('Location: ../inAdmin.php?vista=usuario&editado=err');
+      exit;
+    }
+
+    $model  = new PortadaModel();
+    $actual = $model->obtenerPortadaPorArea($area); // puede ser null si no existía
+
+    // Por defecto, conserva la ruta actual (si la hubiera)
+    $nuevaRuta = $actual['ruta_img_port'] ?? null;
+
+    // 1) ¿Eliminar solo la imagen?
+    if ($delSoloImg) {
       if (!empty($actual['ruta_img_port'])) {
         $this->deleteRelativeIfExists($actual['ruta_img_port']);
       }
-      $nuevaRuta = $rutaSubida;
+      $nuevaRuta = null; // en BD quedará NULL
     }
+
+    // 2) ¿Subieron una imagen nueva?
+    if (!$delSoloImg && $file && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+      $rutaSubida = $this->moveToImg($file, $area);
+      if ($rutaSubida) {
+        // Elimina la anterior si existía
+        if (!empty($actual['ruta_img_port'])) {
+          $this->deleteRelativeIfExists($actual['ruta_img_port']);
+        }
+        $nuevaRuta = $rutaSubida;
+      }
+    }
+
+    // 3) Persistir (actualiza si existe, inserta si no)
+    $model->actualizarPortada($area, $nuevaRuta, $titulo, $descripcion);
+
+    header('Location: ../inAdmin.php?vista=usuario&editado=ok');
+    exit;
   }
-
-  // 3) Persistir (actualiza si existe, inserta si no)
-  $model->actualizarPortada($area, $nuevaRuta, $titulo, $descripcion);
-
-  header('Location: ../inAdmin.php?vista=usuario&editado=ok');
-  exit;
-}
 
   public function subirPortada()
   {
@@ -2828,6 +2829,7 @@ class EvaluacionController
       'sha256' => $hash,
     ];
   }
+  // Brayan Andrey Perdomo :) 
   /* ===================== ROUTER ===================== */
   public static function handle(): void
   {

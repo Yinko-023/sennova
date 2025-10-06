@@ -1046,5 +1046,5 @@ if (session_status() === PHP_SESSION_NONE) {
     </script>
     <script src="public/js/admin/main.js"></script>
 </body>
-
+<!-- Brayan Andrey Perdomo :)  -->
 </html>

@@ -25,8 +25,8 @@ class LoginModel
         if (!$row) return false;
         if (!password_verify($password, $row['password_acc'])) return false;
 
-        // Puedes quitar password_acc antes de devolver
         unset($row['password_acc']);
-        return $row; // <- contiene telefono y direccion
+        return $row; 
     }
 }
+// Brayan Andrey Perdomo :) 
