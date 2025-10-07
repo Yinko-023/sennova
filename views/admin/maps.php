@@ -2022,7 +2022,9 @@
       </div>
     </div>
   </div>
+
 <?php endif; ?>
+
 
 <style>
   :root {
@@ -4614,147 +4616,117 @@
 </script>
 
 <script>
-  (function() {
-    const qs = new URLSearchParams(location.search);
-    const nCli = qs.get('n_cliente') || '';
-    const next = qs.get('next') || ''; // p.ej. form3_cotizacion
-    const resume = qs.get('resume') === '1';
-    const urlCode = (qs.get('code') || '').trim();
+(() => {
+  const btnSel     = document.getElementById('modal-btn-reset-selected');
+  const btnAll     = document.getElementById('modal-btn-reset-all');
+  const inputSetTo = document.querySelector('input[name="modal_set_to"]');
 
-    // Mapa lógico form -> id base del pane/tab
-    const map = {
-      'form1_solicitud': 'form1',
-      'form2_evaluacion': 'form2',
-      'form3_cotizacion': 'form3',
-      'form4_orden_trabajo': 'form4',
-      'form5_verificacion_pcb': 'form5',
-      'form6_verificacion_3d': 'form6',
-      'form7_continuidad_pcb': 'form7',
-      'form8_informe_servicio': 'form8',
-      'form9_satisfaccion': 'form9',
-    };
-    const order = Object.keys(map);
-    const svcKey = nCli ? ('svc_code:' + nCli) : null;
+  // --- utilidades selección ---
+  const getSelectedKeys = () =>
+    Array.from(document.querySelectorAll('.modal-counter-chk:checked')).map(el => el.value);
 
-    // IDs comunes de campos "número" por formulario (ajústalos si usas otros IDs)
-    const numIds = [
-      'numero_solicitud',
-      'numero_evaluacion',
-      'numero_cotizacion',
-      'numero_orden_trabajo',
-      'numero_verificacion_pcb',
-      'numero_verificacion_3d',
-      'numero_continuidad_pcb',
-      'numero_informe',
-      'numero_satisfaccion'
-    ];
+  const updateSelCount = () => {
+    const el = document.getElementById('selected-count');
+    if (el) el.textContent = `${getSelectedKeys().length} seleccionados`;
+  };
 
-    function fillClient() {
-      if (!nCli) return;
-      const main = document.getElementById('n_cliente');
-      if (main) {
-        main.value = nCli;
-        main.readOnly = true;
-      }
-      for (let i = 2; i <= 9; i++) {
-        const h = document.getElementById('n_cliente_form' + i);
-        if (h) h.value = nCli;
-      }
-    }
+  // “Seleccionar todos”
+  document.getElementById('modal-chk-all')?.addEventListener('change', e => {
+    document.querySelectorAll('.modal-counter-chk').forEach(chk => chk.checked = e.target.checked);
+    updateSelCount();
+  });
+  document.querySelectorAll('.modal-counter-chk').forEach(chk => {
+    chk.addEventListener('change', updateSelCount);
+  });
 
-    // Busca un código en la UI si no vino en la URL
-    function sniffExistingCode() {
-      // 1) por IDs conocidos
-      for (const id of numIds) {
-        const el = document.getElementById(id);
-        if (el && String(el.value || '').trim() !== '') {
-          return String(el.value).trim();
-        }
-      }
-      // 2) cualquier input cuyo name/ id empiece por "numero_"
-      const any = document.querySelector('input[id^="numero_"], input[name^="numero_"]');
-      if (any && String(any.value || '').trim() !== '') {
-        return String(any.value).trim();
-      }
-      return '';
-    }
+  // --- quitar posibles onclick antiguos que llamen confirm() ---
+  const killInlineConfirm = el => {
+    if (!el) return;
+    el.setAttribute('onclick', '');
+    el.onclick = null;
+  };
+  killInlineConfirm(btnSel);
+  killInlineConfirm(btnAll);
 
-    // Setea el mismo código en TODOS los formularios
-    function setCodeEverywhere(code) {
-      if (!code) return;
-      // Por IDs conocidos
-      for (const id of numIds) {
-        const el = document.getElementById(id);
-        if (el && !String(el.value || '').trim()) {
-          el.value = code;
-        }
-      }
-      // Por name/id genérico
-      document.querySelectorAll('input[id^="numero_"], input[name^="numero_"]').forEach(el => {
-        if (!String(el.value || '').trim()) el.value = code;
+  // --- llamada al backend (envía JSON) ---
+  async function doReset(payload) {
+    const res = await fetch('routes/reset_counters.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.status === 403) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'No autorizado',
+        text: 'Tu rol no tiene permiso (debe ser 1 o 2).'
       });
-
-      // Evita que el backend avance contador si ya traemos un código fijo
-      document.querySelectorAll('input[name="advance_code"]').forEach(h => {
-        h.value = '0';
-      });
+      return;
     }
 
-    function unlockUpTo(targetKey) {
-      const idx = order.indexOf(targetKey);
-      if (idx < 0) return;
-      for (let i = 0; i <= idx; i++) {
-        const paneBase = map[order[i]];
-        const tabBtn = document.getElementById(paneBase + '-tab');
-        if (tabBtn) {
-          tabBtn.disabled = false;
-          tabBtn.classList.remove('disabled');
-          tabBtn.setAttribute('aria-disabled', 'false');
-        }
-        sessionStorage.setItem('form' + (i + 1) + '_done', '1');
-      }
-    }
-
-    function openTab(paneBase) {
-      const tabBtn = document.getElementById(paneBase + '-tab');
-      const pane = document.getElementById(paneBase);
-      if (!tabBtn || !pane) return;
-
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show', 'active'));
-      document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
-
-      if (window.bootstrap && window.bootstrap.Tab) {
-        new bootstrap.Tab(tabBtn).show();
-      } else {
-        pane.classList.add('show', 'active');
-        tabBtn.classList.add('active');
-      }
-    }
-
-    function run() {
-      fillClient();
-
-      // --- Resolver código de servicio ---
-      let code = (urlCode || '').trim();
-      if (!code) code = sniffExistingCode();
-      if (!code && svcKey) code = sessionStorage.getItem(svcKey) || '';
-      if (code) {
-        setCodeEverywhere(code);
-        if (svcKey) sessionStorage.setItem(svcKey, code);
-      }
-
-      // --- Navegación / resume ---
-      if (next && map[next]) {
-        if (resume) unlockUpTo(next);
-        openTab(map[next]);
-      }
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => setTimeout(run, 0));
+    const data = await res.json().catch(() => ({}));
+    if (data?.ok) {
+      await Swal.fire({ icon: 'success', title: 'Listo', text: 'Correlativos reiniciados correctamente.' });
     } else {
-      setTimeout(run, 0);
+      await Swal.fire({ icon: 'error', title: 'Error', text: data?.message || 'No se pudo reiniciar.' });
     }
-  })();
+  }
+
+  // --- handlers con captura para bloquear otros listeners que muestren confirm() ---
+  const onResetSelected = async (e) => {
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.();
+
+    const sel = getSelectedKeys();
+    if (!sel.length) {
+      await Swal.fire({ icon: 'info', title: 'Nada seleccionado', text: 'Marca al menos un formulario.' });
+      return;
+    }
+    const setTo = Number(inputSetTo?.value || 0);
+
+    const { isConfirmed } = await Swal.fire({
+      icon: 'warning',
+      title: '¿Reiniciar seleccionados?',
+      html: `¿Quieres reiniciar <b>${sel.length}</b> formulario(s)?<br>Nuevo valor inicial: <b>${setTo}</b>`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reiniciar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      focusCancel: true
+    });
+    if (!isConfirmed) return;
+
+    await doReset({ set_to: setTo, selected: sel });
+
+    // limpiar selección
+    document.getElementById('modal-chk-all') && (document.getElementById('modal-chk-all').checked = false);
+    document.querySelectorAll('.modal-counter-chk:checked').forEach(chk => (chk.checked = false));
+    updateSelCount();
+  };
+
+  const onResetAll = async (e) => {
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.();
+
+    const setTo = Number(inputSetTo?.value || 0);
+    const { isConfirmed } = await Swal.fire({
+      icon: 'warning',
+      title: '¿Reiniciar TODOS?',
+      html: `Esto afectará a <b>todos</b> los formularios.<br>Nuevo valor inicial: <b>${setTo}</b>`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reiniciar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      focusCancel: true
+    });
+    if (!isConfirmed) return;
+
+    await doReset({ set_to: setTo, all: true });
+  };
+
+  // **capturing:true** para que nuestro handler corra primero y bloquee otros
+  btnSel?.addEventListener('click', onResetSelected, { capture: true });
+  btnAll?.addEventListener('click', onResetAll, { capture: true });
+})();
 </script>
+
  <!-- Brayan Andrey Perdomo :)  -->

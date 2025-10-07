@@ -681,6 +681,80 @@ class SolicitudModel
         $this->conn = conectaDb();
     }
 
+private function _buildFiltrosNotifs($area, $desde, $hasta, $buscar, $esAdmin)
+{
+    $where  = 'WHERE 1';
+    $params = [];
+
+    // Si NO es admin, filtra por área
+    if (!$esAdmin && $area) {
+        $where .= ' AND n.area = :area';
+        $params[':area'] = $area;
+    }
+    if (!empty($desde)) {
+        $where .= ' AND n.fecha >= :desde';
+        $params[':desde'] = $desde;
+    }
+    if (!empty($hasta)) {
+        $where .= ' AND n.fecha <= :hasta';
+        $params[':hasta'] = $hasta;
+    }
+    if (!empty($buscar)) {
+        $where .= ' AND (r.nombre LIKE :q OR r.email LIKE :q OR r.servicio LIKE :q OR r.cc_cliente LIKE :q)';
+        $params[':q'] = '%'.$buscar.'%';
+    }
+
+    return [$where, $params];
+}
+
+public function contarHistorialNotificaciones($area = null, $desde = null, $hasta = null, $buscar = null, $esAdmin = false): int
+{
+    [$where, $params] = $this->_buildFiltrosNotifs($area, $desde, $hasta, $buscar, $esAdmin);
+
+    $sql = "SELECT COUNT(*)
+            FROM notifications n
+            LEFT JOIN requests r ON r.id_re = n.request_id
+            $where";
+
+    $st = $this->conn->prepare($sql);
+    foreach ($params as $k => $v) $st->bindValue($k, $v);
+    $st->execute();
+
+    return (int)$st->fetchColumn();
+}
+
+public function obtenerHistorialNotificacionesPaginado(
+    $area = null,
+    $desde = null,
+    $hasta = null,
+    $buscar = null,
+    $esAdmin = false,
+    int $limit = 30,
+    int $offset = 0
+) {
+    [$where, $params] = $this->_buildFiltrosNotifs($area, $desde, $hasta, $buscar, $esAdmin);
+
+    // IMPORTANTÍSIMO: incrusta enteros en el SQL (seguros) para evitar problemas con LIMIT/OFFSET
+    $limit  = max(1, (int)$limit);
+    $offset = max(0, (int)$offset);
+
+    $sql = "SELECT n.*, r.nombre, r.email, r.empresa, r.telefono, r.servicio, r.area, r.cc_cliente
+            FROM notifications n
+            LEFT JOIN requests r ON r.id_re = n.request_id
+            $where
+            ORDER BY n.fecha DESC
+            LIMIT $limit OFFSET $offset";
+
+    $st = $this->conn->prepare($sql);
+    foreach ($params as $k => $v) $st->bindValue($k, $v);
+    $st->execute();
+
+    return $st->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+
+
     public function registrarSolicitud($datos)
     {
         try {
@@ -717,16 +791,6 @@ class SolicitudModel
             echo "Error en registrarSolicitud: " . $e->getMessage();
             return false;
         }
-    }
-
-
-    public function actualizarEstado($id, $estado, $comentario, $medio)
-    {
-        $sql = "UPDATE requests 
-                SET estado = ?, comentario = ?, medio_notificacion = ?
-                WHERE id_re = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$estado, $comentario, $medio, $id]);
     }
 
     public function obtenerTodasPorArea($area, $busqueda = '')
@@ -802,37 +866,16 @@ class SolicitudModel
 
     public function obtenerHistorialNotificaciones($area = null, $desde = null, $hasta = null, $buscar = null, $esAdmin = false)
     {
+        [$where, $params] = $this->_buildFiltrosNotifs($area, $desde, $hasta, $buscar, $esAdmin);
+
         $sql = "SELECT n.*, r.nombre, r.email, r.empresa, r.telefono, r.servicio, r.area, r.cc_cliente
-                FROM notifications n
-                LEFT JOIN requests r ON r.id_re = n.request_id
-                WHERE 1";
-        $params = [];
-
-        if (!$esAdmin && $area) {
-            $sql .= " AND n.area = ?";
-            $params[] = $area;
-        }
-        if ($desde) {
-            $sql .= " AND n.fecha >= ?";
-            $params[] = $desde;
-        }
-        if ($hasta) {
-            $sql .= " AND n.fecha <= ?";
-            $params[] = $hasta;
-        }
-        if ($buscar) {
-            $sql .= " AND (r.nombre LIKE ? OR r.email LIKE ? OR r.servicio LIKE ? OR r.cc_cliente LIKE ?)";
-            $like = "%$buscar%";
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
-        }
-
-        $sql .= " ORDER BY n.fecha DESC";
-
+            FROM notifications n
+            LEFT JOIN requests r ON r.id_re = n.request_id
+            $where
+            ORDER BY n.fecha DESC";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
+        foreach ($params as $k => $v) $stmt->bindValue($k, $v);
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -951,13 +994,22 @@ class SolicitudModel
 
         return $row;
     }
-
-
+    public function eliminarNotificacionPorId(int $id): bool
+    {
+        try {
+            $stmt = $this->conn->prepare("DELETE FROM notifications WHERE id = :id");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $ok = $stmt->execute();
+            return $ok && $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log("Error al eliminar notificación: " . $e->getMessage());
+            return false;
+        }
+    }
     public function limpiarNotificaciones()
     {
         try {
-            $sql = "DELETE FROM notifications";
-            $stmt = $this->conn->prepare($sql);
+            $stmt = $this->conn->prepare("DELETE FROM notifications");
             return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Error al limpiar notificaciones: " . $e->getMessage());
@@ -1541,12 +1593,18 @@ class CarruselModel
         if (!$rel) return;
 
         $full = $this->joinPath($root, $rel);
-        if (is_file($full)) { @unlink($full); return; }
+        if (is_file($full)) {
+            @unlink($full);
+            return;
+        }
 
         if (strpos($rel, DIRECTORY_SEPARATOR) === false) {
             foreach (['img/carrusel', 'img', 'uploads/carrusel', 'uploads'] as $base) {
                 $alt = $this->joinPath($root, $this->joinPath($base, $rel));
-                if (is_file($alt)) { @unlink($alt); return; }
+                if (is_file($alt)) {
+                    @unlink($alt);
+                    return;
+                }
             }
         }
     }

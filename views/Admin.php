@@ -170,7 +170,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <?php
     require_once __DIR__ . '/../controllers/PubliController.php';
 
-    $areaSesion = $_SESSION['area'] ?? null; 
+    $areaSesion = $_SESSION['area'] ?? null;
 
     $solicitudController = new SolicitudController();
 
@@ -638,19 +638,85 @@ if (session_status() === PHP_SESSION_NONE) {
 
                     <?php endif; ?>
 
-                    <li class="nav-item">
-                        <a class="nav-link <?= $vista === 'archivo' ? 'active' : '' ?>" href="inAdmin.php?vista=archivo">
-                            <i class="fa-solid fa-cloud-upload-alt"></i>
-                            <span>Subir Archivo</span>
-                        </a>
-                    </li>
+<?php
+// Abre el submenú si estás en archivo o report
+$archivosOpen = in_array(($vista ?? ''), ['archivo', 'report'], true);
+?>
+<li class="nav-item">
+  <!-- fila cabecera: a la izquierda navega, a la derecha el caret colapsa -->
+  <div class="nav-link d-flex align-items-center justify-content-between <?= $archivosOpen ? 'active' : '' ?>">
+    <!-- Al hacer clic en el texto, navega a REPORT por defecto -->
+    <a href="inAdmin.php?vista=report" class="d-inline-flex align-items-center text-decoration-none text-light">
+      <i class="fa fa-archive" aria-hidden="true"></i>
+      <span class="ms-2">Archivos</span>
+    </a>
 
-                    <li class="nav-item">
-                        <a class="nav-link <?= $vista === 'report' ? 'active' : '' ?>" href="inAdmin.php?vista=report">
-                            <i class="fa-solid fa-file"></i>
-                            <span>Reportes de Archivos</span>
-                        </a>
-                    </li>
+    <!-- Botón caret: solo abre/cierra, NO navega -->
+    <button type="button"
+            class="btn btn-sm p-0 text-light border-0 bg-transparent caret-toggle"
+            data-bs-toggle="collapse"
+            data-bs-target="#menuArchivos"
+            aria-expanded="<?= $archivosOpen ? 'true' : 'false' ?>"
+            aria-controls="menuArchivos"
+            title="Mostrar/ocultar">
+      <i class="fas <?= $archivosOpen ? 'fa-chevron-down' : 'fa-chevron-right' ?>"></i>
+    </button>
+  </div>
+
+  <!-- Submenú -->
+  <div class="collapse <?= $archivosOpen ? 'show' : '' ?>" id="menuArchivos">
+    <ul class="nav flex-column ms-4 my-2">
+      <li class="nav-item">
+        <a class="nav-link <?= $vista === 'archivo' ? 'active' : '' ?>"
+           href="inAdmin.php?vista=archivo">
+          <i class="fa-solid fa-cloud-upload-alt me-2"></i> Subir Archivo
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <?= $vista === 'report' ? 'active' : '' ?>"
+           href="inAdmin.php?vista=report">
+          <i class="fa-solid fa-file me-2"></i> Reportes de Archivos
+        </a>
+      </li>
+    </ul>
+  </div>
+</li>
+<script>
+// Evita que el caret haga algo raro (no navega, no burbujea)
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('.caret-toggle');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+// Cambia el ícono al abrir/cerrar el colapso
+document.addEventListener('DOMContentLoaded', function () {
+  const menu = document.getElementById('menuArchivos');
+  if (!menu) return;
+
+  const caretBtn = document.querySelector('[data-bs-target="#menuArchivos"]');
+  const caretIcon = caretBtn?.querySelector('i');
+
+  // Por si hay más de un collapse en el sidebar, escucha solo este
+  menu.addEventListener('shown.bs.collapse', () => {
+    if (caretIcon) {
+      caretIcon.classList.remove('fa-chevron-right');
+      caretIcon.classList.add('fa-chevron-down');
+    }
+    caretBtn?.setAttribute('aria-expanded', 'true');
+  });
+
+  menu.addEventListener('hidden.bs.collapse', () => {
+    if (caretIcon) {
+      caretIcon.classList.remove('fa-chevron-down');
+      caretIcon.classList.add('fa-chevron-right');
+    }
+    caretBtn?.setAttribute('aria-expanded', 'false');
+  });
+});
+</script>
+
 
                     <li class="nav-item">
                         <a class="nav-link <?= $vista === 'gestion' ? 'active' : '' ?>" href="inAdmin.php?vista=gestion">
@@ -1047,4 +1113,5 @@ if (session_status() === PHP_SESSION_NONE) {
     <script src="public/js/admin/main.js"></script>
 </body>
 <!-- Brayan Andrey Perdomo :)  -->
+
 </html>

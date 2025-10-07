@@ -6,7 +6,7 @@ header('Content-Type: application/json; charset=utf-8');
 session_start();
 
 $rol = (int)($_SESSION['rol'] ?? 0);
-if ($rol !== 1) {
+if (!in_array($rol, [1, 2], true)) {
   http_response_code(403);
   echo json_encode(['ok' => false, 'message' => 'Acceso denegado (solo admin).']);
   exit;
