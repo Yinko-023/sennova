@@ -51,110 +51,121 @@ $imagenURL = $imgNombre ? "/sennova/img/{$imgNombre}" : null; // si tu URL públ
     </div>
   <?php endif; ?>
 
-  <!-- Botones de procesos visibles para TODOS -->
-  <div class="process-grid" data-aos="fade-up" data-aos-delay="100">
-    <?php foreach ($botones as $btn): ?>
-      <?php
-      $color = isset($btn['color_but']) && !empty($btn['color_but']) ? $btn['color_but'] : '#4e73df';
-      $gradientColor = "linear-gradient(135deg, $color, #ffffff)";
-      ?>
-      <div class="process-card" style="background: <?= $gradientColor ?>;">
-        <div class="process-card-body">
-          <h3 class="process-name"><?= htmlspecialchars($btn['name_but']) ?></h3>
-          <a href="<?= htmlspecialchars($btn['ruta_but']) ?>?id_ges=<?= $btn['id_ges'] ?>" class="process-btn"
-            style="text-decoration: none;">
-            <i class="fas fa-arrow-right me-2"></i> Ingresar
-          </a>
-          <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
-            || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
-            || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
-          ): ?>
-            <form method="post"
-              action="routes/createProces.php"
-              class="js-confirm-delete"
-              data-name="<?= htmlspecialchars($btn['nombre'] ?? 'el proceso') ?>">
-              <input type="hidden" name="id" value="<?= (int)$btn['id_ges'] ?>">
-              <input type="hidden" name="archivo" value="<?= htmlspecialchars($btn['ruta_but']) ?>">
-              <!-- 👇 OJO: ahora es type="button" -->
-              <button type="button" name="eliminar" class="process-delete-btn">
-                <i class="fas fa-trash me-1"></i> Eliminar proceso
+
+
+
+
+  <!-- Contenedor principal para imagen y botones lado a lado -->
+  <div class="row align-items-start">
+    <!-- Columna para los botones de procesos -->
+    <div class="col-lg-8 col-md-7 mb-4">
+      <div class="process-grid" data-aos="fade-up" data-aos-delay="100">
+        <?php foreach ($botones as $btn): ?>
+          <?php
+          $color = isset($btn['color_but']) && !empty($btn['color_but']) ? $btn['color_but'] : '#4e73df';
+          $gradientColor = "linear-gradient(135deg, $color, #ffffff)";
+          ?>
+          <div class="process-card" style="background: <?= $gradientColor ?>;">
+            <div class="process-card-body">
+              <h3 class="process-name"><?= htmlspecialchars($btn['name_but']) ?></h3>
+              <a href="<?= htmlspecialchars($btn['ruta_but']) ?>?id_ges=<?= $btn['id_ges'] ?>" class="process-btn"
+                style="text-decoration: none;">
+                <i class="fas fa-arrow-right me-2"></i> Ingresar
+              </a>
+              <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
+                || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
+                || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
+              ): ?>
+                <form method="post"
+                  action="routes/createProces.php"
+                  class="js-confirm-delete"
+                  data-name="<?= htmlspecialchars($btn['nombre'] ?? 'el proceso') ?>">
+                  <input type="hidden" name="id" value="<?= (int)$btn['id_ges'] ?>">
+                  <input type="hidden" name="archivo" value="<?= htmlspecialchars($btn['ruta_but']) ?>">
+                  <!-- 👇 OJO: ahora es type="button" -->
+                  <button type="button" name="eliminar" class="process-delete-btn">
+                    <i class="fas fa-trash me-1"></i> Eliminar proceso
+                  </button>
+                </form>
+              <?php endif; ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+
+    <!-- Columna para la imagen -->
+    <div class="col-lg-4 col-md-5 mb-4">
+      <?php if ($imagenURL): ?>
+        <div class="text-center">
+          <img id="main-process-image" src="<?= $imagenURL . '?v=' . time() ?>"
+            class="img-fluid rounded shadow-sm"
+            style="cursor: zoom-in; max-width: 100%; width: 100%; height: auto;"
+            alt="Imagen del proceso"
+            data-bs-toggle="modal" data-bs-target="#custom-imagen-modal">
+        </div>
+
+        <!-- Modal zoom -->
+        <div class="modal fade" id="custom-imagen-modal" tabindex="-1"
+          aria-labelledby="custom-imagen-modal-label" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content" id="modal-actividad">
+              <div class="modal-header border-0 text-white" id="modal-actividad-header">
+                <h5 class="modal-title" id="custom-imagen-modal-label">Vista Ampliada</h5>
+                <button type="button" id="custom-close-button" class="btn-close btn-close-white"
+                  data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+              <div class="modal-body text-center p-4">
+                <img src="<?= $imagenURL . '?v=' . time() ?>" class="img-fluid rounded"
+                  style="max-height: 70vh; width: auto;" alt="Imagen ampliada del proceso">
+              </div>
+            </div>
+          </div>
+        </div>
+      <?php else: ?>
+        <div id="no-image-container" class="text-center text-muted mt-4">
+          <i id="no-image-icon" class="fas fa-image fa-3x mb-2"></i>
+          <p>No hay imagen cargada actualmente</p>
+        </div>
+      <?php endif; ?>
+      <?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
+        || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
+        || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
+      ): ?>
+
+        <div class="text-center mb-4">
+          <!-- SUBIR -->
+          <form id="form-subir-imagen"
+            action="/sennova/routes/SaveImg.php"
+            method="POST"
+            enctype="multipart/form-data"
+            class="d-inline">
+            <input type="hidden" name="accion" value="subir">
+            <input type="file" name="imagen" id="input-file-imagen"
+              accept=".jpg,.jpeg,.png,.webp" style="display:none">
+            <button type="button" class="btn btn-primary me-2" id="btn-subir-imagen">
+              <i class="fas fa-upload me-1"></i> Subir Imagen
+            </button>
+          </form>
+
+          <!-- ELIMINAR -->
+          <?php if (!empty($imagenURL)): ?>
+            <form id="form-eliminar-imagen" action="/sennova/routes/SaveImg.php" method="POST" class="d-inline"
+              onsubmit="return confirm('¿Eliminar la imagen actual?');">
+              <input type="hidden" name="accion" value="eliminar">
+              <button type="submit" class="btn btn-outline-danger">
+                <i class="fas fa-trash me-1"></i> Eliminar Imagen
               </button>
             </form>
-
-
           <?php endif; ?>
         </div>
-      </div>
-    <?php endforeach; ?>
+
+      <?php endif; ?>
+    </div>
   </div>
 </div>
 
-<?php if ((isset($_SESSION['rol']) && $_SESSION['rol'] == 1)
-  || (isset($_SESSION['rol']) && $_SESSION['rol'] == 2)
-  || (isset($_SESSION['rol'], $_SESSION['area']) && $_SESSION['rol'] == 3 && $_SESSION['area'] === 'electronica')
-): ?>
 
-  <div class="text-center mb-4">
-    <!-- SUBIR -->
-    <form id="form-subir-imagen"
-      action="/sennova/routes/SaveImg.php"
-      method="POST"
-      enctype="multipart/form-data"
-      class="d-inline">
-      <input type="hidden" name="accion" value="subir">
-      <input type="file" name="imagen" id="input-file-imagen"
-        accept=".jpg,.jpeg,.png,.webp" style="display:none">
-      <button type="button" class="btn btn-primary me-2" id="btn-subir-imagen">
-        <i class="fas fa-upload me-1"></i> Subir Imagen
-      </button>
-    </form>
-
-    <!-- ELIMINAR -->
-    <?php if (!empty($imagenURL)): ?>
-      <form id="form-eliminar-imagen" action="/sennova/routes/SaveImg.php" method="POST" class="d-inline"
-        onsubmit="return confirm('¿Eliminar la imagen actual?');">
-        <input type="hidden" name="accion" value="eliminar">
-        <button type="submit" class="btn btn-outline-danger">
-          <i class="fas fa-trash me-1"></i> Eliminar Imagen
-        </button>
-      </form>
-    <?php endif; ?>
-  </div>
-
-<?php endif; ?>
-
-<?php if ($imagenURL): ?>
-  <div class="text-center">
-    <img id="main-process-image" src="<?= $imagenURL . '?v=' . time() ?>"
-      class="img-fluid rounded shadow-sm my-3"
-      style="cursor: zoom-in; max-width: 500px; width: 100%; height: auto;"
-      alt="Imagen del proceso"
-      data-bs-toggle="modal" data-bs-target="#custom-imagen-modal">
-  </div>
-
-  <!-- Modal zoom -->
-  <div class="modal fade" id="custom-imagen-modal" tabindex="-1"
-    aria-labelledby="custom-imagen-modal-label" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-      <div class="modal-content" id="modal-actividad">
-        <div class="modal-header border-0 text-white" id="modal-actividad-header">
-          <h5 class="modal-title" id="custom-imagen-modal-label">Vista Ampliada</h5>
-          <button type="button" id="custom-close-button" class="btn-close btn-close-white"
-            data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body text-center p-4">
-          <img src="<?= $imagenURL . '?v=' . time() ?>" class="img-fluid rounded"
-            style="max-height: 70vh; width: auto;" alt="Imagen ampliada del proceso">
-        </div>
-      </div>
-    </div>
-  </div>
-<?php else: ?>
-  <div id="no-image-container" class="text-center text-muted mt-4">
-    <i id="no-image-icon" class="fas fa-image fa-3x mb-2"></i>
-    <p>No hay imagen cargada actualmente</p>
-  </div>
-<?php endif; ?>
 
 <!-- JS: disparar input y auto-enviar -->
 <script>
