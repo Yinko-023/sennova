@@ -310,7 +310,7 @@ $servi = $modelo->obtenerServi();
   <section id="servicios" class="services-section py-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
     <div class="container">
       <div class="section-header text-center mb-5" data-aos="fade-up" data-aos-delay="100">
-        <span class="section-subtitle text-dark">Lo que ofrecemos</span>
+        <span class="section-subtitle text-dark">Lo que ofrecemos</span><br>
         <h2 class="section-title position-relative text-dark">
           Nuestros Servicios
           <span class="title-underline bg-dark"></span>

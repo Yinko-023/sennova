@@ -2,27 +2,24 @@
 require_once __DIR__ . '/../../conexion/conexion.php';
 $pdo = conectaDb();
 
-$q = isset($_GET['q']) ? trim($_GET['q']) : '';
-$f = isset($_GET['form_type']) ? trim($_GET['form_type']) : '';
-$c = isset($_GET['cliente']) ? trim($_GET['cliente']) : '';
-$id = isset($_GET['id']) ? trim($_GET['id']) : '';  // <-- NUEVO
+$q  = isset($_GET['q']) ? trim($_GET['q']) : '';
+$f  = isset($_GET['form_type']) ? trim($_GET['form_type']) : '';
+$c  = isset($_GET['cliente']) ? trim($_GET['cliente']) : '';
+$id = isset($_GET['id']) ? trim($_GET['id']) : '';
 
-
-$where = [];
+$where  = [];
 $params = [];
-// NUEVO: búsqueda directa por N° cliente / cédula
+
+
 if ($id !== '') {
-  // Extrae solo dígitos para buscar en el patrón del filename (cuando guardas con -CEDULA.pdf)
   $digits = preg_replace('/\D+/', '', $id);
 
   if ($digits !== '') {
-    // Busca por patrón del nombre de archivo y también por n_cliente
     $where[] = "(filename_2 LIKE :id_exact OR filename_2 LIKE :id_mid OR n_cliente LIKE :id_cli)";
     $params[':id_exact'] = '%-' . $digits . '.pdf';
     $params[':id_mid']   = '%-' . $digits . '-%.pdf';
     $params[':id_cli']   = '%' . $digits . '%';
   } else {
-    // Si no hay dígitos, usa LIKE en n_cliente por si el "número cliente" es alfanumérico
     $where[] = "n_cliente LIKE :id_cli";
     $params[':id_cli'] = '%' . $id . '%';
   }
@@ -32,27 +29,47 @@ if ($f !== '') {
   $where[] = "form_type = :f";
   $params[':f'] = $f;
 }
+
 if ($c !== '') {
   $where[] = "n_cliente LIKE :c";
   $params[':c'] = '%' . $c . '%';
 }
+
+if ($q !== '') {
+  $where[] = "(original_name LIKE :q OR filename_2 LIKE :q OR form_type LIKE :q OR n_cliente LIKE :q OR area LIKE :q)";
+  $params[':q'] = '%' . $q . '%';
+}
+
 $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-$sql = "SELECT id_pdf, filename_2, original_name, relative_path, size_bytes,
-               created_at, area, form_type, n_cliente, finalizado
+
+$sql = "SELECT
+          id_pdf,
+          filename_2,
+          original_name,
+          relative_path,
+          size_bytes,
+          created_at,
+          area,
+          form_type,
+          n_cliente,
+          finalizado
         FROM generated_pdfs
         $whereSql
         ORDER BY n_cliente ASC, created_at DESC, id_pdf DESC";
 
-$stmt = $pdo->prepare($sql);
+$stmt  = $pdo->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-// Obtener lista de clientes únicos para el filtro
-$sqlClientes = "SELECT DISTINCT n_cliente FROM generated_pdfs WHERE n_cliente IS NOT NULL AND n_cliente != '' ORDER BY n_cliente ASC";
+$sqlClientes = "SELECT DISTINCT n_cliente
+                FROM generated_pdfs
+                WHERE n_cliente IS NOT NULL AND n_cliente != ''
+                ORDER BY n_cliente ASC";
 $stmtClientes = $pdo->prepare($sqlClientes);
 $stmtClientes->execute();
 $clientes = $stmtClientes->fetchAll(PDO::FETCH_COLUMN);
+
 
 function formatBytes($bytes)
 {
@@ -63,7 +80,7 @@ function formatBytes($bytes)
   return number_format($value, $power >= 2 ? 2 : 0) . ' ' . $units[$power];
 }
 
-// Agrupar por cliente
+
 $byCliente = [];
 foreach ($rows as $row) {
   $cliente = $row['n_cliente'] ?? 'Sin Cliente';
@@ -73,7 +90,7 @@ foreach ($rows as $row) {
   $byCliente[$cliente][] = $row;
 }
 
-// Orden lógico de los formularios (ajústalo a tu flujo real)
+
 $formOrder = [
   'form1_solicitud',
   'form2_evaluacion',
@@ -98,7 +115,7 @@ $formLabels = [
   'form9_satisfaccion'     => 'Form 9 - Satisfacción',
 ];
 
-// Devuelve el último form logrado por un cliente (según orden lógico y/o fecha)
+
 function getLastFormForClient(array $rows, array $order): ?string
 {
   $maxIdx = -1;
@@ -1078,54 +1095,30 @@ function getNextForm(?string $last, array $order): ?string
     });
   });
 </script>
+
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const qs = new URLSearchParams(location.search);
-    const nCli = qs.get('n_cliente') || '';
-    const next = qs.get('next') || ''; // ej: form3_cotizacion
-    const relax = qs.get('resume') === '1'; // si viene 1, desbloquea previos
+  // --- Helper para activar pestañas por id del botón (ej: 'form6-tab') ---
+  window.showTab = function(tabButtonId) {
+    const btn = document.getElementById(tabButtonId);
+    if (!btn) return;
 
-    // 1) Fijar n_cliente principal y los hidden de todos los forms
-    if (nCli) {
-      const main = document.getElementById('n_cliente');
-      if (main) {
-        main.value = nCli;
-        main.readOnly = true;
-      }
-      for (let i = 2; i <= 9; i++) {
-        const h = document.getElementById('n_cliente_form' + i);
-        if (h) h.value = nCli;
-      }
-    }
+    // 1) Desactivar todo
+    document.querySelectorAll('#formTabs .nav-link').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#formTabsContent .tab-pane').forEach(p => p.classList.remove('active','show'));
 
-    // 2) Abrir pestaña indicada por ?next=...
-    const map = {
-      form1_solicitud: 'form1-tab',
-      form2_evaluacion: 'form2-tab',
-      form3_cotizacion: 'form3-tab',
-      form4_orden_trabajo: 'form4-tab',
-      form5_verificacion_pcb: 'form5-tab',
-      form6_verificacion_3d: 'form6-tab',
-      form7_continuidad_pcb: 'form7-tab',
-      form8_informe_servicio: 'form8-tab',
-      form9_satisfaccion: 'form9-tab'
-    };
+    // 2) Activar botón destino
+    btn.classList.add('active');
 
-    if (next) {
-      // Si vienes desde “Continuar servicio”, marca previos como completos
-      if (relax) {
-        const order = Object.keys(map);
-        const idx = order.indexOf(next);
-        if (idx > -1) {
-          for (let k = 0; k < idx; k++) {
-            sessionStorage.setItem('form' + (k + 1) + '_done', '1');
-          }
-        }
+    // 3) Activar pane destino
+    const paneSel = btn.getAttribute('data-bs-target'); // ej: "#form6"
+    const pane = paneSel ? document.querySelector(paneSel) : null;
+    if (pane) pane.classList.add('active','show');
+
+    // 4) Si Bootstrap.Tab está disponible, dispara show() (no es obligatorio)
+    try {
+      if (window.bootstrap && bootstrap.Tab) {
+        bootstrap.Tab.getOrCreateInstance(btn).show();
       }
-      const tabId = map[next];
-      if (tabId && typeof window.showTab === 'function') {
-        setTimeout(() => window.showTab(tabId), 150);
-      }
-    }
-  });
+    } catch (e) { /* noop */ }
+  };
 </script>

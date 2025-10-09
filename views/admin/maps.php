@@ -4050,7 +4050,7 @@
     function isStepAllowed(targetIdx) {
       if (IS_ADMIN) return true;
 
-      // Para ir a 6 (idx 5) o 7 (idx 6) primero hay que haber “visitado” el 5 (desbloqueo)
+      // Para ir a 6 (idx 5) o 7 (idx 6) primero hay que haber "visitado" el 5 (desbloqueo)
       if ((targetIdx === 5 || targetIdx === 6) && !optUnlocked()) {
         return false;
       }
@@ -4063,6 +4063,11 @@
       return true;
     }
 
+    function optUnlocked() {
+      return sessionStorage.getItem('opt56_unlocked') === '1';
+    }
+
+    const OPTIONAL_IDX = new Set([4, 5]); // índices 4 y 5 corresponden a form5 y form6
 
     function refreshTabsLock() {
       TAB_IDS.forEach((id, idx) => {
@@ -4111,6 +4116,7 @@
       }
     }
     window.showTab = showTab;
+
     // Si se usa el click directo en la pestaña (Bootstrap), también desbloquea
     document.addEventListener('shown.bs.tab', function(ev) {
       if (ev.target && ev.target.id === 'form5-tab') {
@@ -4153,7 +4159,7 @@
     refreshTabsLock();
     bindCompletionOnSubmit();
 
-    // 1) ORDEN DE TRABAJO – MATERIALES    // =========================
+    // 1) ORDEN DE TRABAJO - MATERIALES
     const otMateriales = [];
 
     function otRenderMateriales() {
@@ -4199,7 +4205,7 @@
     window.otAgregarMaterial = otAgregarMaterial;
     window.otEliminarMaterial = otEliminarMaterial;
 
-    // 2) ÍTEMS DE COTIZACIÓN – máx 4
+    // 2) ÍTEMS DE COTIZACIÓN - máx 4
     function initItemsManagers() {
       $$('#items-body').forEach((oldBody) => {
         const container = oldBody.closest('form') || document;
@@ -4499,7 +4505,7 @@
       apply();
     })();
 
-    // 8) Mostrar/ocultar el campo de “Otro” (solicitud vía)
+    // 8) Mostrar/ocultar el campo de "Otro" (solicitud vía)
     (function() {
       const chk = document.getElementById('sol_via_otro');
       const txt = document.getElementById('sol_via_otro_text');
@@ -4576,7 +4582,6 @@
     });
   })();
 
-
   // Boton pdf circulo
   (function() {
     const fab = document.getElementById('pdf-fab');
@@ -4613,120 +4618,200 @@
       onScroll();
     });
   })();
-</script>
 
-<script>
-(() => {
-  const btnSel     = document.getElementById('modal-btn-reset-selected');
-  const btnAll     = document.getElementById('modal-btn-reset-all');
-  const inputSetTo = document.querySelector('input[name="modal_set_to"]');
+  // Sistema de reinicio de correlativos mejorado
+  (() => {
+    const btnSel = document.getElementById('modal-btn-reset-selected');
+    const btnAll = document.getElementById('modal-btn-reset-all');
+    const inputSetTo = document.querySelector('input[name="modal_set_to"]');
 
-  // --- utilidades selección ---
-  const getSelectedKeys = () =>
-    Array.from(document.querySelectorAll('.modal-counter-chk:checked')).map(el => el.value);
+    // --- utilidades selección ---
+    const getSelectedKeys = () =>
+      Array.from(document.querySelectorAll('.modal-counter-chk:checked')).map(el => el.value);
 
-  const updateSelCount = () => {
-    const el = document.getElementById('selected-count');
-    if (el) el.textContent = `${getSelectedKeys().length} seleccionados`;
-  };
+    const updateSelCount = () => {
+      const el = document.getElementById('selected-count');
+      if (el) el.textContent = `${getSelectedKeys().length} seleccionados`;
+    };
 
-  // “Seleccionar todos”
-  document.getElementById('modal-chk-all')?.addEventListener('change', e => {
-    document.querySelectorAll('.modal-counter-chk').forEach(chk => chk.checked = e.target.checked);
-    updateSelCount();
-  });
-  document.querySelectorAll('.modal-counter-chk').forEach(chk => {
-    chk.addEventListener('change', updateSelCount);
-  });
-
-  // --- quitar posibles onclick antiguos que llamen confirm() ---
-  const killInlineConfirm = el => {
-    if (!el) return;
-    el.setAttribute('onclick', '');
-    el.onclick = null;
-  };
-  killInlineConfirm(btnSel);
-  killInlineConfirm(btnAll);
-
-  // --- llamada al backend (envía JSON) ---
-  async function doReset(payload) {
-    const res = await fetch('routes/reset_counters.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    // "Seleccionar todos"
+    document.getElementById('modal-chk-all')?.addEventListener('change', e => {
+      document.querySelectorAll('.modal-counter-chk').forEach(chk => chk.checked = e.target.checked);
+      updateSelCount();
+    });
+    document.querySelectorAll('.modal-counter-chk').forEach(chk => {
+      chk.addEventListener('change', updateSelCount);
     });
 
-    if (res.status === 403) {
-      await Swal.fire({
-        icon: 'error',
-        title: 'No autorizado',
-        text: 'Tu rol no tiene permiso (debe ser 1 o 2).'
+    // --- quitar posibles onclick antiguos que llamen confirm() ---
+    const killInlineConfirm = el => {
+      if (!el) return;
+      el.setAttribute('onclick', '');
+      el.onclick = null;
+    };
+    killInlineConfirm(btnSel);
+    killInlineConfirm(btnAll);
+
+    // --- llamada al backend (envía JSON) ---
+    async function doReset(payload) {
+      const res = await fetch('routes/reset_counters.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       });
-      return;
+
+      if (res.status === 403) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'No autorizado',
+          text: 'Tu rol no tiene permiso (debe ser 1 o 2).'
+        });
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (data?.ok) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Listo',
+          text: 'Correlativos reiniciados correctamente.'
+        });
+      } else {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: data?.message || 'No se pudo reiniciar.'
+        });
+      }
     }
 
-    const data = await res.json().catch(() => ({}));
-    if (data?.ok) {
-      await Swal.fire({ icon: 'success', title: 'Listo', text: 'Correlativos reiniciados correctamente.' });
-    } else {
-      await Swal.fire({ icon: 'error', title: 'Error', text: data?.message || 'No se pudo reiniciar.' });
-    }
-  }
+    // --- handlers con captura para bloquear otros listeners que muestren confirm() ---
+    const onResetSelected = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
 
-  // --- handlers con captura para bloquear otros listeners que muestren confirm() ---
-  const onResetSelected = async (e) => {
-    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.();
+      const sel = getSelectedKeys();
+      if (!sel.length) {
+        await Swal.fire({
+          icon: 'info',
+          title: 'Nada seleccionado',
+          text: 'Marca al menos un formulario.'
+        });
+        return;
+      }
+      const setTo = Number(inputSetTo?.value || 0);
 
-    const sel = getSelectedKeys();
-    if (!sel.length) {
-      await Swal.fire({ icon: 'info', title: 'Nada seleccionado', text: 'Marca al menos un formulario.' });
-      return;
-    }
-    const setTo = Number(inputSetTo?.value || 0);
+      const {
+        isConfirmed
+      } = await Swal.fire({
+        icon: 'warning',
+        title: '¿Reiniciar seleccionados?',
+        html: `¿Quieres reiniciar <b>${sel.length}</b> formulario(s)?<br>Nuevo valor inicial: <b>${setTo}</b>`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, reiniciar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        focusCancel: true
+      });
+      if (!isConfirmed) return;
 
-    const { isConfirmed } = await Swal.fire({
-      icon: 'warning',
-      title: '¿Reiniciar seleccionados?',
-      html: `¿Quieres reiniciar <b>${sel.length}</b> formulario(s)?<br>Nuevo valor inicial: <b>${setTo}</b>`,
-      showCancelButton: true,
-      confirmButtonText: 'Sí, reiniciar',
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true,
-      focusCancel: true
+      await doReset({
+        set_to: setTo,
+        selected: sel
+      });
+
+      // limpiar selección
+      document.getElementById('modal-chk-all') && (document.getElementById('modal-chk-all').checked = false);
+      document.querySelectorAll('.modal-counter-chk:checked').forEach(chk => (chk.checked = false));
+      updateSelCount();
+    };
+
+    const onResetAll = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
+
+      const setTo = Number(inputSetTo?.value || 0);
+      const {
+        isConfirmed
+      } = await Swal.fire({
+        icon: 'warning',
+        title: '¿Reiniciar TODOS?',
+        html: `Esto afectará a <b>todos</b> los formularios.<br>Nuevo valor inicial: <b>${setTo}</b>`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, reiniciar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        focusCancel: true
+      });
+      if (!isConfirmed) return;
+
+      await doReset({
+        set_to: setTo,
+        all: true
+      });
+    };
+
+    // **capturing:true** para que nuestro handler corra primero y bloquee otros
+    btnSel?.addEventListener('click', onResetSelected, {
+      capture: true
     });
-    if (!isConfirmed) return;
-
-    await doReset({ set_to: setTo, selected: sel });
-
-    // limpiar selección
-    document.getElementById('modal-chk-all') && (document.getElementById('modal-chk-all').checked = false);
-    document.querySelectorAll('.modal-counter-chk:checked').forEach(chk => (chk.checked = false));
-    updateSelCount();
-  };
-
-  const onResetAll = async (e) => {
-    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.();
-
-    const setTo = Number(inputSetTo?.value || 0);
-    const { isConfirmed } = await Swal.fire({
-      icon: 'warning',
-      title: '¿Reiniciar TODOS?',
-      html: `Esto afectará a <b>todos</b> los formularios.<br>Nuevo valor inicial: <b>${setTo}</b>`,
-      showCancelButton: true,
-      confirmButtonText: 'Sí, reiniciar',
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true,
-      focusCancel: true
+    btnAll?.addEventListener('click', onResetAll, {
+      capture: true
     });
-    if (!isConfirmed) return;
+  })();
 
-    await doReset({ set_to: setTo, all: true });
-  };
+  document.addEventListener('DOMContentLoaded', () => {
+    const qs = new URLSearchParams(location.search);
+    const nCli = qs.get('n_cliente') || '';
+    const next = qs.get('next') || ''; // ej: form3_cotizacion
+    const relax = qs.get('resume') === '1'; // si viene 1, desbloquea previos
 
-  // **capturing:true** para que nuestro handler corra primero y bloquee otros
-  btnSel?.addEventListener('click', onResetSelected, { capture: true });
-  btnAll?.addEventListener('click', onResetAll, { capture: true });
-})();
+    // 1) Fijar n_cliente principal y los hidden de todos los forms
+    if (nCli) {
+      const main = document.getElementById('n_cliente');
+      if (main) {
+        main.value = nCli;
+        main.readOnly = true;
+      }
+      for (let i = 2; i <= 9; i++) {
+        const h = document.getElementById('n_cliente_form' + i);
+        if (h) h.value = nCli;
+      }
+    }
+
+    // 2) Abrir pestaña indicada por ?next=...
+    const map = {
+      form1_solicitud: 'form1-tab',
+      form2_evaluacion: 'form2-tab',
+      form3_cotizacion: 'form3-tab',
+      form4_orden_trabajo: 'form4-tab',
+      form5_verificacion_pcb: 'form5-tab',
+      form6_verificacion_3d: 'form6-tab',
+      form7_continuidad_pcb: 'form7-tab',
+      form8_informe_servicio: 'form8-tab',
+      form9_satisfaccion: 'form9-tab'
+    };
+
+    if (next) {
+      // Si vienes desde “Continuar servicio”, marca previos como completos
+      if (relax) {
+        const order = Object.keys(map);
+        const idx = order.indexOf(next);
+        if (idx > -1) {
+          for (let k = 0; k < idx; k++) {
+            sessionStorage.setItem('form' + (k + 1) + '_done', '1');
+          }
+        }
+      }
+      const tabId = map[next];
+      if (tabId && typeof window.showTab === 'function') {
+        setTimeout(() => window.showTab(tabId), 150);
+      }
+    }
+  });
 </script>
-
- <!-- Brayan Andrey Perdomo :)  -->
+<!-- Brayan Andrey Perdomo :)  -->

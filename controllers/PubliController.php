@@ -2797,38 +2797,42 @@ class EvaluacionController
     $relativePath = '/sennova/public/Formul/' . $year . '/' . $month . '/' . rawurlencode($filename);
 
     // 5) Insertar en BD
+    // 5) Insertar en BD
     require_once __DIR__ . '/../conexion/conexion.php';
     $pdo = conectaDb();
-    $area = isset($_SESSION['area']) ? $_SESSION['area'] : null;
+    $area   = $_SESSION['area']       ?? null;
     $userId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
     $original = $suggestedName;
-    $mime = 'application/pdf';
+    $mime  = 'application/pdf';
 
-    $stmt = $pdo->prepare('INSERT INTO generated_pdfs
-      (filename, original_name, relative_path, mime_type, size_bytes, area, form_type, created_by_user, sha256_hash, metadata_json, n_cliente)
-      VALUES (:filename_2, :original_name, :relative_path, :mime_type, :size_bytes, :area, :form_type, :created_by_user, :sha256_hash, :metadata_json, :n_cliente)');
+    $sql = 'INSERT INTO generated_pdfs
+  (filename_2, original_name, relative_path, mime_type, size_bytes, area, form_type, created_by_user, sha256_hash, metadata_json, n_cliente)
+  VALUES (:filename_2, :original_name, :relative_path, :mime_type, :size_bytes, :area, :form_type, :created_by_user, :sha256_hash, :metadata_json, :n_cliente)';
+
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([
-      ':filename_2' => $filename,
-      ':original_name' => $original,
-      ':relative_path' => $relativePath,
-      ':mime_type' => $mime,
-      ':size_bytes' => $size,
-      ':area' => $area,
-      ':form_type' => $formType,
+      ':filename_2'     => $filename,
+      ':original_name'  => $original,
+      ':relative_path'  => $relativePath,
+      ':mime_type'      => $mime,
+      ':size_bytes'     => $size,
+      ':area'           => $area,          // enum('electronica','cafe') según tu tabla
+      ':form_type'      => $formType,
       ':created_by_user' => $userId,
-      ':sha256_hash' => $hash,
-      ':metadata_json' => !empty($metadata) ? json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
-      ':n_cliente' => $n_cliente,
+      ':sha256_hash'    => $hash,
+      ':metadata_json'  => !empty($metadata) ? json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+      ':n_cliente'      => $n_cliente,
     ]);
 
     return [
-      'filename_2' => $filename,
-      'full_path' => $fullPath,
+      'filename_2'   => $filename,
+      'full_path'    => $fullPath,
       'relative_path' => $relativePath,
-      'size' => $size,
-      'sha256' => $hash,
+      'size'         => $size,
+      'sha256'       => $hash,
     ];
   }
+
   // Brayan Andrey Perdomo :) 
   /* ===================== ROUTER ===================== */
   public static function handle(): void
