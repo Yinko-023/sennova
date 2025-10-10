@@ -2695,12 +2695,11 @@ class EvaluacionController
   /* ===================== GESTIÓN DE TCPDF ===================== */
   private static function ensureTcpdfLoaded(): void
   {
-    // Busca autoload de Composer subiendo hasta 3 niveles
     $bases = [
-      __DIR__,                                 // controllers/
-      dirname(__DIR__),                        // raíz esperada (sennova/)
-      dirname(__DIR__, 2),                     // un nivel más arriba
-      dirname(__DIR__, 3),                     // por si cambió estructura
+      __DIR__,                              
+      dirname(__DIR__),                   
+      dirname(__DIR__, 2),               
+      dirname(__DIR__, 3),                     
     ];
 
     $tried = [];
@@ -2714,13 +2713,12 @@ class EvaluacionController
       }
     }
 
-    // Si aún no existe TCPDF, intenta con librerías locales en varias variantes
     if (!class_exists('TCPDF')) {
-      // Raíces candidatas donde podrían estar las librerías
+
       $roots = array_unique([
-        dirname(__DIR__),      // sennova/
-        dirname(__DIR__, 2),   // proyecto/
-        __DIR__,               // controllers/
+        dirname(__DIR__),  
+        dirname(__DIR__, 2),   
+        __DIR__,           
       ]);
 
       $relPaths = [

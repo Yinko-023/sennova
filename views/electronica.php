@@ -26,6 +26,8 @@ $video = $model->obtenerVideoPorArea('electronica');
   <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" />
   <link href="/sennova/css/electrony.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
 
 <body>
 
@@ -488,10 +490,20 @@ $video = $model->obtenerVideoPorArea('electronica');
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label for="empresa" class="block text-gray-700 font-semibold mb-2">Empresa/Cliente</label>
-              <input type="text" id="empresa" name="empresa"
+              <label for="empresa" class="block text-gray-700 font-semibold mb-2">Nombre de la Empresa</label>
+              <input
+                type="text"
+                id="empresa"
+                name="empresa"
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-sena-green-400 focus:ring-sena-green-400 focus:outline-none focus:ring-2 transition duration-200">
+
+              <!-- NUEVO: checkbox particular -->
+              <label class="mt-1 flex items-center gap-2 justify-end text-xs text-gray-600 select-none">
+                <input type="checkbox" id="no_empresa" class="h-3 w-3">
+                No cuenta con Empresa
+              </label>
             </div>
+
             <!-- Cédula -->
             <div class="mb-6">
               <label for="cc_cliente" class="block text-gray-700 font-semibold mb-2">Cédula</label>
@@ -579,63 +591,166 @@ $video = $model->obtenerVideoPorArea('electronica');
   </section>
 
   <!-- PIE DE PAGINA -->
-  <footer class="footer text-white pt-5 pb-4 mt-3 bg-gray-900">
-    <div class="container">
-      <div class="row g-4">
-
-        <!-- Contacto -->
-        <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3 text-center text-md-start" data-aos="fade-up">
-          <h5 class="text-uppercase mb-4 font-weight-bold" style="color:#22c55e;">Tu Empresa/Sitio</h5>
-          <p>Una breve descripción sobre tu sitio, misión o lema principal.</p>
-          <p><i class="fas fa-home me-3"></i> Cra. 7 #591 5-1 a, La Plata, Huila</p>
-          <p><i class="fas fa-envelope me-3"></i> cdathlaplata@sena.edu.co</p>
-          <p class="mb-0"><i class="fas fa-phone me-3"></i> +XX XXX XXX XXX</p>
-        </div>
-
-        <!-- Enlaces -->
-        <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3 text-center text-md-start" data-aos="fade-up" data-aos-delay="100">
-          <h5 class="text-uppercase mb-4 font-weight-bold" style="color:#22c55e;">Enlaces Rápidos</h5>
-          <p class="mb-2"><a href="#publi" class="text-white text-decoration-none">Publicaciones</a></p>
-          <p class="mb-2"><a href="index.php #eventos" class="text-white text-decoration-none">Eventos</a></p>
-          <p class="mb-0"><a href="info.php" class="text-white text-decoration-none">Sobre Nosotros</a></p>
-        </div>
-
-        <!-- Redes y Newsletter -->
-        <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3 text-center text-md-start" data-aos="fade-up" data-aos-delay="300">
-          <h5 class="text-uppercase mb-4 font-weight-bold" style="color:#22c55e;">Síguenos</h5>
-          <div class="d-flex justify-content-center justify-content-md-start align-items-center flex-wrap gap-3 mb-3">
-            <a href="https://www.facebook.com/SENA/" class="text-white fs-5"><i class="bi bi-facebook"></i></a>
-            <a href="https://twitter.com/SENAComunica" class="text-white fs-5"><i class="bi bi-twitter"></i></a>
-            <a href="https://www.tiktok.com/@senacomunica_" class="text-white fs-5"><i class="bi bi-tiktok"></i></a>
-            <a href="https://www.youtube.com/user/SENATV" class="text-white fs-5"><i class="bi bi-youtube"></i></a>
-          </div>
-          <p class="mb-0">Suscríbete para recibir noticias:</p>
-          <form class="mt-2"></form>
+<footer class="footer-modern text-white pt-5 pb-4 mt-3 bg-gray-900" id="contactos">
+  <div class="container footer-content">
+    <div class="row g-5">
+      <!-- Contacto -->
+      <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mt-3">
+        <h5 class="footer-title">Laboratorios Sennova</h5>
+        <p class="mb-4">
+          Innovación, calidad y excelencia en cada proyecto que emprendemos.
+          Comprometidos con el desarrollo tecnológico del país.
+        </p>
+        <div class="footer-links">
+          <a href="https://maps.app.goo.gl/9VyGqmHhsQgXH9Dw5" target="_blank" rel="noopener">
+            <i class="fas fa-home"></i> Cra. 7 #591 5-1 a, La Plata, Huila
+          </a>
+          <a href="mailto:cdathlaplata@sena.edu.co">
+            <i class="fas fa-envelope"></i> cdathlaplata@sena.edu.co
+          </a>
+          <a href="tel:+5712345678">
+            <i class="fas fa-phone"></i> +57 (1) 234 5678
+          </a>
         </div>
       </div>
 
-      <hr class="my-4 text-white">
-
-      <!-- Pie final -->
-      <div class="row align-items-center text-center text-md-start" data-aos="fade-up" data-aos-delay="400">
-        <div class="col-md-7 col-lg-8 mb-2 mb-md-0">
-          <p class="mb-0">&copy;
-            <script>
-              document.write(new Date().getFullYear());
-            </script>
-            TuEmpresa/Sitio. Todos los derechos reservados.
-          </p>
+      <!-- Enlaces -->
+      <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+        <h5 class="footer-title">Enlaces Rápidos</h5>
+        <div class="footer-links">
+          <a href="#publicaciones"><i class="fas fa-newspaper"></i> Publicaciones</a>
+          <a href="#eventos"><i class="fas fa-calendar-alt"></i> Destacados</a>
+          <a href="info.php"><i class="fas fa-users"></i> Sobre Nosotros</a>
         </div>
-        <div class="col-md-5 col-lg-4 text-center text-md-end">
-          <p class="mb-0">Hecho con <i class="fas fa-heart text-danger"></i> por <strong>[Tu Nombre o Empresa]</strong></p>
+      </div>
+
+      <!-- Redes -->
+      <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3">
+        <h5 class="footer-title">Síguenos</h5>
+        <div class="social-icons mb-4">
+          <a href="https://www.facebook.com/SENA/" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://twitter.com/SENAComunica" target="_blank" rel="noopener"><i class="fab fa-twitter"></i></a>
+          <a href="https://www.tiktok.com/@senacomunica_" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i></a>
+          <a href="https://www.youtube.com/user/SENATV" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
         </div>
       </div>
     </div>
-  </footer>
+
+    <hr class="my-5 opacity-50">
+
+    <!-- Pie final -->
+    <div class="row align-items-center">
+      <div class="col-md-7 col-lg-8">
+        <p class="mb-0">
+          &copy; <script>document.write(new Date().getFullYear());</script>
+          SENA - Servicio Nacional de Aprendizaje. Todos los derechos reservados.
+        </p>
+      </div>
+      <div class="col-md-5 col-lg-4 text-center text-md-end">
+        <p class="mb-0">Hecho con <i class="fas fa-heart text-danger"></i> por <strong>Innovación y competitividad</strong></p>
+      </div>
+    </div>
+  </div>
+</footer>
 
 
   <!-- ===== CSS mínimo para quitar spinners en inputs numéricos ===== -->
   <style>
+.footer-modern {
+  position: relative;
+  overflow: hidden;
+
+}
+
+.footer-modern .footer-title {
+  color: #22c55e;               
+  text-transform: none;
+  font-weight: 700;
+  letter-spacing: .2px;
+  margin-bottom: 1rem;
+}
+
+.footer-modern p,
+.footer-modern a {
+  color: rgba(255,255,255,.85);
+}
+
+.footer-modern a:hover {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* Lista de links con iconos a la izquierda */
+.footer-modern .footer-links {
+  display: grid;
+  gap: .65rem;
+}
+.footer-modern .footer-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .35rem .5rem;
+  border-radius: .5rem;
+  transition: background-color .2s ease, transform .15s ease;
+  background: transparent;
+}
+.footer-modern .footer-links a i {
+  width: 1.1rem;
+  text-align: center;
+  color: #9ae6b4;               /* icono más claro */
+}
+.footer-modern .footer-links a:hover {
+  background: rgba(34,197,94,.08);   /* verde muy sutil */
+  transform: translateY(-1px);
+}
+
+/* Redes sociales */
+.footer-modern .social-icons {
+  display: flex;
+  gap: .8rem;
+}
+.footer-modern .social-icons a {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.06);
+  transition: transform .15s ease, border-color .2s ease, background .2s ease;
+}
+.footer-modern .social-icons a:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: rgba(34,197,94,.6);
+  background: rgba(34,197,94,.15);
+}
+.footer-modern .social-icons i {
+  font-size: 1rem;
+  color: #e5ffe9;
+}
+
+/* Separador */
+.footer-modern hr {
+  border-color: rgba(255,255,255,.15) !important;
+}
+
+/* Ondita sutil oscura (decoración, mismo tono) */
+.footer-modern::before {
+  content: "";
+  position: absolute; left: -10%; right: -10%; bottom: 18%;
+  height: 160px;
+  background: radial-gradient(120% 120% at 50% 0%,
+              rgba(255,255,255,.06) 0%,
+              rgba(255,255,255,0) 60%);
+  opacity: .25;
+  pointer-events: none;
+}
+
+/* Responsive detalles */
+@media (max-width: 768px) {
+  .footer-modern .social-icons { justify-content: center; }
+  .footer-modern .footer-links a { padding: .4rem .6rem; }
+}
+
     .only-numbers::-webkit-outer-spin-button,
     .only-numbers::-webkit-inner-spin-button {
       -webkit-appearance: none;
@@ -733,6 +848,68 @@ $video = $model->obtenerVideoPorArea('electronica');
         clearError();
       });
     })();
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- Empresa/Cliente: "particular" ---
+      const empresa = document.getElementById('empresa');
+      const noEmp = document.getElementById('no_empresa');
+
+      const syncEmpresa = () => {
+        if (!empresa || !noEmp) return;
+        if (noEmp.checked) {
+          empresa.value = 'Cliente';
+          empresa.readOnly = true;
+          empresa.classList.add('bg-gray-100', 'text-gray-600', 'cursor-not-allowed');
+        } else {
+          if (empresa.value === 'Cliente') empresa.value = '';
+          empresa.readOnly = false;
+          empresa.classList.remove('bg-gray-100', 'text-gray-600', 'cursor-not-allowed');
+        }
+      };
+      noEmp?.addEventListener('change', syncEmpresa, {
+        passive: true
+      });
+      syncEmpresa();
+
+      // --- Email: "No disponible" ---
+      const email = document.getElementById('email');
+      const noEmail = document.getElementById('no_email');
+      const syncEmail = () => {
+        if (!email || !noEmail) return;
+        if (noEmail.checked) {
+          email.value = '';
+          email.disabled = true;
+          email.classList.add('bg-gray-100', 'text-gray-600', 'cursor-not-allowed');
+        } else {
+          email.disabled = false;
+          email.classList.remove('bg-gray-100', 'text-gray-600', 'cursor-not-allowed');
+        }
+      };
+      noEmail?.addEventListener('change', syncEmail, {
+        passive: true
+      });
+      syncEmail();
+
+      // --- Teléfono: "No disponible" ---
+      const tel = document.getElementById('telefono');
+      const noTel = document.getElementById('no_tel');
+      const syncTel = () => {
+        if (!tel || !noTel) return;
+        if (noTel.checked) {
+          tel.value = '';
+          tel.disabled = true;
+          tel.classList.add('bg-gray-100', 'text-gray-600', 'cursor-not-allowed');
+        } else {
+          tel.disabled = false;
+          tel.classList.remove('bg-gray-100', 'text-gray-600', 'cursor-not-allowed');
+        }
+      };
+      noTel?.addEventListener('change', syncTel, {
+        passive: true
+      });
+      syncTel();
+    });
   </script>
 
   <script src="/sennova/js/funcion.js"></script>

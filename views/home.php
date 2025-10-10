@@ -817,7 +817,7 @@ $videoCafe = $videoCafeData ? $videoCafeData['ruta_video'] : 'videos/default-caf
                 </p>
             </div>
             <div class="col-md-5 col-lg-4 text-center text-md-end">
-                <p class="mb-0">Hecho con <i class="fas fa-heart text-danger"></i> por <strong>SENNOVA</strong></p>
+                <p class="mb-0">Hecho con <i class="fas fa-heart text-danger"></i> por <strong>Innovación y competitividad</strong></p>
             </div>
         </div>
     </div>
