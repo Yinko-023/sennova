@@ -27,10 +27,17 @@ if ($esAdmin) {
 }
 
 usort($solicitudes, function ($a, $b) use ($orden) {
+    $da = (int)($a['destacado_re'] ?? 0);
+    $db = (int)($b['destacado_re'] ?? 0);
+    if ($da !== $db) {
+        return $db <=> $da;
+    }
+
     $fa = $a['fecha_solicitud'] ?? ($a['created_at'] ?? ($a['fecha'] ?? ''));
     $fb = $b['fecha_solicitud'] ?? ($b['created_at'] ?? ($b['fecha'] ?? ''));
     $ta = $fa ? strtotime($fa) : 0;
     $tb = $fb ? strtotime($fb) : 0;
+
     return $orden === 'asc' ? ($ta <=> $tb) : ($tb <=> $ta);
 });
 
@@ -233,16 +240,18 @@ usort($solicitudes, function ($a, $b) use ($orden) {
         <div class="alert alert-info text-center">No hay solicitudes pendientes por ahora.</div>
     <?php else: ?>
 
-        <div class="row g-4 mt-3">
+        <div class="row g-4 mt-3" id="contenedorSolicitudes">
             <?php foreach ($solicitudes as $soli): ?>
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-6" id="card-<?= (int)$soli['id_re'] ?>">
                     <div class="card shadow-sm border-0 h-100 position-relative">
                         <div class="card-body">
                             <div class="position-absolute top-0 end-0 m-2 d-flex gap-1">
-                                <form method="post" action="routes/destacarServi.php" class="d-inline">
-                                    <input type="hidden" name="id_re" value="<?= $soli['id_re'] ?>">
-                                    <button type="submit"
-                                        class="btn btn-<?= $soli['destacado_re'] ? 'secondary' : 'warning' ?> btn-sm"
+                                <form method="post" action="routes/destacarServi.php" class="d-inline destacar-form">
+                                    <input type="hidden" name="id_re" value="<?= (int)$soli['id_re'] ?>">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm js-destacar-btn <?= $soli['destacado_re'] ? 'btn-secondary' : 'btn-warning' ?>"
+                                        data-id="<?= (int)$soli['id_re'] ?>"
                                         title="<?= $soli['destacado_re'] ? 'Quitar destacado' : 'Destacar solicitud' ?>">
                                         <i class="fas fa-star<?= $soli['destacado_re'] ? '' : '-half-alt' ?>"></i>
                                     </button>
@@ -279,7 +288,7 @@ usort($solicitudes, function ($a, $b) use ($orden) {
                                                         if (res.isConfirmed) form.submit();
                                                     });
                                                 } else {
-                                                    // Fallback si SweetAlert2 no está disponible
+
                                                     if (confirm(`¿Quieres eliminar ${nombre}?`)) form.submit();
                                                 }
                                             });
@@ -373,7 +382,8 @@ usort($solicitudes, function ($a, $b) use ($orden) {
 
                                     <div id="avisoSinComent<?= $soli['id_re'] ?>"
                                         class="alert alert-info py-2 px-3 mb-3" style="display:none;">
-                                        No se enviará ninguna notificación (medio: <strong>Ninguno</strong>).
+                                        No se enviará ninguna notificación (medio: <strong>Ninguno</strong>).<br>
+                                        Si desea enviar un mensaje, active "Agregar comentario" para seleccionar otro método.
                                     </div>
 
                                     <div class="mb-3 comentario-container" id="comentarioContainer<?= $soli['id_re'] ?>">
@@ -436,207 +446,304 @@ usort($solicitudes, function ($a, $b) use ($orden) {
         </div>
     <?php endif; ?>
 </div>
-
 <script>
-    const input = document.getElementById('inputBusqueda');
-    const limpiarBtn = document.getElementById('limpiarBusqueda');
-    const form = document.getElementById('form-busqueda-live');
-    const contenedor = document.getElementById('contenedorSolicitudes');
+(() => {
+  /* ===================== UTILIDADES GENERALES ===================== */
+  function qs(root, sel) { return root.querySelector(sel); }
+  function qsa(root, sel) { return [...root.querySelectorAll(sel)]; }
 
+  /* ===================== BÚSQUEDA EN VIVO (input + limpiar) ===================== */
+  const input       = document.getElementById('inputBusqueda');
+  const limpiarBtn  = document.getElementById('limpiarBusqueda');
+  const formLive    = document.getElementById('form-busqueda-live');
+  const contenedor  = document.getElementById('contenedorSolicitudes');
+
+  function doBusquedaLive() {
+    if (!formLive || !contenedor) return;
+    const params = new URLSearchParams(new FormData(formLive));
+    fetch('routes/busquedaLiveCards.php', { method: 'POST', body: params })
+      .then(res => res.text())
+      .then(html => {
+        contenedor.innerHTML = html;
+        // Reaplicar estados iniciales de toggles visibles tras recarga
+        aplicarEstadoInicialTogglesComentario();
+      })
+      .catch(() => {});
+  }
+
+  if (input && limpiarBtn) {
     input.addEventListener('input', () => {
-        const valor = input.value.trim();
-        limpiarBtn.style.display = valor.length > 0 ? 'inline-block' : 'none';
-
-        const params = new URLSearchParams(new FormData(form));
-        fetch('routes/busquedaLiveCards.php', {
-                method: 'POST',
-                body: params
-            })
-            .then(res => res.text())
-            .then(html => {
-                contenedor.innerHTML = html;
-            });
+      const valor = input.value.trim();
+      limpiarBtn.style.display = valor.length > 0 ? 'inline-block' : 'none';
+      doBusquedaLive();
     });
 
     limpiarBtn.addEventListener('click', () => {
-        input.value = '';
-        limpiarBtn.style.display = 'none';
-        input.focus();
+      input.value = '';
+      limpiarBtn.style.display = 'none';
+      input.focus();
+      doBusquedaLive();
+    });
+  }
 
-        const params = new URLSearchParams(new FormData(form));
-        fetch('routes/busquedaLiveCards.php', {
+  /* ===================== TOGGLE DE COMENTARIO (FUERA DE MODALES) ===================== */
+  function aplicarToggleComentario(checkbox) {
+    const id = checkbox?.dataset?.id;
+    if (!id) return;
+    const container = document.getElementById('comentarioContainer' + id);
+    const textarea  = document.getElementById('comentario' + id);
+    if (!container || !textarea) return;
+
+    if (checkbox.checked) {
+      container.style.display = 'block';
+      textarea.disabled = false;
+    } else {
+      container.style.display = 'none';
+      textarea.value = '';
+      textarea.disabled = true;
+    }
+  }
+
+  function aplicarEstadoInicialTogglesComentario() {
+    qsa(document, '.toggle-comentario').forEach(cb => aplicarToggleComentario(cb));
+  }
+
+  // Estado inicial al cargar
+  document.addEventListener('DOMContentLoaded', aplicarEstadoInicialTogglesComentario);
+
+  // Event delegation para cambios (sirve también para contenido dinámico)
+  document.addEventListener('change', (e) => {
+    const cb = e.target.closest?.('.toggle-comentario');
+    if (cb) aplicarToggleComentario(cb);
+  });
+
+  /* ===================== LÓGICA DE MODALES (Bootstrap) ===================== */
+  // Helper para habilitar/deshabilitar radios y sus labels
+  function setMediosDisabled(modalRoot, disabled) {
+    const radios = qsa(modalRoot, '.medio-r');
+    radios.forEach(r => {
+      r.disabled = disabled;
+      const label = qs(modalRoot, 'label[for="' + r.id + '"]');
+      if (label) {
+        label.classList.toggle('disabled', disabled);
+        label.classList.toggle('opacity-50', disabled);
+      }
+    });
+  }
+
+  // Usamos event delegation para capturar cualquier modal que se abra (incluso si fue insertado dinámicamente)
+  document.addEventListener('shown.bs.modal', (ev) => {
+    const modal = ev.target;
+    const form = qs(modal, '.respuesta-form');
+    if (!modal || !form) return;
+
+    const id              = form.id.replace('formResp', '');
+    const toggle          = qs(modal, '#toggleComent' + id);
+    const hiddenFlag      = qs(modal, '#sinOpinion' + id);
+    const comentarioWrap  = qs(modal, '#comentarioContainer' + id);
+    const comentario      = qs(modal, '#comentario' + id);
+
+    const medioCorreo     = qs(modal, '#correo' + id);
+    const medioWhats      = qs(modal, '#whatsapp' + id);
+    const medioNinguno    = qs(modal, '#ninguno' + id);
+
+    const aviso           = qs(modal, '#avisoSinComent' + id);
+
+    if (!toggle || !hiddenFlag || !comentario || !comentarioWrap || !aviso) return;
+
+    // Funciones locales para sincronizar estados
+    function aplicarEstadoPorToggle() {
+      if (toggle.checked) {
+        hiddenFlag.value = '0';
+        comentario.disabled = false;
+        comentarioWrap.style.display = '';
+        setMediosDisabled(modal, false);
+
+        // Si estaba en "Ninguno", cambiar a Correo o WhatsApp por defecto
+        if (medioNinguno?.checked) {
+          if (medioNinguno) medioNinguno.checked = false;
+          (medioCorreo || medioWhats) && ((medioCorreo || medioWhats).checked = true);
+        }
+        aviso.style.display = 'none';
+      } else {
+        hiddenFlag.value = '1';
+        comentario.value = '';
+        comentario.disabled = true;
+        comentarioWrap.style.display = 'none';
+        setMediosDisabled(modal, true);
+
+        // Forzar "Ninguno" al apagar
+        if (medioNinguno) {
+          medioNinguno.disabled = false;
+          medioNinguno.checked = true;
+        }
+        aviso.style.display = 'block';
+      }
+    }
+
+    function encenderComentario() {
+      toggle.checked = true;
+      aplicarEstadoPorToggle();
+    }
+    function apagarComentario() {
+      toggle.checked = false;
+      aplicarEstadoPorToggle();
+    }
+
+    // ---------- Estado inicial al abrir el modal ----------
+    toggle.checked = true;
+    hiddenFlag.value = '0';
+    comentario.disabled = false;
+    comentarioWrap.style.display = '';
+    setMediosDisabled(modal, false);
+    aviso.style.display = 'none';
+
+    // Si no hay medio elegido aún, seleccionar Correo por defecto
+    if (!(medioCorreo?.checked) && !(medioWhats?.checked) && !(medioNinguno?.checked)) {
+      if (medioCorreo) medioCorreo.checked = true;
+      else if (medioWhats) medioWhats.checked = true;
+    }
+
+    // ---------- Enlaces de eventos ----------
+    toggle.onchange = aplicarEstadoPorToggle;
+
+    medioNinguno?.addEventListener('change', () => {
+      if (medioNinguno.checked) apagarComentario();
+    });
+    medioCorreo?.addEventListener('change', () => {
+      if (medioCorreo.checked) encenderComentario();
+    });
+    medioWhats?.addEventListener('change', () => {
+      if (medioWhats.checked) encenderComentario();
+    });
+
+    // Validación de envío
+    form.onsubmit = function (e) {
+      if (toggle.checked) {
+        if (comentario.value.trim() === '') {
+          e.preventDefault();
+          alert('Si activas la opción de comentar, debes escribir un comentario.');
+          return false;
+        }
+        if (medioNinguno?.checked) {
+          e.preventDefault();
+          alert('Selecciona Correo o WhatsApp para notificar, o apaga la opción de comentar.');
+          return false;
+        }
+      } else {
+        comentario.value = '';
+        if (medioNinguno) medioNinguno.checked = true;
+      }
+    };
+  });
+
+  /* ===================== MODAL DE ÉXITO (successModal) ===================== */
+  function initSuccessModal() {
+    const modal   = document.getElementById('successModal');
+    if (!modal) return;
+
+    const closeBtn = document.getElementById('closeModal');
+    const okBtn    = document.getElementById('acceptButton');
+
+    const close = () => modal.classList.remove('active');
+
+    closeBtn?.addEventListener('click', close);
+    okBtn?.addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    // Autocierre a los 5s si está activo
+    setTimeout(() => {
+      if (modal.classList.contains('active')) close();
+    }, 5000);
+  }
+
+  document.addEventListener('DOMContentLoaded', initSuccessModal);
+})();
+</script>
+
+<script>
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.js-destacar-btn');
+        if (!btn) return;
+
+        const form = btn.closest('form.destacar-form');
+        if (!form) return;
+
+        const id = btn.dataset.id;
+        const card = document.getElementById('card-' + id);
+        const cont = document.getElementById('contenedorSolicitudes');
+
+        const wasWarning = btn.classList.contains('btn-warning');
+        const oldHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const fd = new FormData(form);
+            const res = await fetch(form.action + '?ajax=1', {
                 method: 'POST',
-                body: params
-            })
-            .then(res => res.text())
-            .then(html => {
-                contenedor.innerHTML = html;
+                body: fd,
+                headers: {
+                    'Accept': 'application/json'
+                }
             });
-    });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.toggle-comentario').forEach(function(checkbox) {
-            const id = checkbox.dataset.id;
-            const container = document.getElementById('comentarioContainer' + id);
-            const textarea = document.getElementById('comentario' + id);
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (err) {
+                form.submit();
+                return;
+            }
+            if (!res.ok || !data.ok) throw new Error(data.message || 'No se pudo actualizar');
 
-            function toggleComentario() {
-                if (checkbox.checked) {
-                    container.style.display = 'block';
-                    textarea.disabled = false;
+            if (Number(data.nuevo) === 1) {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-secondary');
+                btn.title = 'Quitar destacado';
+                btn.innerHTML = '<i class="fas fa-star"></i>';
+            } else {
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-warning');
+                btn.title = 'Destacar solicitud';
+                btn.innerHTML = '<i class="fas fa-star-half-alt"></i>';
+            }
+
+            if (card && cont) {
+                if (Number(data.nuevo) === 1) {
+                    const first = cont.firstElementChild;
+                    if (first) cont.insertBefore(card, first);
+                    else cont.appendChild(card);
                 } else {
-                    container.style.display = 'none';
-                    textarea.value = '';
-                    textarea.disabled = true;
+                    cont.appendChild(card);
                 }
+                card.classList.add('shadow-lg');
+                setTimeout(() => card.classList.remove('shadow-lg'), 600);
+                const top = card.getBoundingClientRect().top + window.scrollY - 90;
+                window.scrollTo({
+                    top,
+                    behavior: 'smooth'
+                });
             }
 
-            checkbox.addEventListener('change', toggleComentario);
-            toggleComentario();
-        });
-    });
-
-    (function() {
-        function setMediosDisabled(modalRoot, disabled) {
-            const radios = modalRoot.querySelectorAll('.medio-r');
-            radios.forEach(r => {
-                r.disabled = disabled;
-                const label = modalRoot.querySelector('label[for="' + r.id + '"]');
-                if (label) {
-                    if (disabled) {
-                        label.classList.add('disabled', 'opacity-50');
-                    } else {
-                        label.classList.remove('disabled', 'opacity-50');
-                    }
-                }
-            });
-        }
-
-        document.querySelectorAll('.modal').forEach(function(modal) {
-            modal.addEventListener('shown.bs.modal', function() {
-                const form = modal.querySelector('.respuesta-form');
-                if (!form) return;
-
-                const id = form.id.replace('formResp', '');
-                const toggle = modal.querySelector('#toggleComent' + id);
-                const hiddenFlag = modal.querySelector('#sinOpinion' + id);
-                const comentarioWrap = modal.querySelector('#comentarioContainer' + id);
-                const comentario = modal.querySelector('#comentario' + id);
-                const medioCorreo = modal.querySelector('#correo' + id);
-                const medioWhats = modal.querySelector('#whatsapp' + id);
-                const medioNinguno = modal.querySelector('#ninguno' + id);
-                const aviso = modal.querySelector('#avisoSinComent' + id);
-
-                // ===== Estado inicial: switch ACTIVADO (comentar) =====
-                toggle.checked = true;
-                hiddenFlag.value = '0';
-                comentario.disabled = false;
-                comentarioWrap.style.display = '';
-                setMediosDisabled(modal, false);
-                aviso.style.display = 'none';
-
-                // si ningún medio está seleccionado aún, selecciona correo por defecto
-                if (!medioCorreo.checked && !medioWhats.checked && !medioNinguno.checked) {
-                    medioCorreo.checked = true;
-                }
-
-                // ===== Cambio del switch =====
-                toggle.onchange = function() {
-                    if (toggle.checked) {
-                        hiddenFlag.value = '0';
-                        comentario.disabled = false;
-                        comentarioWrap.style.display = '';
-                        setMediosDisabled(modal, false);
-                        if (medioNinguno.checked) {
-                            medioNinguno.checked = false;
-                            medioCorreo.checked = true;
-                        }
-                        aviso.style.display = 'none';
-                    } else {
-                        hiddenFlag.value = '1';
-                        comentario.value = '';
-                        comentario.disabled = true;
-                        comentarioWrap.style.display = 'none';
-                        setMediosDisabled(modal, true);
-                        medioNinguno.disabled = false;
-                        medioNinguno.checked = true;
-                        aviso.style.display = 'block';
-                    }
-                };
-
-                // ===== Validación en submit =====
-                form.onsubmit = function(e) {
-                    if (toggle.checked) {
-                        if (comentario.value.trim() === '') {
-                            e.preventDefault();
-                            alert('Si activas la opción de comentar, debes escribir un comentario.');
-                            return false;
-                        }
-                        if (medioNinguno.checked) {
-                            e.preventDefault();
-                            alert('Selecciona Correo o WhatsApp para notificar, o apaga la opción de comentar.');
-                            return false;
-                        }
-                    } else {
-                        comentario.value = '';
-                        medioNinguno.checked = true;
-                    }
-                };
-            });
-        });
-    })();
-
-    // Modal de notificacion
-    document.addEventListener('DOMContentLoaded', function() {
-        const closeModal = document.getElementById('closeModal');
-        const acceptButton = document.getElementById('acceptButton');
-        const successModal = document.getElementById('successModal');
-
-        if (closeModal) {
-            closeModal.addEventListener('click', function() {
-                successModal.classList.remove('active');
-            });
-        }
-
-        if (acceptButton) {
-            acceptButton.addEventListener('click', function() {
-                successModal.classList.remove('active');
-            });
-        }
-
-        if (successModal) {
-            successModal.addEventListener('click', function(e) {
-                if (e.target === successModal) {
-                    successModal.classList.remove('active');
-                }
-            });
-        }
-
-        // Cerrar automáticamente después de 5 segundos
-        setTimeout(function() {
-            if (successModal && successModal.classList.contains('active')) {
-                successModal.classList.remove('active');
+        } catch (err) {
+            alert('Error: ' + err.message);
+            btn.innerHTML = oldHtml;
+            if (wasWarning) {
+                btn.classList.add('btn-warning');
+                btn.classList.remove('btn-secondary');
+            } else {
+                btn.classList.add('btn-secondary');
+                btn.classList.remove('btn-warning');
             }
-        }, 5000);
-    });
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const modal = document.getElementById('successModal');
-        if (!modal) return;
-
-        const closeBtn = document.getElementById('closeModal');
-        const okBtn = document.getElementById('acceptButton');
-
-        function close() {
-            modal.classList.remove('active');
+        } finally {
+            btn.disabled = false;
         }
-        closeBtn?.addEventListener('click', close);
-        okBtn?.addEventListener('click', close);
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) close();
-        });
     });
 </script>
+
+
 
 <style>
     #respuestaModal<?= $soli['id_re'] ?>.modal-content {

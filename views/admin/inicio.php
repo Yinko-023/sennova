@@ -2,7 +2,6 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 date_default_timezone_set('America/Bogota');
 
-
 $rol        = (int)($_SESSION['rol']  ?? 0);
 $areaSesion = $_SESSION['area']       ?? null;
 
@@ -10,17 +9,17 @@ $resumen = is_array($resumen ?? null) ? $resumen : [];
 
 if (!isset($areaFiltro)) {
   if ($rol === 1) {
-    $areaFiltro = null;
+    $areaFiltro = null;               
   } elseif ($rol === 2) {
-    $areaFiltro = 'electronica';
+    $areaFiltro = 'electronica';     
   } else {
-    $areaFiltro = $areaSesion ?: null;
+    $areaFiltro = $areaSesion ?: null; 
   }
 }
 
 $defaultsResumen = [
   'total'            => 0,
-  'cafe'             => 0,
+  'cafe'             => 0,              
   'electronica'      => 0,
   'atendidas_num'    => 0,
   'pendientes_num'   => 0,
@@ -28,6 +27,12 @@ $defaultsResumen = [
   'atendidas_pct'    => 0,
   'rechazadas_pct'   => 0,
   'growth_pct'       => 0,
+
+ 
+  'atendidas_cafe'         => 0,
+  'cafe_atendidas'         => 0,
+  'atendidas_electronica'  => 0,
+  'electronica_atendidas'  => 0,
 ];
 $resumen = array_merge($defaultsResumen, $resumen);
 
@@ -49,9 +54,13 @@ $rechazadasPct = (int)($resumen['rechazadas_pct'] ?: round($rechazadasNum * 100 
 $growthPct     = (float)$resumen['growth_pct'];
 
 $displayTotal = $totalResumen;
-if ($areaKey === 'cafe')        $displayTotal = (int)$resumen['cafe'];
-elseif ($areaKey === 'electronica') $displayTotal = (int)$resumen['electronica'];
+if ($areaKey === 'cafe') {
+  $displayTotal = (int)$resumen['cafe'];
+} elseif ($areaKey === 'electronica') {
+  $displayTotal = (int)$resumen['electronica'];
+}
 
+// Normalizamos de vuelta por si se usan más abajo
 $resumen['atendidas_num']   = $atendidasNum;
 $resumen['pendientes_num']  = $pendientesNum;
 $resumen['rechazadas_num']  = $rechazadasNum;
@@ -59,13 +68,43 @@ $resumen['atendidas_pct']   = $atendidasPct;
 $resumen['rechazadas_pct']  = $rechazadasPct;
 $resumen['growth_pct']      = $growthPct;
 
-$usuarios     = is_array($usuarios     ?? null) ? $usuarios     : [];
-$actividades  = is_array($actividades  ?? null) ? $actividades  : [];
-$totalUsuarios = (int)($totalUsuarios ?? 0);
-$totalVisitas  = (int)($totalVisitas  ?? 0);
-$totalArchivos = (int)($totalArchivos ?? 0);
-$totalPublicaciones = (int)($totalPublicaciones ?? 0);
+// ===== Colecciones y contadores varios =====
+$usuarios           = is_array($usuarios           ?? null) ? $usuarios           : [];
+$actividades        = is_array($actividades        ?? null) ? $actividades        : [];
+$totalUsuarios      = (int)($totalUsuarios         ?? 0);
+$totalVisitas       = (int)($totalVisitas          ?? 0);
+$totalArchivos      = (int)($totalArchivos         ?? 0);
+$totalPublicaciones = (int)($totalPublicaciones    ?? 0);
+
+$isAdmin = ($rol === 1);
+
+
+$attCafe = (int)(
+  $resumen['atendidas_cafe']
+  ?? $resumen['cafe_atendidas']
+  ?? $resumen['cafe']            // fallback útil si tu backend llena esta clave
+  ?? 0
+);
+
+$attElec = (int)(
+  $resumen['atendidas_electronica']
+  ?? $resumen['electronica_atendidas']
+  ?? $resumen['electronica']     // fallback útil si tu backend llena esta clave
+  ?? 0
+);
+
+// Si estás en un área y no vino su contador específico, usa el total general atendidas
+$attArea = 0;
+if ($areaKey === 'cafe') {
+  $attArea = $attCafe ?: $atendidasNum;
+} elseif ($areaKey === 'electronica') {
+  $attArea = $attElec ?: $atendidasNum;
+} else {
+  $attArea = $atendidasNum;
+}
+
 ?>
+
 
 
 <div class="container-fluid dashboard-container ">
@@ -99,12 +138,12 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
         <div class="card-body">
           <h6 class="metric-title">Publicaciones</h6>
           <h2 class="metric-value"><?= $totalPublicaciones ?? '0' ?></h2>
-
           <i class="fas fa-newspaper metric-icon"></i>
         </div>
       </div>
     </div>
 
+    <?php if ($isAdmin): ?>
     <div class="col-xl-3 col-md-6 mb-4">
       <div class="metric-card info h-100">
         <div class="card-body">
@@ -115,6 +154,19 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
         </div>
       </div>
     </div>
+    <?php else: ?>
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="metric-card info h-100">
+          <div class="card-body">
+            <h6 class="metric-title">
+              Atendidos <?= $areaKey ? ucfirst($areaKey) : '' ?>
+            </h6>
+            <h2 class="metric-value"><?= $attArea ?></h2>
+            <i class="fas fa-clipboard-check metric-icon"></i>
+          </div>
+        </div>
+      </div>
+    <?php endif; ?>
 
     <div class="col-xl-3 col-md-6 mb-4">
       <div class="metric-card warning h-100">
@@ -518,7 +570,7 @@ $totalPublicaciones = (int)($totalPublicaciones ?? 0);
 
       <div class="modal-footer" id="modal-actividad-footer">
         <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal" id="btn-actividad-cerrar">Cerrar</button>
-       
+
       </div>
     </div>
   </div>
