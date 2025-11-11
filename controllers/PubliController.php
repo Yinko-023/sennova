@@ -2696,10 +2696,10 @@ class EvaluacionController
   private static function ensureTcpdfLoaded(): void
   {
     $bases = [
-      __DIR__,                              
-      dirname(__DIR__),                   
-      dirname(__DIR__, 2),               
-      dirname(__DIR__, 3),                     
+      __DIR__,
+      dirname(__DIR__),
+      dirname(__DIR__, 2),
+      dirname(__DIR__, 3),
     ];
 
     $tried = [];
@@ -2716,9 +2716,9 @@ class EvaluacionController
     if (!class_exists('TCPDF')) {
 
       $roots = array_unique([
-        dirname(__DIR__),  
-        dirname(__DIR__, 2),   
-        __DIR__,           
+        dirname(__DIR__),
+        dirname(__DIR__, 2),
+        __DIR__,
       ]);
 
       $relPaths = [
@@ -2754,82 +2754,104 @@ class EvaluacionController
     }
   }
   /* ===================== ALMACENAMIENTO DE PDF Y REGISTRO ===================== */
-  private static function persistGeneratedPdf(\TCPDF $pdf, string $suggestedName, string $formType, array $metadata = [], ?string $documentNumber = null, ?string $n_cliente = null): array
-  {
-    // 1) Preparar directorio destino: /public/pdfs/YYYY/MM
-    $root = dirname(__DIR__); // sennova/
-    $year = date('Y');
-    $month = date('m');
-    $targetDir = rtrim($root, '/\\') . '/public/Formul/' . $year . '/' . $month;
-    if (!is_dir($targetDir)) {
-      @mkdir($targetDir, 0775, true);
-    }
-
-    // 2) Nombre de archivo seguro y único
-    // Normalizar nombre base del PDF
-    $baseNorm = preg_replace('/[^A-Za-z0-9_\-\.]+/', '_', $suggestedName);
-    if ($baseNorm === '' || strtolower(substr($baseNorm, -4)) !== '.pdf') {
-      $baseNorm = 'documento.pdf';
-    }
-    $baseNoExt = preg_replace('/\.pdf$/i', '', $baseNorm);
-    // Tomar solo dígitos de la cédula
-    $cedula = $documentNumber ? preg_replace('/\D+/', '', (string)$documentNumber) : '';
-    // Nombre final: <nombrepdf>-<cedula>.pdf
-    $candidate = $baseNoExt . ($cedula !== '' ? ('-' . $cedula) : '') . '.pdf';
-    $filename = $candidate;
-    $fullPath = $targetDir . '/' . $filename;
-    // Evitar colisiones manteniendo el patrón solicitado
-    $suffix = 1;
-    while (is_file($fullPath)) {
-      $filename = $baseNoExt . ($cedula !== '' ? ('-' . $cedula) : '') . '-' . $suffix . '.pdf';
-      $fullPath = $targetDir . '/' . $filename;
-      $suffix++;
-    }
-
-    // 3) Guardar en disco (copia permanente)
-    $pdf->Output($fullPath, 'F');
-
-    // 4) Calcular metadatos
-    $size = is_file($fullPath) ? filesize($fullPath) : 0;
-    $hash = is_file($fullPath) ? hash_file('sha256', $fullPath) : null;
-    $relativePath = '/sennova/public/Formul/' . $year . '/' . $month . '/' . rawurlencode($filename);
-
-    // 5) Insertar en BD
-    // 5) Insertar en BD
-    require_once __DIR__ . '/../conexion/conexion.php';
-    $pdo = conectaDb();
-    $area   = $_SESSION['area']       ?? null;
-    $userId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
-    $original = $suggestedName;
-    $mime  = 'application/pdf';
-
-    $sql = 'INSERT INTO generated_pdfs
-  (filename_2, original_name, relative_path, mime_type, size_bytes, area, form_type, created_by_user, sha256_hash, metadata_json, n_cliente)
-  VALUES (:filename_2, :original_name, :relative_path, :mime_type, :size_bytes, :area, :form_type, :created_by_user, :sha256_hash, :metadata_json, :n_cliente)';
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-      ':filename_2'     => $filename,
-      ':original_name'  => $original,
-      ':relative_path'  => $relativePath,
-      ':mime_type'      => $mime,
-      ':size_bytes'     => $size,
-      ':area'           => $area,          // enum('electronica','cafe') según tu tabla
-      ':form_type'      => $formType,
-      ':created_by_user' => $userId,
-      ':sha256_hash'    => $hash,
-      ':metadata_json'  => !empty($metadata) ? json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
-      ':n_cliente'      => $n_cliente,
-    ]);
-
-    return [
-      'filename_2'   => $filename,
-      'full_path'    => $fullPath,
-      'relative_path' => $relativePath,
-      'size'         => $size,
-      'sha256'       => $hash,
-    ];
+  // Reemplaza toda tu función por esta
+private static function persistGeneratedPdf(
+  \TCPDF $pdf,
+  string $suggestedName,
+  string $formType,
+  array $metadata = [],
+  ?string $documentNumber = null,
+  ?string $n_cliente = null,
+  ?string $elegidoF56 = null
+): array {
+  $root = dirname(__DIR__);
+  $year = date('Y');
+  $month = date('m');
+  $targetDir = rtrim($root, '/\\') . '/public/Formul/' . $year . '/' . $month;
+  if (!is_dir($targetDir)) {
+    @mkdir($targetDir, 0775, true);
   }
+
+  // normalizar nombre sugerido
+  $baseNorm = preg_replace('/[^A-Za-z0-9_\-\.]+/', '_', $suggestedName);
+  if ($baseNorm === '' || strtolower(substr($baseNorm, -4)) !== '.pdf') {
+    $baseNorm = 'documento.pdf';
+  }
+  $baseNoExt = preg_replace('/\.pdf$/i', '', $baseNorm);
+
+  // cédula opcional
+  $cedula = $documentNumber ? preg_replace('/\D+/', '', (string)$documentNumber) : '';
+
+  // conectamos ANTES para poder consultar duplicados
+  require_once __DIR__ . '/../conexion/conexion.php';
+  $pdo    = conectaDb();
+  $area   = $_SESSION['area'] ?? null;
+  $userId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
+  $mime   = 'application/pdf';
+
+  // vamos a construir un filename ÚNICO que no exista ni en disco ni en la BD
+  $i = 0;
+  $filename = '';
+  $fullPath = '';
+  do {
+    $suffix = $i === 0 ? '' : '-' . $i;
+    $filename = $baseNoExt . ($cedula !== '' ? ('-' . $cedula) : '') . $suffix . '.pdf';
+    $fullPath = $targetDir . '/' . $filename;
+
+    // ¿existe en BD?
+    $stmtCheck = $pdo->prepare("SELECT 1 FROM generated_pdfs WHERE filename_2 = :f LIMIT 1");
+    $stmtCheck->execute([':f' => $filename]);
+    $existsInDb = (bool)$stmtCheck->fetchColumn();
+
+    $i++;
+  } while (is_file($fullPath) || $existsInDb);
+  // cuando salimos de aquí, $filename y $fullPath son únicos
+
+  // guardar el PDF
+  $pdf->Output($fullPath, 'F');
+
+  $size = is_file($fullPath) ? filesize($fullPath) : 0;
+  $hash = is_file($fullPath) ? hash_file('sha256', $fullPath) : null;
+  $relativePath = '/sennova/public/Formul/' . $year . '/' . $month . '/' . rawurlencode($filename);
+
+  // ahora sí el INSERT
+  $sql = 'INSERT INTO generated_pdfs
+    (filename_2, original_name, relative_path, mime_type, size_bytes,
+     area, form_type, elegido_f56, created_by_user, sha256_hash,
+     metadata_json, n_cliente, correlativo)
+   VALUES
+    (:filename_2, :original_name, :relative_path, :mime_type, :size_bytes,
+     :area, :form_type, :elegido_f56, :created_by_user, :sha256_hash,
+     :metadata_json, :n_cliente, :correlativo)';
+
+  $stmt = $pdo->prepare($sql);
+  $stmt->execute([
+    ':filename_2'      => $filename,
+    ':original_name'   => $suggestedName,
+    ':relative_path'   => $relativePath,
+    ':mime_type'       => $mime,
+    ':size_bytes'      => $size,
+    ':area'            => $area,
+    ':form_type'       => $formType,
+    ':elegido_f56'     => ($elegidoF56 === 'f5' || $elegidoF56 === 'f6') ? $elegidoF56 : null,
+    ':created_by_user' => $userId,
+    ':sha256_hash'     => $hash,
+    ':metadata_json'   => !empty($metadata)
+                          ? json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                          : null,
+    ':n_cliente'       => $n_cliente,
+    ':correlativo'     => null,
+  ]);
+
+  return [
+    'filename_2'    => $filename,
+    'full_path'     => $fullPath,
+    'relative_path' => $relativePath,
+    'size'          => $size,
+    'sha256'        => $hash,
+  ];
+}
+
 
   // Brayan Andrey Perdomo :) 
   /* ===================== ROUTER ===================== */
@@ -4187,7 +4209,7 @@ class EvaluacionController
 
     $fileName = "VerificacionPCB_{$norm}.pdf";
     $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
-    self::persistGeneratedPdf($pdf, $fileName, 'form5_verificacion_pcb', [], $cc_para_nombre, $n_cliente);
+    self::persistGeneratedPdf($pdf, $fileName, 'form5_verificacion_pcb', [], $cc_para_nombre, $n_cliente, 'f5');
     $pdf->Output($fileName, $outMode);
     exit;
   }
@@ -4375,7 +4397,7 @@ class EvaluacionController
 
     $fileName = "Verificacion3D_{$norm}.pdf";
     $cc_para_nombre = preg_replace('/\D+/', '', (string)($_POST['nit_cc'] ?? ''));
-    self::persistGeneratedPdf($pdf, $fileName, 'form6_verificacion_3d', [], $cc_para_nombre, $n_cliente);
+    self::persistGeneratedPdf($pdf, $fileName, 'form6_verificacion_3d', [], $cc_para_nombre, $n_cliente, 'f6');
     $pdf->Output($fileName, $outMode);
     exit;
   }

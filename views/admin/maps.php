@@ -1906,6 +1906,42 @@
   </div>
 </div>
 
+<?php
+// === Helpers para mostrar el estado de contadores en la tabla lateral ===
+function __counter_base_dir_for_view(): string {
+  $path = __DIR__ . '/../storage/counters';
+  if (is_dir($path)) return $path;
+  $alt = __DIR__ . '/storage/counters';
+  return $alt;
+}
+function __counter_file_map_for_view(): array {
+  $base = __counter_base_dir_for_view();
+  if (!is_dir($base)) @mkdir($base, 0775, true);
+  return [
+    'form1_solicitud'        => $base . '/solicitud.counter',
+    'form2_evaluacion'       => $base . '/evaluacion.counter',
+    'form3_cotizacion'       => $base . '/cotizacion.counter',
+    'form4_orden_trabajo'    => $base . '/orden_trabajo.counter',
+    'form5_verificacion_pcb' => $base . '/verificacion_pcb.counter',
+    'form6_verificacion_3d'  => $base . '/verificacion_3d.counter',
+    'form7_continuidad_pcb'  => $base . '/continuidad_pcb.counter',
+    'form8_informe_servicio' => $base . '/informe_servicio.counter',
+    'form9_satisfaccion'     => $base . '/satisfaccion.counter',
+  ];
+}
+function __read_counter_value_for_view(string $file): int {
+  if (!is_file($file)) return 0;
+  $raw = @file_get_contents($file);
+  if ($raw === false) return 0;
+  if (preg_match('/\d+/', $raw, $m)) return (int)$m[0];
+  return 0;
+}
+function __next_padded_for_view(int $current): string {
+  return sprintf('%03d', $current + 1);
+}
+$__map_view = __counter_file_map_for_view();
+?>
+
 <?php if ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2): ?>
   <div class="container my-5">
     <div class="d-flex justify-content-center mt-4">
@@ -1915,8 +1951,8 @@
     </div>
   </div>
 
-  <div class="modal fade modal-reset-correlativos " id="modalResetCorrelativos" tabindex="-1" aria-labelledby="modalResetCorrelativosLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+  <div class="modal fade modal-reset-correlativos" id="modalResetCorrelativos" tabindex="-1" aria-labelledby="modalResetCorrelativosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="modalResetCorrelativosLabel">
@@ -1924,88 +1960,126 @@
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+
+        <style>
+          #modalResetCorrelativos .two-col{ display:flex; gap:20px; align-items:flex-start; }
+          #modalResetCorrelativos .two-col .col-left, #modalResetCorrelativos .two-col .col-right{ flex:1 1 0; min-width:0; }
+          @media (max-width: 520px){ #modalResetCorrelativos .two-col{ flex-direction:column; } }
+        </style>
+
         <div class="modal-body">
-          <div class="admin-badge">
+          <div class="admin-badge mb-2">
             <i class="fas fa-shield-alt"></i> Solo administradores
           </div>
 
-          <p class="intro-text">Selecciona los formularios a reiniciar o usa la opción "Todos". El nuevo valor se aplicará a los correlativos seleccionados.</p>
+          <div class="two-col">
+            <!-- Izquierda: controles existentes -->
+            <div class="col-left">
+              <p class="intro-text">
+                Selecciona los formularios a reiniciar o usa la opción "Todos".
+                El nuevo valor se aplicará a los correlativos seleccionados.
+              </p>
 
-          <div class="value-input-container">
-            <label>Nuevo valor inicial:</label>
-            <div class="value-input-wrapper">
-              <input type="number" name="modal_set_to" class="form-control" value="0" min="0">
-              <small>0 = siguiente número será 001</small>
+              <div class="value-input-container">
+                <label>Nuevo valor inicial:</label>
+                <div class="value-input-wrapper">
+                  <input type="number" name="modal_set_to" class="form-control" value="0" min="0">
+                  <small>0 = siguiente número será 001</small>
+                </div>
+              </div>
+
+              <div class="selection-header mt-4 d-flex align-items-center justify-content-between">
+                <div class="form-check-all">
+                  <input class="form-check-input" type="checkbox" id="modal-chk-all">
+                  <label class="form-check-label" for="modal-chk-all">Seleccionar todos</label>
+                </div>
+                <span class="selected-count" id="selected-count">0 seleccionados</span>
+              </div>
+
+              <div class="counters-grid mt-4" id="modal-counters-list">
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form1_solicitud">
+                    <span class="form-check-label">F1 – Solicitud</span>
+                  </label>
+                </div>
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form2_evaluacion">
+                    <span class="form-check-label">F2 – Evaluación técnica</span>
+                  </label>
+                </div>
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form3_cotizacion">
+                    <span class="form-check-label">F3 – Cotización</span>
+                  </label>
+                </div>
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form4_orden_trabajo">
+                    <span class="form-check-label">F4 – Orden de trabajo</span>
+                  </label>
+                </div>
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form5_verificacion_pcb">
+                    <span class="form-check-label">F5 – Verificación PCB</span>
+                  </label>
+                </div>
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form6_verificacion_3d">
+                    <span class="form-check-label">F6 – Verificación 3D</span>
+                  </label>
+                </div>
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form7_continuidad_pcb">
+                    <span class="form-check-label">F7 – Continuidad PCB</span>
+                  </label>
+                </div>
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form8_informe_servicio">
+                    <span class="form-check-label">F8 – Informe de servicio</span>
+                  </label>
+                </div>
+                <div class="counter-item">
+                  <label class="form-check">
+                    <input class="form-check-input modal-counter-chk" type="checkbox" value="form9_satisfaccion">
+                    <span class="form-check-label">F9 – Satisfacción</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="result-container mt-3" id="modal-reset-result"></div>
+            </div>
+
+            <!-- Derecha: tabla (se llena por JS) -->
+            <div class="col-right">
+              <h6 class="mb-2">Estado actual de los correlativos</h6>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Formulario</th>
+                      <th class="text-end">Valor actual</th>
+                      <th class="text-end">Próximo código</th>
+                    </tr>
+                  </thead>
+                  <tbody id="counters-status-tbody">
+                    <tr><td colspan="3">Cargando…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <small class="text-muted d-block mt-1">
+                “Valor actual” es el entero guardado en archivo. “Próximo código” = valor + 1 con padding (001, 002…).
+              </small>
             </div>
           </div>
-
-          <div class="selection-header mt-4">
-            <div class="form-check-all">
-              <input class="form-check-input" type="checkbox" id="modal-chk-all">
-              <label class="form-check-label" for="modal-chk-all">Seleccionar todos</label>
-            </div>
-            <span class="selected-count" id="selected-count">0 seleccionados</span>
-          </div>
-
-          <div class="counters-grid mt-4" id="modal-counters-list">
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form1_solicitud">
-                <span class="form-check-label">F1 – Solicitud</span>
-              </label>
-            </div>
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form2_evaluacion">
-                <span class="form-check-label">F2 – Evaluación técnica</span>
-              </label>
-            </div>
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form3_cotizacion">
-                <span class="form-check-label">F3 – Cotización</span>
-              </label>
-            </div>
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form4_orden_trabajo">
-                <span class="form-check-label">F4 – Orden de trabajo</span>
-              </label>
-            </div>
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form5_verificacion_pcb">
-                <span class="form-check-label">F5 – Verificación PCB</span>
-              </label>
-            </div>
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form6_verificacion_3d">
-                <span class="form-check-label">F6 – Verificación 3D</span>
-              </label>
-            </div>
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form7_continuidad_pcb">
-                <span class="form-check-label">F7 – Continuidad PCB</span>
-              </label>
-            </div>
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form8_informe_servicio">
-                <span class="form-check-label">F8 – Informe de servicio</span>
-              </label>
-            </div>
-            <div class="counter-item">
-              <label class="form-check">
-                <input class="form-check-input modal-counter-chk" type="checkbox" name="modal_selected[]" value="form9_satisfaccion">
-                <span class="form-check-label">F9 – Satisfacción</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="result-container" id="modal-reset-result"></div>
         </div>
+
         <div class="modal-footer">
           <div class="modal-footer-actions">
             <button type="button" class="btn btn-modal btn-modal-cancel" data-bs-dismiss="modal">
@@ -2022,8 +2096,8 @@
       </div>
     </div>
   </div>
-
 <?php endif; ?>
+
 
 
 <style>
@@ -3848,12 +3922,72 @@
 </style>
 
 <script>
+// Pinta el estado consultando al servidor (nada de PHP en la tabla)
+async function loadCountersStatus() {
+  const tbody = document.getElementById('counters-status-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="3">Cargando…</td></tr>';
+
+  try {
+    const res = await fetch('routes/get_counters_status.php', {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    });
+    const data = await res.json();
+    if (!data?.ok) throw new Error(data?.message || 'Respuesta inválida');
+
+    const rows = (data.counters || []).map(c => {
+      const label = c.key
+        .replace(/^form(\d+)_/, (m, g) => `F${g} – `)
+        .replaceAll('_', ' ');
+      return `
+        <tr>
+          <td>${label}</td>
+          <td class="text-end"><code>${c.current_value}</code></td>
+          <td class="text-end"><strong>${c.next_code}</strong></td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.innerHTML = rows || '<tr><td colspan="3">Sin datos</td></tr>';
+  } catch (e) {
+    console.error(e);
+    tbody.innerHTML = '<tr><td colspan="3" class="text-danger">Error al cargar estado</td></tr>';
+  }
+}
+
+// Recarga al abrir el modal
+document.addEventListener('show.bs.modal', (e) => {
+  if (e.target && e.target.id === 'modalResetCorrelativos') loadCountersStatus();
+});
+
+// Reinicio con refresco del estado
+async function doReset(payload) {
+  const res = await fetch('routes/reset_counters.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload)
+  });
+
+  if (res.status === 403) {
+    await Swal.fire({ icon: 'error', title: 'No autorizado', text: 'Tu rol no tiene permiso (debe ser 1 o 2).' });
+    return;
+  }
+
+  const data = await res.json().catch(() => ({}));
+  if (data?.ok) {
+    await Swal.fire({ icon: 'success', title: 'Listo', text: 'Correlativos reiniciados correctamente.' });
+    await loadCountersStatus(); // <- refrescar tabla con los nuevos valores
+  } else {
+    await Swal.fire({ icon: 'error', title: 'Error', text: data?.message || 'No se pudo reiniciar.' });
+  }
+}
+
   document.addEventListener('DOMContentLoaded', function() {
-    // Escuchar cambios en el input principal de n_cliente
     const nClienteInput = document.getElementById('n_cliente');
     nClienteInput.addEventListener('input', function() {
       const nClienteValue = this.value;
-      // Actualizar todos los campos ocultos de los demás formularios
       for (let i = 2; i <= 9; i++) {
         const hiddenInput = document.getElementById('n_cliente_form' + i);
         if (hiddenInput) {
@@ -3862,12 +3996,11 @@
       }
     });
 
-    // Escuchar el clic en los botones de "Siguiente" de las pestañas
     const tabButtons = document.querySelectorAll('.nav-link');
     tabButtons.forEach(button => {
       button.addEventListener('click', function() {
         const nClienteValue = nClienteInput.value;
-        const targetFormId = this.getAttribute('data-bs-target').substring(1); // Obtiene 'form2', 'form3', etc.
+        const targetFormId = this.getAttribute('data-bs-target').substring(1);
         const hiddenInput = document.getElementById('n_cliente_' + targetFormId);
         if (hiddenInput) {
           hiddenInput.value = nClienteValue;
@@ -3880,7 +4013,7 @@
     const ENDPOINT = 'routes/reset_counters.php';
 
     function bindResetModal(modal) {
-      if (!modal || modal.dataset.bound) return; // evita doble binding
+      if (!modal || modal.dataset.bound) return;
       modal.dataset.bound = '1';
 
       const $ = s => modal.querySelector(s);
@@ -3948,7 +4081,7 @@
             headers: {
               'Content-Type': 'application/json'
             },
-            credentials: 'same-origin', // usa la sesión (rol)
+            credentials: 'same-origin',
             body: JSON.stringify({
               set_to: n,
               selected,
@@ -3962,9 +4095,7 @@
           }
 
           const data = await res.json();
-          if (!data.ok) {
-            throw new Error(data.message || 'Fallo en el reinicio');
-          }
+          if (!data.ok) throw new Error(data.message || 'Fallo en el reinicio');
 
           const okCount = (data.results || []).filter(r => r.ok).length;
           showResult(all ?
@@ -3978,7 +4109,6 @@
         }
       }
 
-      // Listeners
       if (chkAll) chkAll.addEventListener('change', function() {
         checkboxes().forEach(cb => cb.checked = this.checked);
         updateCount();
@@ -4002,16 +4132,13 @@
       updateCount();
     }
 
-    // Enlaza si ya está en el DOM
     const modalEl = document.getElementById('modalResetCorrelativos');
     if (modalEl) bindResetModal(modalEl);
 
-    // Y también cuando se abre (por si se inyecta dinámicamente)
     document.addEventListener('show.bs.modal', (e) => {
       if (e.target && e.target.id === 'modalResetCorrelativos') bindResetModal(e.target);
     });
 
-    // (Opcional) Asegura que los modales cuelguen de <body>
     document.querySelectorAll('.modal').forEach(m => {
       if (m.parentElement !== document.body) document.body.appendChild(m);
     });
@@ -4040,34 +4167,30 @@
       maximumFractionDigits: 0
     }).format(n) : '$0');
 
-    // ====== Control de rol (admin puede pasar sin completar previos) ======
-    const IS_ADMIN = (window.APP_ROLE === 1) ||
-      (document.body?.dataset?.role === '1'); // fallback si usas <body data-role="1">
+    const IS_ADMIN = Number(window.APP_ROLE) === 1;
 
-    // Tabs con bloqueo secuencial
     const TAB_IDS = ['form1-tab', 'form2-tab', 'form3-tab', 'form4-tab', 'form5-tab', 'form6-tab', 'form7-tab', 'form8-tab', 'form9-tab'];
 
     function isStepAllowed(targetIdx) {
       if (IS_ADMIN) return true;
-
-      // Para ir a 6 (idx 5) o 7 (idx 6) primero hay que haber "visitado" el 5 (desbloqueo)
-      if ((targetIdx === 5 || targetIdx === 6) && !optUnlocked()) {
-        return false;
+      if (targetIdx === 0) return true;
+      if (targetIdx === 4 || targetIdx === 5) return true;
+      if (targetIdx >= 1 && targetIdx <= 3) {
+        for (let i = 0; i < targetIdx; i++) {
+          if (sessionStorage.getItem('form' + (i + 1) + '_done') !== '1') return false;
+        }
+        return true;
       }
-
-      // Recorre los previos, pero IGNORA 5 y 6 (idx 4 y 5) porque son opcionales
-      for (let i = 0; i < targetIdx; i++) {
-        if (OPTIONAL_IDX.has(i)) continue; // no exijas 5/6
-        if (sessionStorage.getItem('form' + (i + 1) + '_done') !== '1') return false;
+      if (targetIdx >= 6) {
+        const f1a4 = [1, 2, 3, 4].every(i => sessionStorage.getItem('form' + i + '_done') === '1');
+        const f5 = sessionStorage.getItem('form5_done') === '1';
+        const f6 = sessionStorage.getItem('form6_done') === '1';
+        return f1a4 && (f5 || f6);
       }
       return true;
     }
 
-    function optUnlocked() {
-      return sessionStorage.getItem('opt56_unlocked') === '1';
-    }
 
-    const OPTIONAL_IDX = new Set([4, 5]); // índices 4 y 5 corresponden a form5 y form6
 
     function refreshTabsLock() {
       TAB_IDS.forEach((id, idx) => {
@@ -4090,14 +4213,6 @@
       }
       if (window.bootstrap?.Tab) {
         new bootstrap.Tab(el).show();
-
-        // --- DESBLOQUEO 5→6→7 ---
-        if (tabId === 'form5-tab') {
-          sessionStorage.setItem('opt56_unlocked', '1');
-          refreshTabsLock();
-        }
-        // -------------------------
-
       } else {
         const paneId = el.getAttribute('data-bs-target')?.slice(1);
         const pane = paneId ? document.getElementById(paneId) : null;
@@ -4106,26 +4221,10 @@
         pane.classList.add('active', 'show');
         $$('.nav-link').forEach(a => a.classList.remove('active'));
         el.classList.add('active');
-
-        // --- DESBLOQUEO 5→6→7 (fallback sin Bootstrap) ---
-        if (tabId === 'form5-tab') {
-          sessionStorage.setItem('opt56_unlocked', '1');
-          refreshTabsLock();
-        }
-        // --------------------------------------------------
       }
     }
     window.showTab = showTab;
 
-    // Si se usa el click directo en la pestaña (Bootstrap), también desbloquea
-    document.addEventListener('shown.bs.tab', function(ev) {
-      if (ev.target && ev.target.id === 'form5-tab') {
-        sessionStorage.setItem('opt56_unlocked', '1');
-        refreshTabsLock();
-      }
-    });
-
-    // Interceptar clicks en tabs
     TAB_IDS.forEach((id, idx) => {
       const btn = document.getElementById(id);
       if (!btn) return;
@@ -4133,12 +4232,13 @@
         if (!IS_ADMIN && !isStepAllowed(idx)) {
           ev.preventDefault();
           ev.stopPropagation();
+          ev.stopImmediatePropagation();
           alert('Debes completar los formularios anteriores antes de avanzar.');
         }
       }, true);
+
     });
 
-    // Marcar done al enviar cada form
     function bindCompletionOnSubmit() {
       TAB_IDS.forEach((id, idx) => {
         const paneId = document.getElementById(id)?.getAttribute('data-bs-target')?.slice(1);
@@ -4155,11 +4255,9 @@
       });
     }
 
-    // Inicializa
     refreshTabsLock();
     bindCompletionOnSubmit();
 
-    // 1) ORDEN DE TRABAJO - MATERIALES
     const otMateriales = [];
 
     function otRenderMateriales() {
@@ -4205,7 +4303,6 @@
     window.otAgregarMaterial = otAgregarMaterial;
     window.otEliminarMaterial = otEliminarMaterial;
 
-    // 2) ÍTEMS DE COTIZACIÓN - máx 4
     function initItemsManagers() {
       $$('#items-body').forEach((oldBody) => {
         const container = oldBody.closest('form') || document;
@@ -4216,7 +4313,6 @@
         const total = container.querySelector('#total_general');
         if (!oldBtn) return;
 
-        // limpiar listeners previos
         const newBtn = oldBtn.cloneNode(true);
         oldBtn.parentNode.replaceChild(newBtn, oldBtn);
         oldBtn = newBtn;
@@ -4313,7 +4409,6 @@
       });
     }
 
-    // 3) LISTAS: Materiales, Actividades, Partidas
     let materiales = [];
 
     function actualizarListaMateriales() {
@@ -4358,7 +4453,6 @@
     window.agregarMaterial = agregarMaterial;
     window.eliminarMaterial = eliminarMaterial;
 
-    // Actividades
     let actividades = [];
     let nextActivityId = 1;
 
@@ -4431,7 +4525,6 @@
     window.agregarActividad = agregarActividad;
     window.eliminarActividad = eliminarActividad;
 
-    // Partidas presupuestarias
     let partidas = [];
 
     function actualizarListaPartidas() {
@@ -4482,7 +4575,6 @@
     window.agregarPartida = agregarPartida;
     window.eliminarPartida = eliminarPartida;
 
-    // 7) Estado visual Aprobado / Rechazado / Pendiente
     (function() {
       const status = document.getElementById('approval-status');
       if (!status) return;
@@ -4505,7 +4597,6 @@
       apply();
     })();
 
-    // 8) Mostrar/ocultar el campo de "Otro" (solicitud vía)
     (function() {
       const chk = document.getElementById('sol_via_otro');
       const txt = document.getElementById('sol_via_otro_text');
@@ -4576,13 +4667,11 @@
     };
 
     sync();
-
     chk.addEventListener('change', sync, {
       passive: true
     });
   })();
 
-  // Boton pdf circulo
   (function() {
     const fab = document.getElementById('pdf-fab');
     if (!fab) return;
@@ -4619,13 +4708,11 @@
     });
   })();
 
-  // Sistema de reinicio de correlativos mejorado
   (() => {
     const btnSel = document.getElementById('modal-btn-reset-selected');
     const btnAll = document.getElementById('modal-btn-reset-all');
     const inputSetTo = document.querySelector('input[name="modal_set_to"]');
 
-    // --- utilidades selección ---
     const getSelectedKeys = () =>
       Array.from(document.querySelectorAll('.modal-counter-chk:checked')).map(el => el.value);
 
@@ -4634,7 +4721,6 @@
       if (el) el.textContent = `${getSelectedKeys().length} seleccionados`;
     };
 
-    // "Seleccionar todos"
     document.getElementById('modal-chk-all')?.addEventListener('change', e => {
       document.querySelectorAll('.modal-counter-chk').forEach(chk => chk.checked = e.target.checked);
       updateSelCount();
@@ -4643,7 +4729,6 @@
       chk.addEventListener('change', updateSelCount);
     });
 
-    // --- quitar posibles onclick antiguos que llamen confirm() ---
     const killInlineConfirm = el => {
       if (!el) return;
       el.setAttribute('onclick', '');
@@ -4652,13 +4737,13 @@
     killInlineConfirm(btnSel);
     killInlineConfirm(btnAll);
 
-    // --- llamada al backend (envía JSON) ---
     async function doReset(payload) {
       const res = await fetch('routes/reset_counters.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'same-origin', 
         body: JSON.stringify(payload)
       });
 
@@ -4678,6 +4763,7 @@
           title: 'Listo',
           text: 'Correlativos reiniciados correctamente.'
         });
+        location.reload(); 
       } else {
         await Swal.fire({
           icon: 'error',
@@ -4687,7 +4773,7 @@
       }
     }
 
-    // --- handlers con captura para bloquear otros listeners que muestren confirm() ---
+
     const onResetSelected = async (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -4723,7 +4809,6 @@
         selected: sel
       });
 
-      // limpiar selección
       document.getElementById('modal-chk-all') && (document.getElementById('modal-chk-all').checked = false);
       document.querySelectorAll('.modal-counter-chk:checked').forEach(chk => (chk.checked = false));
       updateSelCount();
@@ -4755,7 +4840,6 @@
       });
     };
 
-    // **capturing:true** para que nuestro handler corra primero y bloquee otros
     btnSel?.addEventListener('click', onResetSelected, {
       capture: true
     });
@@ -4764,54 +4848,88 @@
     });
   })();
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const qs = new URLSearchParams(location.search);
-    const nCli = qs.get('n_cliente') || '';
-    const next = qs.get('next') || ''; // ej: form3_cotizacion
-    const relax = qs.get('resume') === '1'; // si viene 1, desbloquea previos
+ document.addEventListener('DOMContentLoaded', () => {
+  const qs     = new URLSearchParams(location.search);
+  const nCli   = qs.get('n_cliente') || '';
+  const next   = qs.get('next') || '';
+  const relax  = qs.get('resume') === '1';
+  const lockPrev = qs.get('lock_prev') === '1';   // <-- nuevo
 
-    // 1) Fijar n_cliente principal y los hidden de todos los forms
-    if (nCli) {
-      const main = document.getElementById('n_cliente');
-      if (main) {
-        main.value = nCli;
-        main.readOnly = true;
-      }
-      for (let i = 2; i <= 9; i++) {
-        const h = document.getElementById('n_cliente_form' + i);
-        if (h) h.value = nCli;
-      }
+  if (nCli) {
+    const main = document.getElementById('n_cliente');
+    if (main) {
+      main.value = nCli;
+      main.readOnly = true;
     }
+    for (let i = 2; i <= 9; i++) {
+      const h = document.getElementById('n_cliente_form' + i);
+      if (h) h.value = nCli;
+    }
+  }
 
-    // 2) Abrir pestaña indicada por ?next=...
-    const map = {
-      form1_solicitud: 'form1-tab',
-      form2_evaluacion: 'form2-tab',
-      form3_cotizacion: 'form3-tab',
-      form4_orden_trabajo: 'form4-tab',
-      form5_verificacion_pcb: 'form5-tab',
-      form6_verificacion_3d: 'form6-tab',
-      form7_continuidad_pcb: 'form7-tab',
-      form8_informe_servicio: 'form8-tab',
-      form9_satisfaccion: 'form9-tab'
-    };
+  const map = {
+    form1_solicitud: 'form1-tab',
+    form2_evaluacion: 'form2-tab',
+    form3_cotizacion: 'form3-tab',
+    form4_orden_trabajo: 'form4-tab',
+    form5_verificacion_pcb: 'form5-tab',
+    form6_verificacion_3d: 'form6-tab',
+    form7_continuidad_pcb: 'form7-tab',
+    form8_informe_servicio: 'form8-tab',
+    form9_satisfaccion: 'form9-tab'
+  };
 
-    if (next) {
-      // Si vienes desde “Continuar servicio”, marca previos como completos
-      if (relax) {
-        const order = Object.keys(map);
-        const idx = order.indexOf(next);
-        if (idx > -1) {
-          for (let k = 0; k < idx; k++) {
-            sessionStorage.setItem('form' + (k + 1) + '_done', '1');
-          }
+  if (next) {
+    // si viene resume=1, marcamos anteriores como "hechos" en sessionStorage (como ya lo tenías)
+    if (relax) {
+      const order = Object.keys(map);
+      const idx = order.indexOf(next);
+      if (idx > -1) {
+        for (let k = 0; k < idx; k++) {
+          sessionStorage.setItem('form' + (k + 1) + '_done', '1');
         }
       }
-      const tabId = map[next];
-      if (tabId && typeof window.showTab === 'function') {
-        setTimeout(() => window.showTab(tabId), 150);
+    }
+
+    // si viene lock_prev=1, visualmente apagamos los tabs anteriores
+    if (lockPrev) {
+      const order = Object.keys(map);            // mismo orden que arriba
+      const idx = order.indexOf(next);           // posición del form que toca
+      if (idx > -1) {
+        // recorro los tabs reales del DOM
+        order.forEach((formKey, i) => {
+          const tabId = map[formKey];            // ej: form3-tab
+          const btn = document.getElementById(tabId);
+          if (!btn) return;
+          if (i < idx) {
+            // es anterior → lo apago
+            btn.classList.add('disabled-form');
+            btn.setAttribute('aria-disabled', 'true');
+            btn.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }, true);
+          }
+        });
       }
     }
-  });
+
+    // por último, muestro el que toca
+    const tabId = map[next];
+    if (tabId && typeof window.showTab === 'function') {
+      setTimeout(() => window.showTab(tabId), 150);
+    }
+  }
+});
+
 </script>
+<style>
+  .disabled-form {
+    opacity: .4;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+</style>
+
+
 <!-- Brayan Andrey Perdomo :)  -->

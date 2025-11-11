@@ -1,9 +1,24 @@
 <?php
-
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
-
 session_start();
+
+
+function counter_map(): array {
+  $base = dirname(__DIR__) . '/storage/counters';
+  if (!is_dir($base)) @mkdir($base, 0775, true);
+  return [
+    'form1_solicitud'        => $base . '/solicitud.counter',
+    'form2_evaluacion'       => $base . '/evaluacion.counter',
+    'form3_cotizacion'       => $base . '/cotizacion.counter',
+    'form4_orden_trabajo'    => $base . '/orden_trabajo.counter',
+    'form5_verificacion_pcb' => $base . '/verificacion_pcb.counter',
+    'form6_verificacion_3d'  => $base . '/verificacion_3d.counter',
+    'form7_continuidad_pcb'  => $base . '/continuidad_pcb.counter',
+    'form8_informe_servicio' => $base . '/informe_servicio.counter',
+    'form9_satisfaccion'     => $base . '/satisfaccion.counter',
+  ];
+}
 
 $rol = (int)($_SESSION['rol'] ?? 0);
 if (!in_array($rol, [1, 2], true)) {
@@ -24,17 +39,7 @@ $setTo = isset($in['set_to']) ? (int)$in['set_to'] : 0;
 if ($setTo < 0) $setTo = 0;
 
 if (!empty($in['all'])) {
-  $selected = [
-    'form1_solicitud',
-    'form2_evaluacion',
-    'form3_cotizacion',
-    'form4_orden_trabajo',
-    'form5_verificacion_pcb',
-    'form6_verificacion_3d',
-    'form7_continuidad_pcb',
-    'form8_informe_servicio',
-    'form9_satisfaccion'
-  ];
+  $selected = array_keys(counter_map());
 } else {
   $selected = array_values(array_unique(array_filter((array)($in['selected'] ?? []))));
   if (!$selected) {
@@ -44,21 +49,7 @@ if (!empty($in['all'])) {
   }
 }
 
-$counterDir = __DIR__ . '/../storage/counters';
-if (!is_dir($counterDir)) @mkdir($counterDir, 0775, true);
-
-$map = [
-  'form1_solicitud'        => $counterDir . '/solicitud.counter',
-  'form2_evaluacion'       => $counterDir . '/evaluacion.counter',
-  'form3_cotizacion'       => $counterDir . '/cotizacion.counter',
-  'form4_orden_trabajo'    => $counterDir . '/orden_trabajo.counter',
-  'form5_verificacion_pcb' => $counterDir . '/verificacion_pcb.counter',
-  'form6_verificacion_3d'  => $counterDir . '/verificacion_3d.counter',
-  'form7_continuidad_pcb'  => $counterDir . '/continuidad_pcb.counter',
-  'form8_informe_servicio' => $counterDir . '/informe_servicio.counter',
-  'form9_satisfaccion'     => $counterDir . '/satisfaccion.counter',
-];
-
+$map = counter_map();
 $results = [];
 $errors  = [];
 
@@ -70,21 +61,35 @@ foreach ($selected as $key) {
   }
 
   $file = $map[$key];
-
-  $ok = @file_put_contents($file, (string)$setTo, LOCK_EX);
-  if ($ok === false) {
-    $errors[]  = "No se pudo escribir: {$file}";
-    $results[] = ['key' => $key, 'ok' => false, 'error' => 'no se pudo escribir', 'counterfile' => $file];
+  $h = @fopen($file, 'c+');
+  if (!$h) {
+    $errors[]  = "No se puede abrir: {$file}";
+    $results[] = ['key' => $key, 'ok' => false, 'error' => 'no se pudo abrir', 'counterfile' => $file];
     continue;
   }
+
+  if (!flock($h, LOCK_EX)) {
+    fclose($h);
+    $errors[]  = "No se pudo bloquear: {$file}";
+    $results[] = ['key' => $key, 'ok' => false, 'error' => 'no se pudo bloquear', 'counterfile' => $file];
+    continue;
+  }
+
+  // Guardamos tal cual el entero (valor actual).
+  ftruncate($h, 0);
+  rewind($h);
+  fwrite($h, (string)$setTo);
+  fflush($h);
+  flock($h, LOCK_UN);
+  fclose($h);
   @chmod($file, 0664);
 
-  $next = max(0, (int)$setTo) + 1;
+  $next = $setTo + 1;
   $results[] = [
-    'key'        => $key,
-    'ok'         => true,
-    'new_value'  => (int)$setTo,
-    'next_code'  => sprintf('%03d', $next),
+    'key'         => $key,
+    'ok'          => true,
+    'new_value'   => $setTo,                 // Valor actual (el guardado)
+    'next_code'   => sprintf('%03d', $next), // Próximo correlativo mostrado
     'counterfile' => $file,
   ];
 }

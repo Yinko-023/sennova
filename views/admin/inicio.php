@@ -60,7 +60,6 @@ if ($areaKey === 'cafe') {
   $displayTotal = (int)$resumen['electronica'];
 }
 
-// Normalizamos de vuelta por si se usan más abajo
 $resumen['atendidas_num']   = $atendidasNum;
 $resumen['pendientes_num']  = $pendientesNum;
 $resumen['rechazadas_num']  = $rechazadasNum;
@@ -68,7 +67,6 @@ $resumen['atendidas_pct']   = $atendidasPct;
 $resumen['rechazadas_pct']  = $rechazadasPct;
 $resumen['growth_pct']      = $growthPct;
 
-// ===== Colecciones y contadores varios =====
 $usuarios           = is_array($usuarios           ?? null) ? $usuarios           : [];
 $actividades        = is_array($actividades        ?? null) ? $actividades        : [];
 $totalUsuarios      = (int)($totalUsuarios         ?? 0);
@@ -82,18 +80,17 @@ $isAdmin = ($rol === 1);
 $attCafe = (int)(
   $resumen['atendidas_cafe']
   ?? $resumen['cafe_atendidas']
-  ?? $resumen['cafe']            // fallback útil si tu backend llena esta clave
+  ?? $resumen['cafe']          
   ?? 0
 );
 
 $attElec = (int)(
   $resumen['atendidas_electronica']
   ?? $resumen['electronica_atendidas']
-  ?? $resumen['electronica']     // fallback útil si tu backend llena esta clave
+  ?? $resumen['electronica']     
   ?? 0
 );
 
-// Si estás en un área y no vino su contador específico, usa el total general atendidas
 $attArea = 0;
 if ($areaKey === 'cafe') {
   $attArea = $attCafe ?: $atendidasNum;

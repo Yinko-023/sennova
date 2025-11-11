@@ -53,10 +53,12 @@ $sql = "SELECT
           area,
           form_type,
           n_cliente,
-          finalizado
+          finalizado,
+          metadata_json  
         FROM generated_pdfs
         $whereSql
         ORDER BY n_cliente ASC, created_at DESC, id_pdf DESC";
+
 
 $stmt  = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -70,7 +72,6 @@ $stmtClientes = $pdo->prepare($sqlClientes);
 $stmtClientes->execute();
 $clientes = $stmtClientes->fetchAll(PDO::FETCH_COLUMN);
 
-
 function formatBytes($bytes)
 {
   $units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -79,7 +80,6 @@ function formatBytes($bytes)
   $value = $bytes / (1024 ** $power);
   return number_format($value, $power >= 2 ? 2 : 0) . ' ' . $units[$power];
 }
-
 
 $byCliente = [];
 foreach ($rows as $row) {
@@ -136,10 +136,48 @@ function getNextForm(?string $last, array $order): ?string
   if ($last === null) return $order[0] ?? null;
   $i = array_search($last, $order, true);
   if ($i === false) return $order[0] ?? null;
-  return $order[$i + 1] ?? null; // null si ya está en el último
+  return $order[$i + 1] ?? null;
+}
+
+function getFormCode(array $row): ?string
+{
+  $meta = [];
+  if (!empty($row['metadata_json'])) {
+    $tmp = json_decode($row['metadata_json'], true);
+    if (is_array($tmp)) $meta = $tmp;
+  }
+
+  $map = [
+    'form1_solicitud'        => ['numero_solicitud', 'sol_no', 'codigo', 'code'],
+    'form2_evaluacion'       => ['codigo', 'eva_no', 'code'],
+    'form3_cotizacion'       => ['cot_no', 'codigo', 'code'],
+    'form4_orden_trabajo'    => ['ot_no', 'numero', 'codigo', 'code'],
+    'form5_verificacion_pcb' => ['pcb_no', 'ot', 'codigo', 'code'],
+    'form6_verificacion_3d'  => ['v3d_no', 'ot', 'codigo', 'code'],
+    'form7_continuidad_pcb'  => ['con_no', 'ot', 'codigo', 'code'],
+    'form8_informe_servicio' => ['inf_no', 'ot', 'codigo', 'code'],
+    'form9_satisfaccion'     => ['sat_no', 'codigo', 'code'],
+  ];
+  $ft = $row['form_type'] ?? '';
+  $candidates = $map[$ft] ?? ['codigo', 'code'];
+
+  foreach ($candidates as $k) {
+    if (isset($meta[$k]) && $meta[$k] !== '') {
+      $val = (string)$meta[$k];
+      if (ctype_digit($val)) return sprintf('%03d', (int)$val);
+      return $val;
+    }
+  }
+
+  if (!empty($row['filename_2'])) {
+    if (preg_match('/(?:^|[_\-])(\d{3,})(?:[_\-]|\.)/i', $row['filename_2'], $m)) {
+      return sprintf('%03d', (int)$m[1]);
+    }
+  }
+
+  return null;
 }
 ?>
-
 
 <div class="gradient-header mt-5">
   <div class="container">
@@ -300,13 +338,9 @@ function getNextForm(?string $last, array $order): ?string
       . "&n_cliente=" . urlencode($clienteNombre)
       . "&area=" . urlencode($areaForClient)
       . ($nextForm ? "&next=" . urlencode($nextForm) : "")
-      . "&resume=1";
+      . "&resume=1"
+      . "&lock_prev=1";
 
-    $continueUrl = "/sennova/inAdmin.php?vista=maps"
-      . "&n_cliente=" . urlencode($clienteNombre)
-      . "&area=" . urlencode($areaForClient)
-      . ($nextForm ? "&next=" . urlencode($nextForm) : "")
-      . "&resume=1";
     ?>
     <div class="client-section mb-4">
       <div class="client-header">
@@ -368,8 +402,13 @@ function getNextForm(?string $last, array $order): ?string
               <?php foreach ($clientePdfs as $row): ?>
                 <tr>
                   <td>
-                    <span class="pdf-id-badge">#<?= (int)$row['id_pdf'] ?></span>
+                    <?php $code = getFormCode($row); ?>
+                    <span class="pdf-id-badge" title="#<?= (int)$row['id_pdf'] ?>">
+                      <?= htmlspecialchars($code ?? '—') ?>
+                    </span>
                   </td>
+
+
                   <td>
                     <?php
                     $formTypeLabels = [
@@ -1104,7 +1143,7 @@ function getNextForm(?string $last, array $order): ?string
 
     // 1) Desactivar todo
     document.querySelectorAll('#formTabs .nav-link').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('#formTabsContent .tab-pane').forEach(p => p.classList.remove('active','show'));
+    document.querySelectorAll('#formTabsContent .tab-pane').forEach(p => p.classList.remove('active', 'show'));
 
     // 2) Activar botón destino
     btn.classList.add('active');
@@ -1112,13 +1151,15 @@ function getNextForm(?string $last, array $order): ?string
     // 3) Activar pane destino
     const paneSel = btn.getAttribute('data-bs-target'); // ej: "#form6"
     const pane = paneSel ? document.querySelector(paneSel) : null;
-    if (pane) pane.classList.add('active','show');
+    if (pane) pane.classList.add('active', 'show');
 
     // 4) Si Bootstrap.Tab está disponible, dispara show() (no es obligatorio)
     try {
       if (window.bootstrap && bootstrap.Tab) {
         bootstrap.Tab.getOrCreateInstance(btn).show();
       }
-    } catch (e) { /* noop */ }
+    } catch (e) {
+      /* noop */
+    }
   };
 </script>
